@@ -1,0 +1,88 @@
+name: Dinkr
+
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: 11.0.0
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: 7.0.0
+
+options:
+  bundleIdPrefix: com.dinkr
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16"
+  createIntermediateGroups: true
+
+targets:
+  Dinkr:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: PickleballApp
+    resources:
+      - path: PickleballApp/Resources/Assets.xcassets
+      - path: PickleballApp/Resources/GoogleService-Info.plist
+    dependencies:
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseStorage
+      - package: GoogleSignIn
+        product: GoogleSignIn
+      - package: GoogleSignIn
+        product: GoogleSignInSwift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dinkr.ios
+        SWIFT_VERSION: "5.9"
+        DEVELOPMENT_TEAM: ""
+        TARGETED_DEVICE_FAMILY: "1"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        SWIFT_EMIT_LOC_STRINGS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Dinkr
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Used to show nearby courts and games"
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Used to upload photos for posts and listings"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGNING_ALLOWED: NO
+
+  DinkrTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: PickleballAppTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dinkr.ios.tests
+        SWIFT_VERSION: "5.9"
+    dependencies:
+      - target: Dinkr
+
+schemes:
+  Dinkr:
+    build:
+      targets:
+        Dinkr: all
+        DinkrTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - DinkrTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

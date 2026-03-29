@@ -1,0 +1,17 @@
+# Xcode build
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.moved-aside
+
+# SPM
+.build/
+.swiftpm/
+
+# Old project (replaced by Dinkr.xcodeproj via xcodegen)
+PickleballApp.xcodeproj/
+
+# macOS
+.DS_Store
