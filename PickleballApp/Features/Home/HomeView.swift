@@ -7,6 +7,8 @@ struct HomeView: View {
     @State private var showNotifications = false
     @State private var showMessages = false
     @State private var feedMode = 0
+    @State private var showHighlightsFeed = false
+    @State private var highlightsFeedCategory: VideoCategory = .all
 
     var body: some View {
         NavigationStack {
@@ -103,6 +105,20 @@ struct HomeView: View {
                             WeekendForecastWidget(days: viewModel.weekendForecast)
                                 .padding(.horizontal, 16)
 
+                            // Video Highlights
+                            VideoHighlightsWidget(
+                                videos: viewModel.videoHighlights,
+                                onWatchAll: {
+                                    highlightsFeedCategory = .all
+                                    showHighlightsFeed = true
+                                },
+                                onWatchVideo: { _ in
+                                    highlightsFeedCategory = .all
+                                    showHighlightsFeed = true
+                                }
+                            )
+                            .padding(.horizontal, 16)
+
                             // Feed preview
                             FeedPreviewWidget(
                                 posts: Array(viewModel.posts.prefix(3)),
@@ -128,11 +144,15 @@ struct HomeView: View {
             MessagesView()
                 .environment(authService)
         }
+        .fullScreenCover(isPresented: $showHighlightsFeed) {
+            VideoHighlightsFeedView(initialCategory: highlightsFeedCategory)
+        }
         .task {
             await viewModel.loadFeed()
             let lat = locationService.currentLocation?.coordinate.latitude ?? 30.2672
             let lon = locationService.currentLocation?.coordinate.longitude ?? -97.7431
             await viewModel.fetchWeather(latitude: lat, longitude: lon)
+            await viewModel.loadVideoHighlights()
         }
     }
 }

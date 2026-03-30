@@ -26,6 +26,7 @@ final class HomeViewModel {
     var newPlayersThisWeek = 3
     var weather: CurrentWeather? = nil
     var weekendForecast: [DayForecast] = []
+    var videoHighlights: [VideoPost] = []
 
     // MARK: - Pagination state
 
@@ -237,6 +238,11 @@ final class HomeViewModel {
         await WeatherService.shared.fetch(latitude: latitude, longitude: longitude)
         weather = WeatherService.shared.current
         weekendForecast = WeatherService.shared.weekendForecast
+    }
+
+    func loadVideoHighlights() async {
+        let featured = await VideoService.shared.loadFeaturedVideos()
+        videoHighlights = featured
     }
 }
 

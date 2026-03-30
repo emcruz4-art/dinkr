@@ -1106,3 +1106,121 @@ private struct ReactionPill: View {
         .buttonStyle(.plain)
     }
 }
+
+// MARK: - 13. VideoHighlightsWidget
+struct VideoHighlightsWidget: View {
+    let videos: [VideoPost]
+    let onWatchAll: () -> Void
+    let onWatchVideo: (VideoPost) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "play.rectangle.fill")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.dinkrCoral)
+                    Text("TOP HIGHLIGHTS")
+                        .font(.system(size: 9, weight: .heavy))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button(action: onWatchAll) {
+                    HStack(spacing: 3) {
+                        Text("Watch All")
+                            .font(.system(size: 12, weight: .semibold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundStyle(Color.dinkrGreen)
+                }
+                .buttonStyle(.plain)
+            }
+
+            // Video thumbnail cards
+            if videos.isEmpty {
+                HStack(spacing: 10) {
+                    ForEach(0..<2, id: \.self) { _ in
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.secondary.opacity(0.1))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 160)
+                            .redacted(reason: .placeholder)
+                    }
+                }
+            } else {
+                HStack(spacing: 10) {
+                    ForEach(Array(videos.prefix(2))) { video in
+                        VideoThumbnailCard(video: video, onTap: { onWatchVideo(video) })
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+}
+
+struct VideoThumbnailCard: View {
+    let video: VideoPost
+    let onTap: () -> Void
+
+    private var gradientColors: [Color] {
+        video.category == .drills
+            ? [Color.dinkrGreen.opacity(0.6), Color.dinkrNavy.opacity(0.9)]
+            : [Color.dinkrCoral.opacity(0.6), Color.dinkrNavy.opacity(0.9)]
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            ZStack(alignment: .bottom) {
+                // Gradient background (thumbnail placeholder)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(
+                        LinearGradient(colors: gradientColors, startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 160)
+
+                // Center play button
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .shadow(color: .black.opacity(0.3), radius: 4)
+
+                // Bottom overlay
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(video.category == .drills ? "🎯 Drill" : "🔥 Highlight")
+                        .font(.system(size: 8, weight: .heavy))
+                        .foregroundStyle(.white.opacity(0.9))
+
+                    Text(video.title)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+
+                    HStack(spacing: 6) {
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.white.opacity(0.8))
+                        Text(video.likes >= 1000
+                             ? String(format: "%.1fK", Double(video.likes)/1000)
+                             : "\(video.likes)")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                }
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    LinearGradient(colors: [Color.clear, Color.black.opacity(0.6)],
+                                   startPoint: .top, endPoint: .bottom)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
