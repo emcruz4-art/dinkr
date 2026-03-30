@@ -9,6 +9,9 @@ struct HomeView: View {
     @State private var feedMode = 0
     @State private var showHighlightsFeed = false
     @State private var highlightsFeedCategory: VideoCategory = .all
+    @State private var showHostGame = false
+    @State private var showFindGame = false
+    @State private var showStoriesSheet = false
 
     var body: some View {
         NavigationStack {
@@ -35,6 +38,7 @@ struct HomeView: View {
                         // Check-in stories bar
                         CheckInStoriesBar(checkIns: CheckInStoriesBar.mockCheckIns)
                             .padding(.top, 6)
+                            .onTapGesture { showStoriesSheet = true }
 
                         // For You / Following toggle
                         Picker("Feed", selection: $feedMode) {
@@ -55,8 +59,21 @@ struct HomeView: View {
                             .padding(.horizontal, 16)
 
                             // Quick actions
-                            QuickActionsWidget()
-                                .padding(.horizontal, 16)
+                            QuickActionsWidget(
+                                onHostGame: {
+                                    HapticManager.medium()
+                                    showHostGame = true
+                                },
+                                onFindGame: {
+                                    HapticManager.selection()
+                                    showFindGame = true
+                                },
+                                onOpenPlay: {
+                                    HapticManager.selection()
+                                    showFindGame = true
+                                }
+                            )
+                            .padding(.horizontal, 16)
 
                             // Featured event + Nearby games
                             HStack(alignment: .top, spacing: 12) {
@@ -80,7 +97,11 @@ struct HomeView: View {
                                 TopNewsWidget(articles: Array(viewModel.newsArticles.prefix(3)))
                                 FindPlayersNearbyWidget(
                                     count: viewModel.nearbyPlayerCount,
-                                    newThisWeek: viewModel.newPlayersThisWeek
+                                    newThisWeek: viewModel.newPlayersThisWeek,
+                                    onMatch: {
+                                        HapticManager.selection()
+                                        showFindGame = true
+                                    }
                                 )
                                 .frame(width: 130)
                             }
@@ -136,6 +157,12 @@ struct HomeView: View {
         }
         .sheet(isPresented: $viewModel.showCreatePost) {
             CreatePostView()
+        }
+        .sheet(isPresented: $showHostGame) {
+            HostGameView()
+        }
+        .sheet(isPresented: $showFindGame) {
+            NearbyGamesView(viewModel: PlayViewModel())
         }
         .sheet(isPresented: $showNotifications) {
             NotificationCenterView()

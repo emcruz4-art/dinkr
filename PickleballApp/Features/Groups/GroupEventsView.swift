@@ -29,6 +29,7 @@ struct GroupEventsView: View {
 
 struct GroupEventRow: View {
     let event: Event
+    @State private var isRSVPed = false
 
     var body: some View {
         PickleballCard {
@@ -65,13 +66,18 @@ struct GroupEventRow: View {
 
                 Spacer()
 
-                Button {} label: {
-                    Text("RSVP")
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        isRSVPed.toggle()
+                    }
+                    HapticManager.medium()
+                } label: {
+                    Text(isRSVPed ? "Going ✓" : "RSVP")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.dinkrGreen)
+                        .background(isRSVPed ? Color.dinkrSky : Color.dinkrGreen)
                         .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)

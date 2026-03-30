@@ -132,6 +132,8 @@ struct AddCheckInButton: View {
 struct CheckInDetailSheet: View {
     let checkIn: CourtCheckIn
     @Environment(\.dismiss) private var dismiss
+    @State private var didJoin = false
+    @State private var didMessage = false
 
     var body: some View {
         NavigationStack {
@@ -153,24 +155,33 @@ struct CheckInDetailSheet: View {
                 }
 
                 HStack(spacing: 12) {
-                    Button {} label: {
-                        Text("Join Session")
+                    Button {
+                        HapticManager.success()
+                        didJoin = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { dismiss() }
+                    } label: {
+                        Text(didJoin ? "Joined!" : "Join Session")
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
-                            .background(Color.dinkrGreen)
+                            .background(didJoin ? Color.dinkrGreen.opacity(0.7) : Color.dinkrGreen)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
+                    .disabled(didJoin)
 
-                    Button {} label: {
-                        Text("Message")
+                    Button {
+                        HapticManager.selection()
+                        didMessage = true
+                        dismiss()
+                    } label: {
+                        Text(didMessage ? "Sent!" : "Message")
                             .font(.subheadline.weight(.bold))
-                            .foregroundStyle(Color.dinkrSky)
+                            .foregroundStyle(didMessage ? Color.white : Color.dinkrSky)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
-                            .background(Color.dinkrSky.opacity(0.12))
+                            .background(didMessage ? Color.dinkrSky : Color.dinkrSky.opacity(0.12))
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)

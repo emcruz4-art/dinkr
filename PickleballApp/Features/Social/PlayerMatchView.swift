@@ -7,6 +7,7 @@ struct PlayerMatchView: View {
     @State private var showMatchAlert = false
     @State private var matchedPlayer: User? = nil
     @State private var rotation = 0.0
+    @State private var showFilters = false
 
     var currentPlayer: User? {
         guard currentIndex < players.count else { return nil }
@@ -34,7 +35,10 @@ struct PlayerMatchView: View {
                         }
                         Spacer()
                         // Filter button
-                        Button {} label: {
+                        Button {
+                            showFilters = true
+                            HapticManager.selection()
+                        } label: {
                             Image(systemName: "slider.horizontal.3")
                                 .foregroundStyle(Color.dinkrGreen)
                         }
@@ -153,7 +157,20 @@ struct PlayerMatchView: View {
                         .buttonStyle(.plain)
 
                         // Super match
-                        Button {} label: {
+                        Button {
+                            if let player = currentPlayer {
+                                HapticManager.medium()
+                                withAnimation(.spring()) {
+                                    offset = CGSize(width: 0, height: -600)
+                                }
+                                matchedPlayer = player
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    showMatchAlert = true
+                                    currentIndex += 1
+                                    offset = .zero
+                                }
+                            }
+                        } label: {
                             ZStack {
                                 Circle()
                                     .fill(Color.dinkrAmber.opacity(0.12))
@@ -198,6 +215,28 @@ struct PlayerMatchView: View {
             if let player = matchedPlayer {
                 MatchSuccessSheet(player: player)
             }
+        }
+        .sheet(isPresented: $showFilters) {
+            NavigationStack {
+                VStack(spacing: 20) {
+                    Text("Filter Players")
+                        .font(.headline)
+                    Text("Skill, distance, and availability filters coming soon.")
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Spacer()
+                }
+                .padding(.top, 24)
+                .padding(.horizontal)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") { showFilters = false }
+                            .foregroundStyle(Color.dinkrGreen)
+                    }
+                }
+            }
+            .presentationDetents([.medium])
         }
     }
 }

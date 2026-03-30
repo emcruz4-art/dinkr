@@ -69,6 +69,7 @@ struct GroupDetailView: View {
 
 struct GroupDetailHeader: View {
     let group: Group
+    @State private var isJoined = false
 
     var accentColor: Color { groupDetailColor(for: group.type) }
 
@@ -209,10 +210,15 @@ struct GroupDetailHeader: View {
             }
 
             // ── Join / Joined CTA ─────────────────────────────────────────
-            Button {} label: {
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    isJoined.toggle()
+                }
+                HapticManager.medium()
+            } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "person.badge.plus")
-                    Text("Join Group")
+                    Image(systemName: isJoined ? "checkmark.circle.fill" : "person.badge.plus")
+                    Text(isJoined ? "Joined" : "Join Group")
                 }
                 .font(.subheadline.weight(.bold))
                 .foregroundStyle(.white)

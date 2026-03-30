@@ -25,6 +25,7 @@ struct DinkrHeaderView: View {
             .clipShape(Capsule())
 
             Button {
+                HapticManager.selection()
                 onMessagesTap?()
             } label: {
                 Image(systemName: "bubble.left.and.bubble.right.fill")
@@ -194,17 +195,24 @@ private struct HeroStatBadge: View {
 
 // MARK: - 3. QuickActionsWidget
 struct QuickActionsWidget: View {
+    var onHostGame: () -> Void = {}
+    var onFindGame: () -> Void = {}
+    var onOpenPlay: () -> Void = {}
+
     var body: some View {
         HStack(spacing: 10) {
             QuickActionPill(label: "Host Game",
                            icon: "plus.circle.fill",
-                           gradientColors: [Color.dinkrGreen, Color.dinkrGreen.opacity(0.7)])
+                           gradientColors: [Color.dinkrGreen, Color.dinkrGreen.opacity(0.7)],
+                           action: onHostGame)
             QuickActionPill(label: "Find Game",
                            icon: "magnifyingglass.circle.fill",
-                           gradientColors: [Color.dinkrSky, Color.dinkrSky.opacity(0.7)])
+                           gradientColors: [Color.dinkrSky, Color.dinkrSky.opacity(0.7)],
+                           action: onFindGame)
             QuickActionPill(label: "Open Play",
                            icon: "arrow.left.arrow.right.circle.fill",
-                           gradientColors: [Color.dinkrCoral, Color.dinkrCoral.opacity(0.7)])
+                           gradientColors: [Color.dinkrCoral, Color.dinkrCoral.opacity(0.7)],
+                           action: onOpenPlay)
         }
     }
 }
@@ -213,11 +221,14 @@ struct QuickActionPill: View {
     let label: String
     let icon: String
     let gradientColors: [Color]
+    var action: () -> Void = {}
 
     @State private var isPressed = false
 
     var body: some View {
         Button {
+            HapticManager.medium()
+            action()
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: icon)
@@ -625,6 +636,7 @@ struct TopNewsWidget: View {
 struct FindPlayersNearbyWidget: View {
     let count: Int
     let newThisWeek: Int
+    var onMatch: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -655,7 +667,10 @@ struct FindPlayersNearbyWidget: View {
 
             Spacer()
 
-            Button {} label: {
+            Button {
+                HapticManager.selection()
+                onMatch()
+            } label: {
                 Text("Match →")
                     .font(.caption.weight(.bold))
                     .foregroundStyle(.white)
@@ -1089,7 +1104,10 @@ private struct ReactionPill: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            HapticManager.selection()
+            action()
+        } label: {
             HStack(spacing: 3) {
                 Image(systemName: icon)
                     .font(.system(size: 10))
@@ -1174,7 +1192,10 @@ struct VideoThumbnailCard: View {
     }
 
     var body: some View {
-        Button(action: onTap) {
+        Button {
+            HapticManager.selection()
+            onTap()
+        } label: {
             ZStack(alignment: .bottom) {
                 // Gradient background (thumbnail placeholder)
                 RoundedRectangle(cornerRadius: 12)

@@ -221,7 +221,11 @@ struct SearchView: View {
                         label: category.label,
                         icon: category.icon,
                         gradientStart: category.gradientStart,
-                        gradientEnd: category.gradientEnd
+                        gradientEnd: category.gradientEnd,
+                        onTap: {
+                            viewModel.query = category.label
+                            searchFocused = false
+                        }
                     )
                 }
             }
@@ -305,7 +309,12 @@ struct SearchView: View {
                     ) { selectedTab = .players }
 
                     ForEach(viewModel.playerResults.prefix(3)) { player in
-                        PlayerSearchRow(user: player)
+                        NavigationLink {
+                            UserProfileView(user: player, currentUserId: User.mockCurrentUser.id)
+                        } label: {
+                            PlayerSearchRow(user: player)
+                        }
+                        .buttonStyle(.plain)
                         Divider().padding(.leading, 68)
                     }
                 }
@@ -318,7 +327,12 @@ struct SearchView: View {
                     ) { selectedTab = .events }
 
                     ForEach(viewModel.eventResults.prefix(3)) { event in
-                        EventSearchRow(event: event)
+                        NavigationLink {
+                            EventDetailView(event: event)
+                        } label: {
+                            EventSearchRow(event: event)
+                        }
+                        .buttonStyle(.plain)
                         Divider().padding(.leading, 68)
                     }
                 }
@@ -331,7 +345,12 @@ struct SearchView: View {
                     ) { selectedTab = .courts }
 
                     ForEach(viewModel.courtResults.prefix(3)) { court in
-                        CourtSearchRow(venue: court)
+                        NavigationLink {
+                            CourtDetailView(venue: court)
+                        } label: {
+                            CourtSearchRow(venue: court)
+                        }
+                        .buttonStyle(.plain)
                         Divider().padding(.leading, 68)
                     }
                 }
@@ -344,7 +363,12 @@ struct SearchView: View {
                     ) { selectedTab = .market }
 
                     ForEach(viewModel.listingResults.prefix(3)) { listing in
-                        ListingSearchRow(listing: listing)
+                        NavigationLink {
+                            ListingDetailView(listing: listing)
+                        } label: {
+                            ListingSearchRow(listing: listing)
+                        }
+                        .buttonStyle(.plain)
                         Divider().padding(.leading, 68)
                     }
                 }
@@ -360,7 +384,12 @@ struct SearchView: View {
             emptyStateView
         } else {
             ForEach(viewModel.playerResults) { player in
-                PlayerSearchRow(user: player)
+                NavigationLink {
+                    UserProfileView(user: player, currentUserId: User.mockCurrentUser.id)
+                } label: {
+                    PlayerSearchRow(user: player)
+                }
+                .buttonStyle(.plain)
                 Divider().padding(.leading, 68)
             }
         }
@@ -372,7 +401,12 @@ struct SearchView: View {
             emptyStateView
         } else {
             ForEach(viewModel.eventResults) { event in
-                EventSearchRow(event: event)
+                NavigationLink {
+                    EventDetailView(event: event)
+                } label: {
+                    EventSearchRow(event: event)
+                }
+                .buttonStyle(.plain)
                 Divider().padding(.leading, 68)
             }
         }
@@ -384,7 +418,12 @@ struct SearchView: View {
             emptyStateView
         } else {
             ForEach(viewModel.courtResults) { venue in
-                CourtSearchRow(venue: venue)
+                NavigationLink {
+                    CourtDetailView(venue: venue)
+                } label: {
+                    CourtSearchRow(venue: venue)
+                }
+                .buttonStyle(.plain)
                 Divider().padding(.leading, 68)
             }
         }
@@ -396,7 +435,12 @@ struct SearchView: View {
             emptyStateView
         } else {
             ForEach(viewModel.listingResults) { listing in
-                ListingSearchRow(listing: listing)
+                NavigationLink {
+                    ListingDetailView(listing: listing)
+                } label: {
+                    ListingSearchRow(listing: listing)
+                }
+                .buttonStyle(.plain)
                 Divider().padding(.leading, 68)
             }
         }
@@ -549,10 +593,12 @@ struct CategoryCard: View {
     let icon: String
     let gradientStart: Color
     let gradientEnd: Color
+    var onTap: (() -> Void)? = nil
 
     var body: some View {
         Button {
-            // Navigate to category
+            onTap?()
+            HapticManager.selection()
         } label: {
             ZStack {
                 LinearGradient(

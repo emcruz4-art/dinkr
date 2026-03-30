@@ -75,21 +75,30 @@ private struct OnboardingPageView: View {
             VStack(spacing: 24) {
                 Spacer()
 
-                // SF Symbol icon with floating animation
-                Image(systemName: page.imageName)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
-                    .foregroundColor(.white)
-                    .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 6)
-                    .offset(y: isFloating ? -8 : 8)
-                    .animation(
-                        .easeInOut(duration: 3).repeatForever(autoreverses: true),
-                        value: isFloating
-                    )
-                    .onAppear {
-                        isFloating = true
-                    }
+                // Page 0 uses the custom paddle icon; all others use SF Symbols
+                if page.id == 0 {
+                    PickleballPaddleIcon(size: 80, color: .white)
+                        .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 6)
+                        .offset(y: isFloating ? -8 : 8)
+                        .animation(
+                            .easeInOut(duration: 3).repeatForever(autoreverses: true),
+                            value: isFloating
+                        )
+                        .onAppear { isFloating = true }
+                } else {
+                    Image(systemName: page.imageName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 80, height: 80)
+                        .foregroundColor(.white)
+                        .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 6)
+                        .offset(y: isFloating ? -8 : 8)
+                        .animation(
+                            .easeInOut(duration: 3).repeatForever(autoreverses: true),
+                            value: isFloating
+                        )
+                        .onAppear { isFloating = true }
+                }
 
                 // Accent emoji with spring bounce
                 Text(page.accentEmoji)

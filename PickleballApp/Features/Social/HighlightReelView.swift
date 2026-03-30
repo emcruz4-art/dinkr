@@ -191,6 +191,9 @@ struct HighlightCard: View {
 
     @State private var progress: CGFloat = 0
     @State private var likeScale: CGFloat = 1.0
+    @State private var isBookmarked = false
+    @State private var showComments = false
+    @State private var showShare = false
 
     var body: some View {
         GeometryReader { geo in
@@ -320,7 +323,9 @@ struct HighlightCard: View {
     private var rightSideBar: some View {
         VStack(spacing: 24) {
             // Author avatar
-            Button {} label: {
+            Button {
+                HapticManager.selection()
+            } label: {
                 ZStack {
                     Circle()
                         .fill(Color.dinkrGreen)
@@ -362,7 +367,10 @@ struct HighlightCard: View {
 
             // Comment
             VStack(spacing: 4) {
-                Button {} label: {
+                Button {
+                    HapticManager.selection()
+                    showComments = true
+                } label: {
                     Image(systemName: "bubble.right")
                         .font(.title2)
                         .foregroundStyle(.white)
@@ -375,7 +383,10 @@ struct HighlightCard: View {
 
             // Share
             VStack(spacing: 4) {
-                Button {} label: {
+                Button {
+                    HapticManager.selection()
+                    showShare = true
+                } label: {
                     Image(systemName: "arrowshape.turn.up.right")
                         .font(.title2)
                         .foregroundStyle(.white)
@@ -387,12 +398,57 @@ struct HighlightCard: View {
             }
 
             // Save / Bookmark
-            Button {} label: {
-                Image(systemName: "bookmark")
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                    isBookmarked.toggle()
+                }
+                HapticManager.medium()
+            } label: {
+                Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
                     .font(.title2)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(isBookmarked ? Color.dinkrAmber : .white)
                     .shadow(color: .black.opacity(0.3), radius: 2)
             }
+        }
+        .sheet(isPresented: $showComments) {
+            NavigationStack {
+                VStack(spacing: 16) {
+                    Text("Comments")
+                        .font(.headline)
+                    Text("Comments coming soon.")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.top, 24)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") { showComments = false }
+                            .foregroundStyle(Color.dinkrGreen)
+                    }
+                }
+            }
+            .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showShare) {
+            NavigationStack {
+                VStack(spacing: 16) {
+                    Text("Share Highlight")
+                        .font(.headline)
+                    Text("Sharing coming soon.")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.top, 24)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") { showShare = false }
+                            .foregroundStyle(Color.dinkrGreen)
+                    }
+                }
+            }
+            .presentationDetents([.medium])
         }
     }
 

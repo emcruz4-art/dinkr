@@ -8,6 +8,8 @@ struct CourtDetailView: View {
 
     @State private var mapPosition: MapCameraPosition
     @State private var showGoogleMapsAlert = false
+    @State private var allReviews: [CourtReview] = []
+    @State private var showWriteReview = false
 
     init(venue: CourtVenue) {
         self.venue = venue
@@ -15,6 +17,23 @@ struct CourtDetailView: View {
             center: venue.coordinates.clLocation,
             span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
         )))
+    }
+
+    private var courtReviews: [CourtReview] {
+        allReviews.filter { $0.courtId == venue.id }
+    }
+
+    private var featuredReviews: [CourtReview] {
+        let featured = courtReviews.filter(\.isFeatured)
+        if featured.isEmpty {
+            return Array(courtReviews.sorted { $0.helpfulCount > $1.helpfulCount }.prefix(2))
+        }
+        return Array(featured.prefix(2))
+    }
+
+    private var averageRating: Double {
+        guard !courtReviews.isEmpty else { return venue.rating }
+        return courtReviews.map(\.overallRating).reduce(0, +) / Double(courtReviews.count)
     }
 
     private var isOpen: Bool {
@@ -151,33 +170,76 @@ struct CourtDetailView: View {
 
                 Divider().padding(.vertical, 16).padding(.horizontal, 20)
 
-                // MARK: Reviews NavigationLink
-                NavigationLink(destination: CourtReviewsView(court: venue)) {
-                    HStack {
-                        HStack(spacing: 8) {
-                            Image(systemName: "star.bubble.fill")
-                                .font(.title3)
-                                .foregroundStyle(Color.dinkrAmber)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Reviews (\(venue.reviewCount))")
-                                    .font(.subheadline.weight(.semibold))
+                // MARK: Reviews Section
+                VStack(alignment: .leading, spacing: 14) {
+                    // Section header with rating summary
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Reviews")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .textCase(.uppercase)
+                                .tracking(0.6)
+                            HStack(spacing: 6) {
+                                StarRatingDisplay(rating: averageRating, size: 14)
+                                Text(String(format: "%.1f", averageRating))
+                                    .font(.subheadline.weight(.bold))
                                     .foregroundStyle(Color.dinkrNavy)
-                                Text("See what players are saying")
+                                Text("(\(courtReviews.isEmpty ? venue.reviewCount : courtReviews.count) reviews)")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
                         }
                         Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color(UIColor.systemGray3))
+                        NavigationLink(destination: CourtReviewsView(court: venue)) {
+                            Text("See All →")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Color.dinkrGreen)
+                        }
                     }
-                    .padding(16)
-                    .background(Color.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                    // Featured review cards (top 2)
+                    if !featuredReviews.isEmpty {
+                        VStack(spacing: 10) {
+                            ForEach(featuredReviews) { review in
+                                CompactReviewCard(review: review)
+                            }
+                        }
+                    } else {
+                        Text("Be the first to review this court!")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .padding(.vertical, 8)
+                    }
+
+                    // Write a Review button
+                    Button {
+                        showWriteReview = true
+                    } label: {
+                        Label("Write a Review", systemImage: "square.and.pencil")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.dinkrGreen)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color.dinkrGreen.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.dinkrGreen.opacity(0.35), lineWidth: 1.5)
+                            )
+                    }
                 }
-                .buttonStyle(.plain)
                 .padding(.horizontal, 20)
+                .sheet(isPresented: $showWriteReview) {
+                    WriteCourtReviewView(court: venue) { newReview in
+                        allReviews.insert(newReview, at: 0)
+                    }
+                }
+                .onAppear {
+                    if allReviews.isEmpty {
+                        allReviews = CourtReview.mockReviews
+                    }
+                }
 
                 Divider().padding(.vertical, 16).padding(.horizontal, 20)
 
@@ -284,6 +346,67 @@ struct CourtDetailView: View {
                 UIApplication.shared.open(webURL)
             }
         }
+    }
+}
+
+// MARK: - CompactReviewCard
+
+private struct CompactReviewCard: View {
+    let review: CourtReview
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                AuthorInitialCircle(name: review.authorName)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 5) {
+                        Text(review.authorName)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.dinkrNavy)
+                        if review.isVerifiedPlayer {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.caption2)
+                                .foregroundStyle(Color.dinkrGreen)
+                        }
+                    }
+                    StarRatingDisplay(rating: review.overallRating, size: 11)
+                }
+                Spacer()
+                Text(review.createdAt, style: .relative)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Text(review.body)
+                .font(.caption)
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+
+            if !review.tags.isEmpty {
+                HStack(spacing: 5) {
+                    ForEach(review.tags.prefix(3), id: \.self) { tag in
+                        Text(tag.rawValue)
+                            .font(.caption2.weight(.medium))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(Color.dinkrSky.opacity(0.12))
+                            .foregroundStyle(Color.dinkrSky)
+                            .clipShape(Capsule())
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(
+                    review.isFeatured ? Color.dinkrGreen.opacity(0.4) : Color.clear,
+                    lineWidth: 1.5
+                )
+        )
     }
 }
 

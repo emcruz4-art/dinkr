@@ -38,6 +38,12 @@ struct PostCardView: View {
                     }
                 }
 
+                // Tagged users
+                if !post.taggedUserIds.isEmpty {
+                    TaggedUsersRow(taggedIds: post.taggedUserIds)
+                        .padding(.horizontal, 12)
+                }
+
                 Divider()
 
                 // Actions

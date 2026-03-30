@@ -11,6 +11,7 @@ final class CreatePostViewModel {
     var postType: PostType = .highlight
     var tags: [String] = []
     var tagInput: String = ""
+    var taggedUserIds: [String] = []
     var isLoading: Bool = false
     var uploadProgress: Double = 0
     var errorMessage: String? = nil
@@ -40,7 +41,7 @@ final class CreatePostViewModel {
     }
 
     @MainActor
-    func submit(authorId: String, authorName: String, authorAvatarURL: String?) async throws {
+    func submit(authorId: String, authorName: String, authorAvatarURL: String?, taggedUserIds: [String]) async throws {
         isLoading = true
         uploadProgress = 0
         errorMessage = nil
@@ -73,6 +74,7 @@ final class CreatePostViewModel {
             createdAt: Date(),
             isLiked: false,
             tags: tags,
+            taggedUserIds: taggedUserIds,
             groupId: nil
         )
 
@@ -131,6 +133,10 @@ struct CreatePostView: View {
     @State private var showCameraPicker: Bool = false
     @State private var pendingPickerImage: UIImage? = nil
 
+    // People tagging
+    @State private var taggedUserIds: [String] = []
+    @State private var showTagPicker: Bool = false
+
     // Error
     @State private var showError: Bool = false
 
@@ -175,6 +181,9 @@ struct CreatePostView: View {
             CameraView(selectedImage: $pendingPickerImage)
                 .ignoresSafeArea()
         }
+        .sheet(isPresented: $showTagPicker) {
+            UserTagPicker(taggedIds: $taggedUserIds)
+        }
         .onChange(of: pendingPickerImage) { _, newImage in
             if let img = newImage, viewModel.selectedImages.count < 4 {
                 viewModel.selectedImages.append(img)
@@ -209,6 +218,12 @@ struct CreatePostView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
 
+                if !taggedUserIds.isEmpty {
+                    TaggedUsersRow(taggedIds: taggedUserIds)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 4)
+                }
+
                 if !viewModel.selectedImages.isEmpty {
                     mediaThumbnails
                         .padding(.top, 12)
@@ -217,6 +232,10 @@ struct CreatePostView: View {
                 addPhotoRow
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
+
+                tagPeopleRow
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
 
                 Divider().padding(.top, 12)
 
@@ -247,7 +266,8 @@ struct CreatePostView: View {
                         try await viewModel.submit(
                             authorId: authorId,
                             authorName: authorName,
-                            authorAvatarURL: authorAvatarURL
+                            authorAvatarURL: authorAvatarURL,
+                            taggedUserIds: taggedUserIds
                         )
                     } catch {
                         viewModel.errorMessage = error.localizedDescription
@@ -492,6 +512,32 @@ struct CreatePostView: View {
                     .font(.caption)
                     .foregroundStyle(Color.secondary)
             }
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Tag People Row
+
+    private var tagPeopleRow: some View {
+        HStack(spacing: 10) {
+            Button {
+                showTagPicker = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "person.badge.plus")
+                    Text(taggedUserIds.isEmpty ? "Tag people" : "Tag people (\(taggedUserIds.count))")
+                        .font(.subheadline.weight(.medium))
+                }
+                .foregroundStyle(Color.dinkrGreen)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.dinkrGreen.opacity(0.1))
+                )
+            }
+            .buttonStyle(.plain)
 
             Spacer()
         }

@@ -3,12 +3,12 @@ import SwiftUI
 // MARK: - RootTabView
 
 struct RootTabView: View {
-    @State private var selectedTab: AppTab = .home
+    @State private var router = TabRouter.shared
     @State private var showCreatePost = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            TabView(selection: $selectedTab) {
+            TabView(selection: $router.selectedTab) {
                 HomeView()
                     .tag(AppTab.home)
                     .toolbar(.hidden, for: .tabBar)
@@ -41,7 +41,7 @@ struct RootTabView: View {
             }
             .tint(Color.dinkrGreen)
 
-            FloatingTabBar(selectedTab: $selectedTab, showCreatePost: $showCreatePost)
+            FloatingTabBar(selectedTab: $router.selectedTab, showCreatePost: $showCreatePost)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
                 .ignoresSafeArea(.keyboard)

@@ -14,12 +14,13 @@ struct Post: Identifiable, Codable, Hashable {
     var likedBy: [String] = []
     var isLiked: Bool = false   // client-side only — derived from likedBy, excluded from Firestore encoding
     var tags: [String]
+    var taggedUserIds: [String] = []
     var groupId: String?
 
     // isLiked is client-side only — exclude from Firestore encoding
     private enum CodingKeys: String, CodingKey {
         case id, authorId, authorName, authorAvatarURL, content, mediaURLs,
-             postType, likes, commentCount, createdAt, likedBy, tags, groupId
+             postType, likes, commentCount, createdAt, likedBy, tags, taggedUserIds, groupId
     }
 }
 
@@ -28,7 +29,8 @@ extension Post {
         Post(id: "p1", authorId: "user_001", authorName: "Alex Rivera",
              authorAvatarURL: nil, content: "Just had the most epic game at Westside Courts! 4 games to 11, went to a tiebreak. Nothing beats a Sunday morning dink battle 🏓",
              mediaURLs: [], postType: .highlight, likes: 47, commentCount: 12,
-             createdAt: Date().addingTimeInterval(-3600), isLiked: false, tags: ["austintx", "pickleball"], groupId: nil),
+             createdAt: Date().addingTimeInterval(-3600), isLiked: false, tags: ["austintx", "pickleball"],
+             taggedUserIds: ["user_002", "user_003"], groupId: nil),
         Post(id: "p2", authorId: "user_002", authorName: "Maria Chen",
              authorAvatarURL: nil, content: "Looking for a 4th for doubles this Saturday around 9am near Mueller Park. 3.5+ skill level preferred. DM me! 🎉",
              mediaURLs: [], postType: .lookingForGame, likes: 23, commentCount: 8,
@@ -60,7 +62,8 @@ extension Post {
         Post(id: "p9", authorId: "user_002", authorName: "Maria Chen",
              authorAvatarURL: nil, content: "Austin Open Women's Singles 3.5 — WINNER 🏆 Two years of work paid off today. Huge thanks to my doubles partner and coach. See you all at the 2025 edition!",
              mediaURLs: [], postType: .winCelebration, likes: 487, commentCount: 134,
-             createdAt: Date().addingTimeInterval(-432000), isLiked: true, tags: ["austinopen", "champion"], groupId: "grp_001"),
+             createdAt: Date().addingTimeInterval(-432000), isLiked: true, tags: ["austinopen", "champion"],
+             taggedUserIds: ["user_004", "user_007"], groupId: "grp_001"),
         Post(id: "p10", authorId: "user_006", authorName: "Taylor Kim",
              authorAvatarURL: nil, content: "Bought my first real paddle — a Selkirk SLK Halo. Huge upgrade from the wooden paddle I started with. Night and day difference 🎾",
              mediaURLs: [], postType: .general, likes: 28, commentCount: 11,
@@ -68,7 +71,8 @@ extension Post {
         Post(id: "p11", authorId: "user_003", authorName: "Jordan Smith",
              authorAvatarURL: nil, content: "Drilled for 90 minutes this morning before anyone else showed up. There's something magical about an empty court at 6am. Peace. Focus. Sweat. Love this sport.",
              mediaURLs: [], postType: .highlight, likes: 102, commentCount: 31,
-             createdAt: Date().addingTimeInterval(-604800), isLiked: true, tags: ["earlybird", "drills"], groupId: "grp_001"),
+             createdAt: Date().addingTimeInterval(-604800), isLiked: true, tags: ["earlybird", "drills"],
+             taggedUserIds: ["user_005"], groupId: "grp_001"),
         Post(id: "p12", authorId: "user_004", authorName: "Sarah Johnson",
              authorAvatarURL: nil, content: "PSA: Mueller Park is hosting free open play every Sunday 8am–12pm starting next week. Bring your paddle, bring a friend, all levels welcome! Spread the word 📢",
              mediaURLs: [], postType: .general, likes: 201, commentCount: 56,

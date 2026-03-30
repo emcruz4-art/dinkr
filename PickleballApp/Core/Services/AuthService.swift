@@ -11,6 +11,7 @@ import UIKit
 final class AuthService {
     var currentUser: User? = nil
     var isAuthenticated: Bool = false
+    var isRestoringSession: Bool = true
     var isLoading: Bool = false
     var error: String? = nil
 
@@ -31,6 +32,7 @@ final class AuthService {
     // MARK: - Restore Session
 
     func restoreSession() async {
+        defer { isRestoringSession = false }
         // Attach auth state listener now that FirebaseApp is configured.
         if authStateListener == nil {
             authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
@@ -224,9 +226,37 @@ final class AuthService {
     // MARK: - Private Helpers
 
     private func fetchAndSetUser(uid: String) async {
-        guard let user = try? await fetchUserDocument(uid: uid) else { return }
-        currentUser = user
-        isAuthenticated = true
+        if let user = try? await fetchUserDocument(uid: uid) {
+            currentUser = user
+            isAuthenticated = true
+        } else if Auth.auth().currentUser != nil {
+            // Firestore fetch failed but Firebase Auth session is valid —
+            // create a minimal fallback so the user can still access the app.
+            let fallback = User(
+                id: uid,
+                displayName: Auth.auth().currentUser?.displayName ?? "Player",
+                username: "player_\(uid.prefix(6))",
+                avatarURL: Auth.auth().currentUser?.photoURL?.absoluteString,
+                bio: "",
+                skillLevel: .intermediate30,
+                city: "",
+                location: nil,
+                clubIds: [],
+                badges: [],
+                reliabilityScore: 5.0,
+                gamesPlayed: 0,
+                wins: 0,
+                joinedDate: Date(),
+                isWomenOnly: false,
+                followersCount: 0,
+                followingCount: 0,
+                duprRating: nil,
+                isPrivate: false,
+                socialLinks: SocialLinks()
+            )
+            currentUser = fallback
+            isAuthenticated = true
+        }
     }
 
     private func createUserDocument(_ user: User) async throws {

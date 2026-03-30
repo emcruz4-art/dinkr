@@ -2,6 +2,8 @@ import SwiftUI
 
 struct GameSummaryCard: View {
     let result: GameResult
+    @State private var kudosGiven = false
+    @State private var showingComment = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -62,18 +64,26 @@ struct GameSummaryCard: View {
 
             // Reactions + Kudos
             HStack(spacing: 16) {
-                Button {} label: {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                        kudosGiven.toggle()
+                    }
+                    HapticManager.medium()
+                } label: {
                     HStack(spacing: 5) {
-                        Image(systemName: "hands.clap.fill")
+                        Image(systemName: kudosGiven ? "hands.clap.fill" : "hands.clap")
                             .foregroundStyle(Color.dinkrAmber)
-                        Text("Kudos")
+                        Text(kudosGiven ? "Kudos!" : "Kudos")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
                     }
                 }
                 .buttonStyle(.plain)
 
-                Button {} label: {
+                Button {
+                    HapticManager.selection()
+                    showingComment = true
+                } label: {
                     HStack(spacing: 5) {
                         Image(systemName: "bubble.right")
                             .foregroundStyle(.secondary)
@@ -96,6 +106,26 @@ struct GameSummaryCard: View {
         .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .sheet(isPresented: $showingComment) {
+            NavigationStack {
+                VStack(spacing: 16) {
+                    Text("Comments")
+                        .font(.headline)
+                    Text("Comments coming soon.")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.top, 24)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") { showingComment = false }
+                            .foregroundStyle(Color.dinkrGreen)
+                    }
+                }
+            }
+            .presentationDetents([.medium])
+        }
     }
 }
 

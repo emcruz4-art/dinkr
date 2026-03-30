@@ -117,7 +117,9 @@ struct AppRootView: View {
 
     var body: some View {
         ZStack {
-            if authService.isAuthenticated {
+            if authService.isRestoringSession {
+                LaunchSplashView()
+            } else if authService.isAuthenticated {
                 RootTabView()
             } else {
                 OnboardingView()
@@ -136,5 +138,21 @@ struct AppRootView: View {
         }
         // Analytics screen tracking — add .onAppear to individual views, e.g.:
         // .onAppear { AnalyticsService.logScreen("Home") }
+    }
+}
+
+// MARK: - Launch Splash View
+
+private struct LaunchSplashView: View {
+    var body: some View {
+        ZStack {
+            Color.dinkrNavy
+                .ignoresSafeArea()
+            VStack(spacing: 20) {
+                DinkrLogoView()
+                ProgressView()
+                    .tint(.white.opacity(0.6))
+            }
+        }
     }
 }

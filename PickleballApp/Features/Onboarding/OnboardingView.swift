@@ -5,12 +5,13 @@ import AuthenticationServices
 
 struct OnboardingView: View {
     @Environment(AuthService.self) private var authService
-    @State private var showCarousel = true
+    @State private var showCarousel = !UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
 
     var body: some View {
         ZStack {
             if showCarousel {
                 OnboardingCarouselView {
+                    UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
                     withAnimation(.easeInOut(duration: 0.4)) {
                         showCarousel = false
                     }

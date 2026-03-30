@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Settings View
 
 struct SettingsView: View {
+    @Environment(AuthService.self) private var authService
 
     // MARK: Account
     @State private var showChangeUsername = false
@@ -30,6 +31,7 @@ struct SettingsView: View {
     // MARK: Danger Zone
     @State private var showLogOutAlert = false
     @State private var showDeleteAlert = false
+    @State private var showShareSheet = false
 
     var body: some View {
         NavigationStack {
@@ -46,13 +48,13 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .alert("Log Out", isPresented: $showLogOutAlert) {
-                Button("Log Out", role: .destructive) { /* auth sign-out stub */ }
+                Button("Log Out", role: .destructive) { authService.signOut() }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Are you sure you want to log out?")
             }
             .alert("Delete Account", isPresented: $showDeleteAlert) {
-                Button("Delete My Account", role: .destructive) { /* delete stub */ }
+                Button("Delete My Account", role: .destructive) { authService.signOut() /* full delete requires server-side Firebase call */ }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("This action is permanent. All your data, matches, and posts will be deleted and cannot be recovered.")
@@ -200,7 +202,9 @@ struct SettingsView: View {
     private var aboutSection: some View {
         Section("About") {
             Button {
-                // open App Store review stub
+                if let url = URL(string: "https://apps.apple.com/app/id000000000") {
+                    UIApplication.shared.open(url)
+                }
             } label: {
                 HStack {
                     SettingsRow(icon: "star", iconColor: Color.dinkrAmber, title: "Rate Dinkr")
@@ -213,7 +217,7 @@ struct SettingsView: View {
             .buttonStyle(.plain)
 
             Button {
-                // share sheet stub
+                showShareSheet = true
             } label: {
                 HStack {
                     SettingsRow(icon: "square.and.arrow.up", iconColor: Color.dinkrGreen, title: "Share Dinkr")
@@ -224,6 +228,14 @@ struct SettingsView: View {
                 }
             }
             .buttonStyle(.plain)
+            .sheet(isPresented: $showShareSheet) {
+                ShareLink(
+                    item: URL(string: "https://dinkr.app")!,
+                    subject: Text("Play Pickleball with Dinkr"),
+                    message: Text("I've been using Dinkr to find pickleball games, courts, and players near me!")
+                )
+                .presentationDetents([.medium])
+            }
 
             NavigationLink {
                 Text("Privacy Policy").navigationTitle("Privacy Policy")
@@ -375,4 +387,5 @@ enum SettingsCourtSurface: String, CaseIterable, Identifiable {
 
 #Preview {
     SettingsView()
+        .environment(AuthService())
 }

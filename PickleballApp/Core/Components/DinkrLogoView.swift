@@ -5,26 +5,36 @@ struct DinkrLogoView: View {
     var showWordmark: Bool = true
     var tintColor: Color = Color.dinkrGreen
 
+    private var paddleWidth: CGFloat { size * 0.52 }
+    private var paddleHeight: CGFloat { size * 0.76 }
+
     var body: some View {
-        HStack(spacing: 6) {
-            // Paddle icon
+        HStack(spacing: size * 0.14) {
+            // Paddle icon — proper silhouette shape, rotated for brand flair
             ZStack {
+                // Shadow
+                LogoPaddleShape()
+                    .fill(Color.black.opacity(0.18))
+                    .frame(width: paddleWidth, height: paddleHeight)
+                    .blur(radius: paddleWidth * 0.07)
+                    .offset(x: paddleWidth * 0.05, y: paddleWidth * 0.05)
+                    .rotationEffect(.degrees(-18))
+
                 // Paddle body
-                RoundedRectangle(cornerRadius: size * 0.18)
+                LogoPaddleShape()
                     .fill(tintColor)
-                    .frame(width: size * 0.6, height: size * 0.76)
-                    .rotationEffect(.degrees(-20))
-                // Paddle handle notch
-                Rectangle()
-                    .fill(tintColor)
-                    .frame(width: size * 0.18, height: size * 0.28)
-                    .offset(y: size * 0.44)
-                    .rotationEffect(.degrees(-20))
-                // Ball
+                    .frame(width: paddleWidth, height: paddleHeight)
+                    .rotationEffect(.degrees(-18))
+
+                // Pickleball — offset to upper-right of paddle
                 Circle()
-                    .fill(Color.white)
+                    .fill(tintColor.opacity(0.7))
+                    .overlay(
+                        Circle()
+                            .strokeBorder(tintColor, lineWidth: size * 0.018)
+                    )
                     .frame(width: size * 0.22, height: size * 0.22)
-                    .offset(x: size * 0.28, y: -size * 0.24)
+                    .offset(x: size * 0.28, y: -size * 0.26)
             }
             .frame(width: size, height: size)
 
@@ -37,6 +47,46 @@ struct DinkrLogoView: View {
     }
 }
 
+// MARK: - Logo Paddle Shape
+// Self-contained path — does not depend on AppIconView internals.
+
+private struct LogoPaddleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width
+        let h = rect.height
+
+        // Head: top 62% of height
+        let headH = h * 0.62
+        let headW = w * 0.9
+        let headX = (w - headW) / 2
+        let r = headW * 0.26
+        path.addRoundedRect(
+            in: CGRect(x: headX, y: 0, width: headW, height: headH),
+            cornerSize: CGSize(width: r, height: r)
+        )
+
+        // Neck bridge
+        let neckW = w * 0.28
+        let neckX = (w - neckW) / 2
+        path.addRect(CGRect(x: neckX, y: headH - 2, width: neckW, height: h * 0.07))
+
+        // Handle: bottom portion
+        let handleW = w * 0.28
+        let handleH = h * 0.33
+        let handleX = (w - handleW) / 2
+        let hr = handleW * 0.35
+        path.addRoundedRect(
+            in: CGRect(x: handleX, y: headH + h * 0.05, width: handleW, height: handleH),
+            cornerSize: CGSize(width: hr, height: hr)
+        )
+
+        return path
+    }
+}
+
+// MARK: - Previews
+
 #Preview {
     VStack(spacing: 20) {
         DinkrLogoView(size: 40)
@@ -44,6 +94,10 @@ struct DinkrLogoView: View {
         DinkrLogoView(size: 32, tintColor: .white)
             .padding()
             .background(Color.dinkrNavy)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        DinkrLogoView(size: 52, tintColor: Color.dinkrGreen)
+            .padding()
+            .background(Color(UIColor.systemGroupedBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     .padding()

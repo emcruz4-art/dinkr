@@ -135,6 +135,8 @@ struct LivePlayView: View {
     var viewModel: PlayViewModel
     @State private var showAvailability = false
     @State private var pulseAnimation = false
+    @State private var showJoinConfirmation = false
+    @State private var invitedPlayer: String? = nil
 
     let liveSessionPlayers: [String] = ["Maria Chen", "Jordan Smith", "Chris Park", "Riley Torres"]
     let waitingPlayers: [String] = ["Taylor Kim", "Morgan Davis", "Jamie Lee"]
@@ -218,16 +220,20 @@ struct LivePlayView: View {
                         }
                     }
 
-                    Button {} label: {
-                        Text("Join This Session")
+                    Button {
+                        HapticManager.success()
+                        showJoinConfirmation = true
+                    } label: {
+                        Text(showJoinConfirmation ? "Joining..." : "Join This Session")
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
-                            .background(Color.dinkrGreen)
+                            .background(showJoinConfirmation ? Color.dinkrGreen.opacity(0.7) : Color.dinkrGreen)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
+                    .disabled(showJoinConfirmation)
                 }
                 .padding(16)
                 .background(Color.cardBackground)
@@ -264,13 +270,16 @@ struct LivePlayView: View {
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
-                            Button {} label: {
-                                Text("Invite")
+                            Button {
+                                HapticManager.selection()
+                                invitedPlayer = player
+                            } label: {
+                                Text(invitedPlayer == player ? "Invited!" : "Invite")
                                     .font(.caption.weight(.bold))
-                                    .foregroundStyle(Color.dinkrSky)
+                                    .foregroundStyle(invitedPlayer == player ? Color.white : Color.dinkrSky)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 5)
-                                    .background(Color.dinkrSky.opacity(0.12))
+                                    .background(invitedPlayer == player ? Color.dinkrSky : Color.dinkrSky.opacity(0.12))
                                     .clipShape(Capsule())
                             }
                             .buttonStyle(.plain)
@@ -291,12 +300,20 @@ struct LivePlayView: View {
                             .font(.system(size: 10, weight: .heavy))
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Button {} label: {
+                        Button {
+                            showAvailability = true
+                        } label: {
                             Text("Edit")
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(Color.dinkrGreen)
                         }
                         .buttonStyle(.plain)
+                        .sheet(isPresented: $showAvailability) {
+                            Text("Set Availability")
+                                .font(.title2.weight(.bold))
+                                .padding()
+                                .presentationDetents([.medium])
+                        }
                     }
 
                     HStack(spacing: 8) {

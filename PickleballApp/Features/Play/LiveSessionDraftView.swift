@@ -4,6 +4,7 @@ struct LiveSessionDraftView: View {
     @State private var countdown = 45  // seconds to start
     @State private var timerActive = true
     @State private var players: [DraftPlayer] = DraftPlayer.mockDraftPlayers
+    @State private var spotConfirmed = false
 
     struct DraftPlayer: Identifiable {
         let id: String
@@ -108,16 +109,22 @@ struct LiveSessionDraftView: View {
                     .padding(.horizontal)
 
                     // Action
-                    Button {} label: {
-                        Text("Confirm Spot  →")
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            spotConfirmed = true
+                        }
+                        HapticManager.success()
+                    } label: {
+                        Text(spotConfirmed ? "Spot Confirmed ✓" : "Confirm Spot  →")
                             .font(.headline)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(Color.dinkrGreen)
+                            .background(spotConfirmed ? Color.dinkrSky : Color.dinkrGreen)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
                     .buttonStyle(.plain)
+                    .disabled(spotConfirmed)
                     .padding(.horizontal)
                     .padding(.bottom, 32)
                 }
