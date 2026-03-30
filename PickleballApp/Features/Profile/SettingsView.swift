@@ -39,6 +39,7 @@ struct SettingsView: View {
                 privacySection
                 preferencesSection
                 aboutSection
+                supportSection
                 dangerZoneSection
             }
             .listStyle(.insetGrouped)
@@ -243,6 +244,39 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    // MARK: - Support Section
+
+    private var supportSection: some View {
+        Section("Support") {
+            NavigationLink {
+                FAQView()
+            } label: {
+                SettingsRow(icon: "questionmark.circle", iconColor: Color.dinkrSky, title: "FAQ")
+            }
+
+            NavigationLink {
+                FeedbackView()
+            } label: {
+                SettingsRow(icon: "envelope", iconColor: Color.dinkrGreen, title: "Send Feedback")
+            }
+
+            Button {
+                if let url = URL(string: "mailto:support@dinkr.app") {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                HStack {
+                    SettingsRow(icon: "headphones", iconColor: Color.dinkrNavy, title: "Contact Support")
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .buttonStyle(.plain)
         }
     }
 

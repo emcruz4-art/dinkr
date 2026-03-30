@@ -6,6 +6,7 @@ struct ProfileView: View {
     @State private var viewModel = ProfileViewModel()
     @Environment(AuthService.self) private var authService
     @State private var selectedTab = 0
+    @State private var showSettings = false
     @Namespace private var tabNamespace
     let tabs = ["Overview", "History", "Achievements"]
 
@@ -47,6 +48,16 @@ struct ProfileView: View {
             .ignoresSafeArea(edges: .top)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                            .foregroundStyle(.white)
+                            .fontWeight(.semibold)
+                    }
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button("Edit Profile") { viewModel.showEditProfile = true }
@@ -62,6 +73,9 @@ struct ProfileView: View {
                 }
             }
             .toolbarBackground(.hidden, for: .navigationBar)
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
         }
         .sheet(isPresented: $viewModel.showEditProfile) {
             EditProfileView(user: viewModel.user ?? User.mockCurrentUser)
