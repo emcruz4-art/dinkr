@@ -118,6 +118,7 @@
 		B88C117C0F6A0C93C43DE127 /* GameResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 508C0D4F78564E072158739D /* GameResult.swift */; };
 		B982E24AAEDCA1B84F83538E /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93AF2F13EB743CE53AEE49A1 /* OnboardingViewModel.swift */; };
 		BA113F760D717172BAEDC662 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6428D31953C494434F4AE0F0 /* NetworkMonitor.swift */; };
+		BD2E7876BCCA993180F9F0B0 /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3189C0218193C5CEB518A3E /* WeatherService.swift */; };
 		BDB01B36E5D1C05004A0A6BD /* GameFilterBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8138D0528294FD17BC3206C5 /* GameFilterBar.swift */; };
 		BF57301431040375D94A28E2 /* EventDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 916091277C352B9C6B0EFE86 /* EventDetailView.swift */; };
 		BFB12849B7437550BB86517C /* PickleballCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28C778610E676CF419E61183 /* PickleballCard.swift */; };
@@ -307,6 +308,7 @@
 		EC1408DFAAB624C7E960936D /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		ECF627FABE8342030B8F3CB4 /* CourtDiscoveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourtDiscoveryView.swift; sourceTree = "<group>"; };
 		EE45FAFAF38DA49594FEA315 /* Color+Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Brand.swift"; sourceTree = "<group>"; };
+		F3189C0218193C5CEB518A3E /* WeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherService.swift; sourceTree = "<group>"; };
 		F4296D6022C33BC7E8D2FFF5 /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
 		F95BAF4DDF1EE47D7CB600A6 /* EventsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsView.swift; sourceTree = "<group>"; };
 		F9DCBAF58496D895E77E3E77 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -352,6 +354,7 @@
 				96CED5B3377A4487C6E7586F /* SearchService.swift */,
 				C5AF18DDEF55B9746519D352 /* SeedService.swift */,
 				5324A8EA2AC005049DD1BDC4 /* StoreService.swift */,
+				F3189C0218193C5CEB518A3E /* WeatherService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -896,6 +899,7 @@
 				8AA669813E9ACCF7D9AFD9F2 /* TrendingFeedView.swift in Sources */,
 				B427E6D7A4BD460829D16F88 /* User.swift in Sources */,
 				982EBE2D42CB609ACBC11A82 /* View+Modifiers.swift in Sources */,
+				BD2E7876BCCA993180F9F0B0 /* WeatherService.swift in Sources */,
 				AB5645172F87302AE0D13BC9 /* WelcomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

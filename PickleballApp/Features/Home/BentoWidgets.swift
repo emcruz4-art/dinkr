@@ -801,25 +801,75 @@ struct WomensCornerWidget: View {
 
 // MARK: - 11. CourtVibesWidget
 struct CourtVibesWidget: View {
+    let weather: CurrentWeather?
     @State private var courtCount = 8
 
+    private var tempDisplay: String {
+        guard let w = weather else { return "—°F" }
+        return "\(Int(w.temperatureF))°F"
+    }
+
+    private var windDisplay: String {
+        guard let w = weather else { return "" }
+        return "\(Int(w.windSpeedMph)) mph"
+    }
+
+    private var emoji: String {
+        weather?.emoji ?? "🌤"
+    }
+
+    private var tempColor: Color {
+        guard let w = weather else { return Color.dinkrAmber }
+        if w.isRainy { return Color.dinkrSky }
+        if w.temperatureF >= 65 && w.temperatureF <= 85 { return Color.dinkrGreen }
+        if w.temperatureF > 85 { return Color.dinkrCoral }
+        return Color.dinkrAmber
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("🌤")
+                Text(emoji)
                 Text("COURT VIBES")
                     .font(.system(size: 9, weight: .heavy))
                     .foregroundStyle(.secondary)
                 Spacer()
             }
 
-            Text("78°F")
+            Text(tempDisplay)
                 .font(.system(size: 28, weight: .heavy))
-                .foregroundStyle(Color.dinkrAmber)
+                .foregroundStyle(tempColor)
+                .contentTransition(.numericText())
+                .animation(.spring(response: 0.4), value: tempDisplay)
 
-            Text("Perfect pickleball weather")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            if let w = weather {
+                Text(w.label)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                // Wind chip
+                if w.windSpeedMph > 0 {
+                    HStack(spacing: 3) {
+                        Image(systemName: "wind")
+                            .font(.system(size: 9))
+                            .foregroundStyle(w.isWindy ? Color.dinkrCoral : Color.secondary)
+                        Text(windDisplay)
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(w.isWindy ? Color.dinkrCoral : Color.secondary)
+                        if w.isWindy {
+                            Text("· Affects play")
+                                .font(.system(size: 9))
+                                .foregroundStyle(Color.dinkrCoral.opacity(0.8))
+                        }
+                    }
+                }
+            } else {
+                Text("Loading…")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .redacted(reason: .placeholder)
+            }
 
             Spacer()
 
@@ -827,7 +877,6 @@ struct CourtVibesWidget: View {
                 Image(systemName: "sportscourt.fill")
                     .font(.caption2)
                     .foregroundStyle(Color.dinkrSky)
-                // Animated court count
                 Text("\(courtCount) courts open")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.dinkrSky)
@@ -845,6 +894,106 @@ struct CourtVibesWidget: View {
             )
         )
         .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+}
+
+// MARK: - 11b. WeekendForecastWidget
+struct WeekendForecastWidget: View {
+    let days: [DayForecast]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Color.dinkrNavy)
+                Text("WEEKEND FORECAST")
+                    .font(.system(size: 9, weight: .heavy))
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+
+            if days.isEmpty {
+                HStack {
+                    ProgressView()
+                        .tint(Color.dinkrGreen)
+                    Text("Loading forecast…")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                HStack(spacing: 10) {
+                    ForEach(days) { day in
+                        WeekendDayCard(day: day)
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+}
+
+private struct WeekendDayCard: View {
+    let day: DayForecast
+
+    private var playColor: Color {
+        switch day.playabilityColor {
+        case "coral":  return Color.dinkrCoral
+        case "amber":  return Color.dinkrAmber
+        case "sky":    return Color.dinkrSky
+        default:       return Color.dinkrGreen
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Text(day.dayName)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Color.dinkrNavy)
+
+            Text(day.emoji)
+                .font(.title2)
+
+            VStack(spacing: 2) {
+                Text("\(Int(day.maxTempF))°")
+                    .font(.system(size: 14, weight: .heavy))
+                    .foregroundStyle(Color.dinkrNavy)
+                Text("\(Int(day.minTempF))°")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+
+            // Rain probability
+            if day.precipProbability > 10 {
+                HStack(spacing: 2) {
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: 8))
+                        .foregroundStyle(Color.dinkrSky)
+                    Text("\(day.precipProbability)%")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Color.dinkrSky)
+                }
+            }
+
+            // Play verdict pill
+            Text(day.playabilityLabel)
+                .font(.system(size: 8, weight: .bold))
+                .foregroundStyle(playColor)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(playColor.opacity(0.12))
+                .clipShape(Capsule())
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 6)
+        .background(Color.appBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
 

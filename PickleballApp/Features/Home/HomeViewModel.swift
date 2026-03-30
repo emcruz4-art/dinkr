@@ -24,6 +24,8 @@ final class HomeViewModel {
     var nearestDistance = "0.8 mi"
     var nearbyPlayerCount = 12
     var newPlayersThisWeek = 3
+    var weather: CurrentWeather? = nil
+    var weekendForecast: [DayForecast] = []
 
     // MARK: - Pagination state
 
@@ -228,5 +230,13 @@ final class HomeViewModel {
 
     var currentUserName: String? = nil
     var currentUserId: String? = nil
+
+    // MARK: - Weather
+
+    func fetchWeather(latitude: Double, longitude: Double) async {
+        await WeatherService.shared.fetch(latitude: latitude, longitude: longitude)
+        weather = WeatherService.shared.current
+        weekendForecast = WeatherService.shared.weekendForecast
+    }
 }
 

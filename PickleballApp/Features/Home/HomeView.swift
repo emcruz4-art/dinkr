@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(AuthService.self) private var authService
+    @Environment(LocationService.self) private var locationService
     @State private var viewModel = HomeViewModel()
     @State private var showNotifications = false
     @State private var showMessages = false
@@ -94,9 +95,13 @@ struct HomeView: View {
                             // Women's corner + Court vibes
                             HStack(alignment: .top, spacing: 12) {
                                 WomensCornerWidget()
-                                CourtVibesWidget()
+                                CourtVibesWidget(weather: viewModel.weather)
                             }
                             .padding(.horizontal, 16)
+
+                            // Weekend Forecast (full width)
+                            WeekendForecastWidget(days: viewModel.weekendForecast)
+                                .padding(.horizontal, 16)
 
                             // Feed preview
                             FeedPreviewWidget(
@@ -123,11 +128,17 @@ struct HomeView: View {
             MessagesView()
                 .environment(authService)
         }
-        .task { await viewModel.loadFeed() }
+        .task {
+            await viewModel.loadFeed()
+            let lat = locationService.currentLocation?.coordinate.latitude ?? 30.2672
+            let lon = locationService.currentLocation?.coordinate.longitude ?? -97.7431
+            await viewModel.fetchWeather(latitude: lat, longitude: lon)
+        }
     }
 }
 
 #Preview {
     HomeView()
         .environment(AuthService())
+        .environment(LocationService())
 }
