@@ -30,10 +30,13 @@
 		21FE3D3493671A236323081C /* SkillSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBFDF690563E323AA5B5F3E8 /* SkillSelectionView.swift */; };
 		2289CBF69BC2DB5A29401F33 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 619A736ED243498DB055175F /* ShareSheet.swift */; };
 		2491B116B34217851AD2162C /* TournamentBracketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504D8BCAEE0B21E0B709C5C3 /* TournamentBracketView.swift */; };
+		25E31911A3A35348E518ACA9 /* ChallengeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F13CF097ACE7AE3A72C385A /* ChallengeDetailView.swift */; };
+		287186072C191AB84E845C83 /* DinkrWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8A3A579EBD13977EF6B120A4 /* DinkrWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		294BC5FA14859219F3E92B71 /* ChatThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF720520686F6EA9B784A013 /* ChatThread.swift */; };
 		2CF21CC2EA490B51386E8A07 /* MessagingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9C8A12D948B4A48783F40B8 /* MessagingService.swift */; };
 		2F6E36FD96015A73BABC7DDB /* GroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE89D1DA50D5CA4EDD4E8E5 /* GroupsView.swift */; };
 		30F860AADC05348F75B8D852 /* JoinToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DD6838382BD352F6FCA95A0 /* JoinToastView.swift */; };
+		31B04C8B3995B5CA53E16D6A /* DinkrWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B9922A27292ECD2160F74C /* DinkrWidgetBundle.swift */; };
 		32CA333532EE99D4D30F52B0 /* FollowListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E140FCF33B7292F686F13848 /* FollowListView.swift */; };
 		32E9FDE3C793035D118DC1CD /* FeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20F37086088624CD95828A9C /* FeedView.swift */; };
 		3395C8BC91887155FFBE0257 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC1408DFAAB624C7E960936D /* ChatView.swift */; };
@@ -45,6 +48,7 @@
 		36F448A0792EDDDD92705A17 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = AC4C7283DECF8477CEC34F61 /* FirebaseCrashlytics */; };
 		375E99C772F9293D4B15EE8C /* CrashlyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FFC6C56B0CCBE889AC05E95 /* CrashlyticsService.swift */; };
 		386313ED14A90470E34C5BBA /* ExploreSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7C05F8B61429678249C3CEB /* ExploreSection.swift */; };
+		3ADCA7894EEEE3B75B9F7B74 /* DinkrWidgetModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6C62562E05E14B53E83452A /* DinkrWidgetModel.swift */; };
 		3D18B2347DFB10BAF4F6127E /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4296D6022C33BC7E8D2FFF5 /* AnalyticsService.swift */; };
 		3EC4F188780E14ADFED43150 /* MarketListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 966049ADAA0D4B0E2B7AFD94 /* MarketListing.swift */; };
 		41D108770DE3015681BC6E5F /* StreakDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08D83A605720D8F9B809704D /* StreakDashboard.swift */; };
@@ -56,8 +60,10 @@
 		488C03510E08CAA05B74A3E3 /* BentoWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B29303610DD44F94624E1937 /* BentoWidgets.swift */; };
 		4960C33D27ACCF5B3BEA66A6 /* GameSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83DCE507EB7057CF937B9A58 /* GameSummaryCard.swift */; };
 		4A791A96A47D451336A0BE32 /* PostDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1608DF5C9E33FE9A5630DB7F /* PostDetailView.swift */; };
+		4C0952C6392AD60DD92E5FCD /* DinkrWidgetEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07A4049F1E9D68628AF06DC0 /* DinkrWidgetEntryView.swift */; };
 		4C5FE7E595116B89C4B01FCB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9DCBAF58496D895E77E3E77 /* SettingsView.swift */; };
 		4C685C7E3ED95463361E1125 /* SeedService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AF18DDEF55B9746519D352 /* SeedService.swift */; };
+		4C6956DFA2E1CC1B0A0D3C0C /* NewChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03554E0E67D1494D8240BF77 /* NewChallengeView.swift */; };
 		4E016BBC3AF917E76E2D38BA /* OnboardingCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D18D5C397C9B0423BF68CAAB /* OnboardingCarouselView.swift */; };
 		4F5787D1E661E3EEC39A86C1 /* EmptyFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7AA524FBD3CD89FBEF47C42 /* EmptyFeedView.swift */; };
 		50541CFBD3785EA14538AC28 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 7BF986571708B11165E7FB27 /* FirebaseAuth */; };
@@ -74,6 +80,7 @@
 		6985008889ACAAFD0C98AAB9 /* QRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15DA1CCE454A908B75FA7DC /* QRCodeView.swift */; };
 		6B50F025A2D99729E802BF35 /* DailyChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDE7CE62FB893FAB0D62F0E /* DailyChallenge.swift */; };
 		6BED78E61FC52FEF1D362A12 /* FollowService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 780F4217E618D0987909D6BC /* FollowService.swift */; };
+		706CB2AB2B224508F0289437 /* ChallengesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ADD6ADA22B6B1B091DC36D3 /* ChallengesView.swift */; };
 		70E55A792A8F90C4BCB57FA1 /* CourtVenue.swift in Sources */ = {isa = PBXBuildFile; fileRef = C22958581A28EDB422D7633B /* CourtVenue.swift */; };
 		74553F831575A904AEF5AFE7 /* MyOffersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30F80A0A4115CB6A222B7DB4 /* MyOffersView.swift */; };
 		74850571162F78A477634F68 /* ReputationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA07BD1872BA6708CC215082 /* ReputationView.swift */; };
@@ -132,6 +139,7 @@
 		C1F87B2A723C4103F1B15669 /* EditProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB949272237AE1F623CC98DE /* EditProfileView.swift */; };
 		C2075E8911F658F475180346 /* Badge.swift in Sources */ = {isa = PBXBuildFile; fileRef = C11DDDA6BE4DB80C7721DC02 /* Badge.swift */; };
 		C28F3230C1FB3CF1CCA11120 /* Color+Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE45FAFAF38DA49594FEA315 /* Color+Brand.swift */; };
+		C4ADE1E494373DC3021BF642 /* DinkrWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E62B71CEC9C91F5DDF293CC /* DinkrWidget.swift */; };
 		C4E39D54699251BDE04BAE4D /* ReferralView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7EB3A2F24036045D91D10C /* ReferralView.swift */; };
 		C68C97C18C9F6CDA84DF82D9 /* Date+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BEA300F1A5DF32C54BC5735 /* Date+Helpers.swift */; };
 		C7AD85314B6735626EBB75B2 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACE17F36E640206D5741D8D /* AuthService.swift */; };
@@ -170,6 +178,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		4BD7110B25D7B7FB8CBE389B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7228AE7FB153CF984D441C6D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A17964D96E62BEF21532F267;
+			remoteInfo = DinkrWidget;
+		};
 		C3D8887B0E69F0887BBD31CC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 7228AE7FB153CF984D441C6D /* Project object */;
@@ -179,14 +194,31 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		B6FAAECE272FE26CF2B21575 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				287186072C191AB84E845C83 /* DinkrWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		0192308F58D59069E767092F /* PostCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostCardView.swift; sourceTree = "<group>"; };
 		026416B8869E487626D53C39 /* DinkrTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DinkrTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		03554E0E67D1494D8240BF77 /* NewChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChallengeView.swift; sourceTree = "<group>"; };
 		0371E9A8A4CF0CCA2A5EBABC /* CreateListingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateListingView.swift; sourceTree = "<group>"; };
 		03DF9390F6F719F321EF4609 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		06E901721D1B3E52B017F5D7 /* FirestoreCollections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreCollections.swift; sourceTree = "<group>"; };
 		06F88DE91E742924D51628B1 /* SkillProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillProgressView.swift; sourceTree = "<group>"; };
+		07A4049F1E9D68628AF06DC0 /* DinkrWidgetEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DinkrWidgetEntryView.swift; sourceTree = "<group>"; };
 		08D83A605720D8F9B809704D /* StreakDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakDashboard.swift; sourceTree = "<group>"; };
+		0ADD6ADA22B6B1B091DC36D3 /* ChallengesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengesView.swift; sourceTree = "<group>"; };
 		0B54971F3462A2520EFBA38B /* DinkrNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DinkrNotification.swift; sourceTree = "<group>"; };
 		0D087FA8D0A437E2FD8737B4 /* PickleballPaddleIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleballPaddleIcon.swift; sourceTree = "<group>"; };
 		11066FA07B419DF676C50370 /* AvailabilityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvailabilityView.swift; sourceTree = "<group>"; };
@@ -204,9 +236,11 @@
 		23EE2F244742E0312CFD7BD4 /* DinkrLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DinkrLogoView.swift; sourceTree = "<group>"; };
 		256EB693FDAA93992BA57A55 /* CachedAsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAsyncImage.swift; sourceTree = "<group>"; };
 		27C75EA19F4E5F9616481F64 /* UserTagPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserTagPicker.swift; sourceTree = "<group>"; };
+		283FE9D9E2E7D7A05C9E8C31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		28C778610E676CF419E61183 /* PickleballCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleballCard.swift; sourceTree = "<group>"; };
 		295A5A7CD2AE5B57179804E0 /* Comment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Comment.swift; sourceTree = "<group>"; };
 		2DD6838382BD352F6FCA95A0 /* JoinToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoinToastView.swift; sourceTree = "<group>"; };
+		2E62B71CEC9C91F5DDF293CC /* DinkrWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DinkrWidget.swift; sourceTree = "<group>"; };
 		30F80A0A4115CB6A222B7DB4 /* MyOffersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyOffersView.swift; sourceTree = "<group>"; };
 		3170A4C6B97CB95CF2DA506B /* MarketViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketViewModel.swift; sourceTree = "<group>"; };
 		37634FFD5655064084D95E17 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
@@ -261,9 +295,11 @@
 		855EB496DACE24C6CD2EB008 /* TabRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabRouter.swift; sourceTree = "<group>"; };
 		85CAACB101A39E809BF129C1 /* FollowButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowButton.swift; sourceTree = "<group>"; };
 		8868A271AAD40EAAAD00BFAB /* OfferService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfferService.swift; sourceTree = "<group>"; };
+		8A3A579EBD13977EF6B120A4 /* DinkrWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = DinkrWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B847588649DFF54BA360FB8 /* GameSessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSessionDetailView.swift; sourceTree = "<group>"; };
 		8B86D65F8D029E095CDAAE4A /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
 		8CDE7CE62FB893FAB0D62F0E /* DailyChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallenge.swift; sourceTree = "<group>"; };
+		8F13CF097ACE7AE3A72C385A /* ChallengeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeDetailView.swift; sourceTree = "<group>"; };
 		8FEC09B58BAD9B9EF802C8A7 /* PickleballAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleballAppTests.swift; sourceTree = "<group>"; };
 		902AF0D4858F2D986B17D4E3 /* VideoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoService.swift; sourceTree = "<group>"; };
 		916091277C352B9C6B0EFE86 /* EventDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventDetailView.swift; sourceTree = "<group>"; };
@@ -281,6 +317,7 @@
 		A3B8F02B4B3435B0CD618417 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
 		A645DF0D7BD5545160A9B4BC /* EventCalendarStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventCalendarStrip.swift; sourceTree = "<group>"; };
 		A64AEAE9976F781179FAB163 /* LocationPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPermissionView.swift; sourceTree = "<group>"; };
+		A6C62562E05E14B53E83452A /* DinkrWidgetModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DinkrWidgetModel.swift; sourceTree = "<group>"; };
 		A82E3C8123B8F34ECCFC3F3F /* GameCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCardView.swift; sourceTree = "<group>"; };
 		AA22E0111F957DD046DEEAE4 /* SkillBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillBadge.swift; sourceTree = "<group>"; };
 		AA428296B50345158EAC4AED /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
@@ -323,6 +360,7 @@
 		E140FCF33B7292F686F13848 /* FollowListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowListView.swift; sourceTree = "<group>"; };
 		E2A5933356063B967F7BAF05 /* SavedListingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedListingsView.swift; sourceTree = "<group>"; };
 		E6BA53AB9CE9683E74DFC9AD /* LiveSessionDraftView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveSessionDraftView.swift; sourceTree = "<group>"; };
+		E9B9922A27292ECD2160F74C /* DinkrWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DinkrWidgetBundle.swift; sourceTree = "<group>"; };
 		EA07BD1872BA6708CC215082 /* ReputationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReputationView.swift; sourceTree = "<group>"; };
 		EB46CF44B755AC01A1B61BE4 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		EC1408DFAAB624C7E960936D /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
@@ -491,6 +529,7 @@
 		4B7E5B6C6818972B4EDC6257 = {
 			isa = PBXGroup;
 			children = (
+				7B7EA8E34C1CC08618942778 /* DinkrWidget */,
 				274A7F1A2FDAD2F580360200 /* PickleballApp */,
 				0AE5B84B266FA867CC7B4235 /* PickleballAppTests */,
 				DDC7DFB614A3E3117BCD9B93 /* Products */,
@@ -565,9 +604,22 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		7B7EA8E34C1CC08618942778 /* DinkrWidget */ = {
+			isa = PBXGroup;
+			children = (
+				2E62B71CEC9C91F5DDF293CC /* DinkrWidget.swift */,
+				E9B9922A27292ECD2160F74C /* DinkrWidgetBundle.swift */,
+				07A4049F1E9D68628AF06DC0 /* DinkrWidgetEntryView.swift */,
+				A6C62562E05E14B53E83452A /* DinkrWidgetModel.swift */,
+				283FE9D9E2E7D7A05C9E8C31 /* Info.plist */,
+			);
+			path = DinkrWidget;
+			sourceTree = "<group>";
+		};
 		8F019B567D2219B55315CE4F /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				EC6E11845BAA9D3BAF136CDE /* Challenges */,
 				67CC7DC27DB730E582BD7DBB /* Dev */,
 				D62FCBB513227DE9F42EC127 /* Events */,
 				CD9DA75DE487176A61CAB457 /* Groups */,
@@ -646,6 +698,7 @@
 			children = (
 				D8C6CE9C97C0F0548C436BDE /* Dinkr.app */,
 				026416B8869E487626D53C39 /* DinkrTests.xctest */,
+				8A3A579EBD13977EF6B120A4 /* DinkrWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -665,6 +718,16 @@
 				BDC73D572602F37E64E6DDCF /* TrendingFeedView.swift */,
 			);
 			path = Social;
+			sourceTree = "<group>";
+		};
+		EC6E11845BAA9D3BAF136CDE /* Challenges */ = {
+			isa = PBXGroup;
+			children = (
+				8F13CF097ACE7AE3A72C385A /* ChallengeDetailView.swift */,
+				0ADD6ADA22B6B1B091DC36D3 /* ChallengesView.swift */,
+				03554E0E67D1494D8240BF77 /* NewChallengeView.swift */,
+			);
+			path = Challenges;
 			sourceTree = "<group>";
 		};
 		F348530D53E8D44D3B34D6D3 /* Home */ = {
@@ -705,10 +768,12 @@
 				D90574D6EB3B68F557AFC5C3 /* Sources */,
 				DC2B33B25A809BF9A6E3E51D /* Resources */,
 				3E73B88F32BC1C51B6C6FEED /* Frameworks */,
+				B6FAAECE272FE26CF2B21575 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				6836F2627D7A6285A40F950C /* PBXTargetDependency */,
 			);
 			name = Dinkr;
 			packageProductDependencies = (
@@ -724,6 +789,23 @@
 			productName = Dinkr;
 			productReference = D8C6CE9C97C0F0548C436BDE /* Dinkr.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A17964D96E62BEF21532F267 /* DinkrWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 858FF8E3E78E2A0681EE8371 /* Build configuration list for PBXNativeTarget "DinkrWidget" */;
+			buildPhases = (
+				D3F9368AEA32F3EFD28F6525 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DinkrWidget;
+			packageProductDependencies = (
+			);
+			productName = DinkrWidget;
+			productReference = 8A3A579EBD13977EF6B120A4 /* DinkrWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		EE0C012F614F6C7A642F06A1 /* DinkrTests */ = {
 			isa = PBXNativeTarget;
@@ -755,6 +837,9 @@
 					020508763D6CB184FA841F32 = {
 						DevelopmentTeam = "";
 					};
+					A17964D96E62BEF21532F267 = {
+						DevelopmentTeam = "";
+					};
 				};
 			};
 			buildConfigurationList = A91C5B0D210FE46F9F28B338 /* Build configuration list for PBXProject "Dinkr" */;
@@ -777,6 +862,7 @@
 			targets = (
 				020508763D6CB184FA841F32 /* Dinkr */,
 				EE0C012F614F6C7A642F06A1 /* DinkrTests */,
+				A17964D96E62BEF21532F267 /* DinkrWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -802,6 +888,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D3F9368AEA32F3EFD28F6525 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C4ADE1E494373DC3021BF642 /* DinkrWidget.swift in Sources */,
+				31B04C8B3995B5CA53E16D6A /* DinkrWidgetBundle.swift in Sources */,
+				4C0952C6392AD60DD92E5FCD /* DinkrWidgetEntryView.swift in Sources */,
+				3ADCA7894EEEE3B75B9F7B74 /* DinkrWidgetModel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D90574D6EB3B68F557AFC5C3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -816,7 +913,9 @@
 				488C03510E08CAA05B74A3E3 /* BentoWidgets.swift in Sources */,
 				8A6ABC84B6B2D099772DBA59 /* CachedAsyncImage.swift in Sources */,
 				5DE4CCA42D55433C03283DFD /* Challenge.swift in Sources */,
+				25E31911A3A35348E518ACA9 /* ChallengeDetailView.swift in Sources */,
 				E4F3AB9120DA6B1549357FAB /* ChallengeView.swift in Sources */,
+				706CB2AB2B224508F0289437 /* ChallengesView.swift in Sources */,
 				294BC5FA14859219F3E92B71 /* ChatThread.swift in Sources */,
 				3395C8BC91887155FFBE0257 /* ChatView.swift in Sources */,
 				E1749B453561D7FD923900C9 /* CheckInStoriesBar.swift in Sources */,
@@ -901,6 +1000,7 @@
 				74553F831575A904AEF5AFE7 /* MyOffersView.swift in Sources */,
 				F4A125F31697C8A81C0B39CD /* NearbyGamesView.swift in Sources */,
 				BA113F760D717172BAEDC662 /* NetworkMonitor.swift in Sources */,
+				4C6956DFA2E1CC1B0A0D3C0C /* NewChallengeView.swift in Sources */,
 				4439C33BA473D782A89FE485 /* NewsArticle.swift in Sources */,
 				3492C2A507A4B2F97695A838 /* NewsRowView.swift in Sources */,
 				9B59DA79A9FCE111EA020261 /* NotificationCenterView.swift in Sources */,
@@ -961,6 +1061,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		6836F2627D7A6285A40F950C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A17964D96E62BEF21532F267 /* DinkrWidget */;
+			targetProxy = 4BD7110B25D7B7FB8CBE389B /* PBXContainerItemProxy */;
+		};
 		E782C1E7ACE2CD12B6742095 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 020508763D6CB184FA841F32 /* Dinkr */;
@@ -1002,6 +1107,31 @@
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Dinkr.app/Dinkr";
+			};
+			name = Debug;
+		};
+		6A58E32DF0CE56AA014D44F2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGNING_REQUIRED = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DinkrWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DinkrWidget;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dinkr.ios.widget;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -1133,6 +1263,7 @@
 				CODE_SIGNING_REQUIRED = YES;
 				CODE_SIGN_ENTITLEMENTS = PickleballApp/Resources/Dinkr.entitlements;
 				CODE_SIGN_IDENTITY = "-";
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PickleballApp/Resources/Info.plist;
@@ -1145,9 +1276,35 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dinkr.ios;
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		DCD3C36855B1760BC2CDF79D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGNING_REQUIRED = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DinkrWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DinkrWidget;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dinkr.ios.widget;
+				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -1162,6 +1319,7 @@
 				CODE_SIGNING_REQUIRED = YES;
 				CODE_SIGN_ENTITLEMENTS = PickleballApp/Resources/Dinkr.entitlements;
 				CODE_SIGN_IDENTITY = "-";
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PickleballApp/Resources/Info.plist;
@@ -1174,6 +1332,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dinkr.ios;
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1185,6 +1344,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		858FF8E3E78E2A0681EE8371 /* Build configuration list for PBXNativeTarget "DinkrWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6A58E32DF0CE56AA014D44F2 /* Debug */,
+				DCD3C36855B1760BC2CDF79D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		A91C5B0D210FE46F9F28B338 /* Build configuration list for PBXProject "Dinkr" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

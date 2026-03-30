@@ -42,6 +42,7 @@ targets:
         product: GoogleSignIn
       - package: GoogleSignIn
         product: GoogleSignInSwift
+      - target: DinkrWidget
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.dinkr.ios
@@ -53,6 +54,8 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         GENERATE_INFOPLIST_FILE: YES
+        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "1.0"
         INFOPLIST_KEY_CFBundleDisplayName: Dinkr
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Used to show nearby courts and games"
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Used to upload photos for posts and listings"
@@ -68,6 +71,32 @@ targets:
           - CFBundleTypeRole: Editor
             CFBundleURLSchemes:
           - com.googleusercontent.apps.758874225321-n4asdjde9utasat9tnf7h3omfmgcsm5s
+
+  DinkrWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: DinkrWidget
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dinkr.ios.widget
+        SWIFT_VERSION: "5.9"
+        DEVELOPMENT_TEAM: ""
+        TARGETED_DEVICE_FAMILY: "1"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        GENERATE_INFOPLIST_FILE: YES
+        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "1.0"
+        INFOPLIST_KEY_CFBundleDisplayName: DinkrWidget
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_REQUIRED: YES
+        CODE_SIGNING_ALLOWED: YES
+    info:
+      path: DinkrWidget/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
   DinkrTests:
     type: bundle.unit-test

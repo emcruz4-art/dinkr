@@ -381,6 +381,8 @@ private struct ProfileOverviewTab: View {
     let user: User
     let viewModel: ProfileViewModel
 
+    @State private var showChallenges = false
+
     var body: some View {
         VStack(spacing: 0) {
             // Streak card
@@ -392,6 +394,20 @@ private struct ProfileOverviewTab: View {
             }
             .buttonStyle(.plain)
             .padding(.top, 20)
+
+            // Challenges card
+            Button {
+                HapticManager.selection()
+                showChallenges = true
+            } label: {
+                ProfileChallengesCard()
+                    .padding(.horizontal, 20)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 12)
+            .sheet(isPresented: $showChallenges) {
+                ChallengesView()
+            }
 
             // Premium Reputation card
             PremiumReputationCard(user: user)
@@ -886,4 +902,69 @@ struct StatColumn: View {
 #Preview {
     ProfileView()
         .environment(AuthService())
+}
+
+// MARK: - Profile Challenges Card
+
+private struct ProfileChallengesCard: View {
+    private var activeChallenges: [Challenge] {
+        Challenge.mockChallenges.filter { $0.status == .active }
+    }
+
+    private var winningCount: Int {
+        activeChallenges.filter { challenge in
+            guard let me = challenge.participants.first(where: { $0.id == "user_001" }),
+                  let leader = challenge.leadingParticipant else { return false }
+            return leader.id == me.id
+        }.count
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.dinkrAmber.opacity(0.2), Color.dinkrAmber.opacity(0.1)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 48, height: 48)
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Color.dinkrAmber)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Challenges")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(Color.dinkrNavy)
+
+                HStack(spacing: 8) {
+                    Text("\(activeChallenges.count) active")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    if winningCount > 0 {
+                        HStack(spacing: 3) {
+                            Circle().fill(Color.dinkrGreen).frame(width: 6, height: 6)
+                            Text("winning \(winningCount)")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Color.dinkrGreen)
+                        }
+                    }
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(14)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+    }
 }

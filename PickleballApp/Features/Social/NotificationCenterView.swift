@@ -107,6 +107,7 @@ struct NotificationRow: View {
         case .kudos, .newChallenger, .tournamentUpdate: return Color.dinkrCoral
         case .newFollower, .playerRequest: return Color.dinkrSky
         case .gameReminder, .achievementUnlocked: return Color.dinkrAmber
+        case .challengeReceived, .challengeCompleted: return Color.dinkrGreen
         }
     }
 

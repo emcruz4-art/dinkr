@@ -1245,3 +1245,90 @@ struct VideoThumbnailCard: View {
         .buttonStyle(.plain)
     }
 }
+
+// MARK: - ChallengesWidget
+
+struct ChallengesWidget: View {
+    let activeCount: Int
+    let winningCount: Int
+
+    @State private var showChallenges = false
+
+    private var losingCount: Int { activeCount - winningCount }
+
+    var body: some View {
+        Button {
+            HapticManager.selection()
+            showChallenges = true
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.dinkrAmber.opacity(0.2), Color.dinkrAmber.opacity(0.1)],
+                                startPoint: .topLeading, endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 48, height: 48)
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(Color.dinkrAmber)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Challenges")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(Color.dinkrNavy)
+
+                    HStack(spacing: 6) {
+                        if winningCount > 0 {
+                            HStack(spacing: 3) {
+                                Circle().fill(Color.dinkrGreen).frame(width: 7, height: 7)
+                                Text("\(winningCount) winning")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(Color.dinkrGreen)
+                            }
+                        }
+                        if losingCount > 0 {
+                            HStack(spacing: 3) {
+                                Circle().fill(Color.dinkrCoral).frame(width: 7, height: 7)
+                                Text("\(losingCount) losing")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(Color.dinkrCoral)
+                            }
+                        }
+                        if activeCount == 0 {
+                            Text("No active challenges")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                ZStack {
+                    Circle()
+                        .fill(Color.dinkrAmber.opacity(0.15))
+                        .frame(width: 36, height: 36)
+                    Text("\(activeCount)")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(Color.dinkrAmber)
+                }
+
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(14)
+            .background(Color.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 3)
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showChallenges) {
+            ChallengesView()
+        }
+    }
+}

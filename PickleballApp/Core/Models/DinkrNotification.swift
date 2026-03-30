@@ -10,6 +10,8 @@ enum DinkrNotificationType: String, Codable {
     case achievementUnlocked  // you earned a badge
     case tournamentUpdate // event update
     case newChallenger  // leaderboard challenge
+    case challengeReceived   // someone sent you a challenge
+    case challengeCompleted  // a challenge you're in finished
 }
 
 struct DinkrNotification: Identifiable, Hashable {
@@ -79,6 +81,8 @@ extension DinkrNotification {
         case .achievementUnlocked: return "trophy.fill"
         case .tournamentUpdate: return "calendar.badge.exclamationmark"
         case .newChallenger: return "flame.fill"
+        case .challengeReceived: return "trophy.fill"
+        case .challengeCompleted: return "checkmark.seal.fill"
         }
     }
 
@@ -93,6 +97,8 @@ extension DinkrNotification {
         case .achievementUnlocked: return "dinkrAmber"
         case .tournamentUpdate: return "dinkrCoral"
         case .newChallenger: return "dinkrCoral"
+        case .challengeReceived: return "dinkrAmber"
+        case .challengeCompleted: return "dinkrGreen"
         }
     }
 }

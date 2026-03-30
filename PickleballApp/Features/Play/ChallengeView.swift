@@ -7,14 +7,14 @@ enum ChallengeFormat: String, CaseIterable, Codable {
     case doubles = "Doubles"
 }
 
-enum ChallengeStatus: String, Codable {
+enum GameChallengeStatus: String, Codable {
     case pending   = "Pending"
     case accepted  = "Accepted"
     case declined  = "Declined"
     case completed = "Completed"
 }
 
-struct Challenge: Identifiable, Codable {
+struct GameChallenge: Identifiable, Codable {
     var id: String
     var challengerId: String
     var challengerName: String
@@ -25,16 +25,16 @@ struct Challenge: Identifiable, Codable {
     var skillMax: Double
     var proposedDate: Date
     var message: String
-    var status: ChallengeStatus
+    var status: GameChallengeStatus
     var createdAt: Date
 }
 
-extension Challenge {
-    static let mockChallenges: [Challenge] = {
+extension GameChallenge {
+    static let mockChallenges: [GameChallenge] = {
         let now = Date()
         let cal = Calendar.current
         return [
-            Challenge(
+            GameChallenge(
                 id: "ch_001",
                 challengerId: "user_003",
                 challengerName: "Jordan Smith",
@@ -48,7 +48,7 @@ extension Challenge {
                 status: .pending,
                 createdAt: cal.date(byAdding: .hour, value: -3, to: now) ?? now
             ),
-            Challenge(
+            GameChallenge(
                 id: "ch_002",
                 challengerId: "user_007",
                 challengerName: "Jamie Lee",
@@ -62,7 +62,7 @@ extension Challenge {
                 status: .pending,
                 createdAt: cal.date(byAdding: .hour, value: -1, to: now) ?? now
             ),
-            Challenge(
+            GameChallenge(
                 id: "ch_003",
                 challengerId: "user_001",
                 challengerName: "Alex Rivera",
@@ -76,7 +76,7 @@ extension Challenge {
                 status: .accepted,
                 createdAt: cal.date(byAdding: .day, value: -1, to: now) ?? now
             ),
-            Challenge(
+            GameChallenge(
                 id: "ch_004",
                 challengerId: "user_001",
                 challengerName: "Alex Rivera",
@@ -90,7 +90,7 @@ extension Challenge {
                 status: .pending,
                 createdAt: cal.date(byAdding: .hour, value: -8, to: now) ?? now
             ),
-            Challenge(
+            GameChallenge(
                 id: "ch_005",
                 challengerId: "user_001",
                 challengerName: "Alex Rivera",
@@ -112,24 +112,24 @@ extension Challenge {
 
 @MainActor
 class ChallengeViewModel: ObservableObject {
-    @Published var challenges: [Challenge] = Challenge.mockChallenges
+    @Published var challenges: [GameChallenge] = GameChallenge.mockChallenges
     @Published var showSendSheet: Bool = false
 
-    var incoming: [Challenge] {
+    var incoming: [GameChallenge] {
         challenges.filter { $0.challengeeId == "user_001" }
     }
 
-    var sent: [Challenge] {
+    var sent: [GameChallenge] {
         challenges.filter { $0.challengerId == "user_001" }
     }
 
-    func accept(_ challenge: Challenge) {
+    func accept(_ challenge: GameChallenge) {
         if let idx = challenges.firstIndex(where: { $0.id == challenge.id }) {
             challenges[idx].status = .accepted
         }
     }
 
-    func decline(_ challenge: Challenge) {
+    func decline(_ challenge: GameChallenge) {
         if let idx = challenges.firstIndex(where: { $0.id == challenge.id }) {
             challenges[idx].status = .declined
         }
@@ -142,7 +142,7 @@ class ChallengeViewModel: ObservableObject {
         proposedDate: Date,
         message: String
     ) {
-        let new = Challenge(
+        let new = GameChallenge(
             id: UUID().uuidString,
             challengerId: "user_001",
             challengerName: "Alex Rivera",
@@ -164,7 +164,7 @@ class ChallengeViewModel: ObservableObject {
 // MARK: - Challenge Row
 
 private struct ChallengeRow: View {
-    let challenge: Challenge
+    let challenge: GameChallenge
     let isIncoming: Bool
     let onAccept: (() -> Void)?
     let onDecline: (() -> Void)?
@@ -283,7 +283,7 @@ private struct ChallengeRow: View {
     }
 
     @ViewBuilder
-    private func statusChip(_ status: ChallengeStatus) -> some View {
+    private func statusChip(_ status: GameChallengeStatus) -> some View {
         let config = chipConfig(for: status)
         Text(status.rawValue)
             .font(.caption2.bold())
@@ -294,7 +294,7 @@ private struct ChallengeRow: View {
             .clipShape(Capsule())
     }
 
-    private func chipConfig(for status: ChallengeStatus) -> (text: Color, bg: Color) {
+    private func chipConfig(for status: GameChallengeStatus) -> (text: Color, bg: Color) {
         switch status {
         case .pending:   return (Color.dinkrAmber, Color.dinkrAmber.opacity(0.18))
         case .accepted:  return (Color.dinkrGreen, Color.dinkrGreen.opacity(0.15))

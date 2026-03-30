@@ -75,6 +75,10 @@ struct HomeView: View {
                             )
                             .padding(.horizontal, 16)
 
+                            // Active challenges snapshot
+                            ChallengesWidget(activeCount: 3, winningCount: 2)
+                                .padding(.horizontal, 16)
+
                             // Featured event + Nearby games
                             HStack(alignment: .top, spacing: 12) {
                                 FeaturedEventWidget(event: viewModel.featuredEvent)
