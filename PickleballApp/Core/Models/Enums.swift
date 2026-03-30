@@ -78,6 +78,36 @@ enum GroupType: String, Codable, CaseIterable {
     case recreational = "Recreational"
     case competitive = "Competitive"
     case neighborhood = "Neighborhood"
+    case corporate = "Corporate"
+    case internalLeague = "Internal League"
+}
+
+enum PlayStyle: String, Codable, CaseIterable {
+    case competitive    = "Competitive"
+    case recreational   = "Recreational"
+    case drillFocused   = "Drill-Focused"
+    case dinkCulture    = "Dink Culture"
+    case allAround      = "All-Around"
+
+    var icon: String {
+        switch self {
+        case .competitive:  return "flame.fill"
+        case .recreational: return "face.smiling.fill"
+        case .drillFocused: return "target"
+        case .dinkCulture:  return "figure.mind.and.body"
+        case .allAround:    return "star.fill"
+        }
+    }
+
+    var color: String {
+        switch self {
+        case .competitive:  return "dinkrCoral"
+        case .recreational: return "dinkrGreen"
+        case .drillFocused: return "dinkrSky"
+        case .dinkCulture:  return "dinkrAmber"
+        case .allAround:    return "dinkrNavy"
+        }
+    }
 }
 
 enum CourtSurface: String, Codable, CaseIterable {

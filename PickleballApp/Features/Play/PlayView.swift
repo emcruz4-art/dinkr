@@ -3,6 +3,7 @@ import SwiftUI
 struct PlayView: View {
     @State private var viewModel = PlayViewModel()
     @Environment(AuthService.self) private var authService
+    @State private var showLogResult = false
 
     // MARK: - Segment icons
     private func segmentIcon(_ seg: PlayViewModel.PlaySegment) -> String {
@@ -114,17 +115,29 @@ struct PlayView: View {
             .navigationTitle("Play")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        viewModel.showHostGame = true
-                    } label: {
-                        Label("Host", systemImage: "plus.circle.fill")
+                    HStack(spacing: 4) {
+                        Button {
+                            showLogResult = true
+                        } label: {
+                            Label("Log Result", systemImage: "square.and.pencil")
+                        }
+                        .tint(Color.dinkrGreen)
+
+                        Button {
+                            viewModel.showHostGame = true
+                        } label: {
+                            Label("Host", systemImage: "plus.circle.fill")
+                        }
+                        .tint(Color.dinkrGreen)
                     }
-                    .tint(Color.dinkrGreen)
                 }
             }
         }
         .sheet(isPresented: $viewModel.showHostGame) {
             HostGameView()
+        }
+        .sheet(isPresented: $showLogResult) {
+            LogGameResultView()
         }
         .task { await viewModel.load() }
     }
@@ -348,7 +361,7 @@ struct LivePlayView: View {
 
 // MARK: - Leaderboard View
 struct LeaderboardView: View {
-    @State private var leaderboardMode = 0   // 0 = DUPR, 1 = Win Rate
+    @State private var leaderboardMode = 0   // 0 = DUPR, 1 = Win Rate, 2 = Company
     @State private var selectedPeriod = 0
     let periods = ["This Week", "This Month", "All Time"]
 
@@ -393,67 +406,89 @@ struct LeaderboardView: View {
     var leaders: [LeaderEntry] { leaderboardMode == 0 ? duprRanked : winRateRanked }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                // Mode toggle
-                Picker("Mode", selection: $leaderboardMode) {
-                    Text("DUPR Rating").tag(0)
-                    Text("Win Rate").tag(1)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-                .padding(.top, 12)
-
-                // Period picker (win rate only)
-                if leaderboardMode == 1 {
-                    Picker("Period", selection: $selectedPeriod) {
-                        ForEach(0..<periods.count, id: \.self) { i in
-                            Text(periods[i]).tag(i)
+        ZStack {
+            if leaderboardMode == 2 {
+                // Company leaderboard — shown inline (no nested NavigationStack)
+                ScrollView {
+                    VStack(spacing: 16) {
+                        // Mode toggle — keep visible so user can switch back
+                        Picker("Mode", selection: $leaderboardMode) {
+                            Text("DUPR Rating").tag(0)
+                            Text("Win Rate").tag(1)
+                            Text("Company").tag(2)
                         }
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal)
+                        .padding(.top, 12)
 
-                // DUPR info banner
-                if leaderboardMode == 0 {
-                    HStack(spacing: 10) {
-                        Image(systemName: "info.circle.fill")
-                            .foregroundStyle(Color.dinkrAmber)
-                            .font(.subheadline)
-                        Text("DUPR (Dynamic Universal Pickleball Rating) is the world's most accurate pickleball rating system.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        OrgLeaderboardView()
                     }
-                    .padding(12)
-                    .background(Color.dinkrAmber.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .padding(.horizontal)
                 }
-
-                // Top 3 podium
-                if leaders.count >= 3 {
-                    HStack(alignment: .bottom, spacing: 10) {
-                        DUPRPodiumCard(entry: leaders[1], medalColor: Color(red: 0.75, green: 0.75, blue: 0.78), mode: leaderboardMode)
-                        DUPRPodiumCard(entry: leaders[0], medalColor: Color.dinkrAmber, isFirst: true, mode: leaderboardMode)
-                        DUPRPodiumCard(entry: leaders[2], medalColor: Color(red: 0.80, green: 0.52, blue: 0.25), mode: leaderboardMode)
-                    }
-                    .padding(.horizontal)
-                }
-
-                // Full leaderboard list
-                VStack(spacing: 0) {
-                    ForEach(leaders) { entry in
-                        DUPRLeaderboardRow(entry: entry, isCurrentUser: entry.username == "pickleking", mode: leaderboardMode)
-                        if entry.id != leaders.last?.id {
-                            Divider().padding(.horizontal)
+            } else {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        // Mode toggle
+                        Picker("Mode", selection: $leaderboardMode) {
+                            Text("DUPR Rating").tag(0)
+                            Text("Win Rate").tag(1)
+                            Text("Company").tag(2)
                         }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal)
+                        .padding(.top, 12)
+
+                        // Period picker (win rate only)
+                        if leaderboardMode == 1 {
+                            Picker("Period", selection: $selectedPeriod) {
+                                ForEach(0..<periods.count, id: \.self) { i in
+                                    Text(periods[i]).tag(i)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .padding(.horizontal)
+                        }
+
+                        // DUPR info banner
+                        if leaderboardMode == 0 {
+                            HStack(spacing: 10) {
+                                Image(systemName: "info.circle.fill")
+                                    .foregroundStyle(Color.dinkrAmber)
+                                    .font(.subheadline)
+                                Text("DUPR (Dynamic Universal Pickleball Rating) is the world's most accurate pickleball rating system.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(12)
+                            .background(Color.dinkrAmber.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .padding(.horizontal)
+                        }
+
+                        // Top 3 podium
+                        if leaders.count >= 3 {
+                            HStack(alignment: .bottom, spacing: 10) {
+                                DUPRPodiumCard(entry: leaders[1], medalColor: Color(red: 0.75, green: 0.75, blue: 0.78), mode: leaderboardMode)
+                                DUPRPodiumCard(entry: leaders[0], medalColor: Color.dinkrAmber, isFirst: true, mode: leaderboardMode)
+                                DUPRPodiumCard(entry: leaders[2], medalColor: Color(red: 0.80, green: 0.52, blue: 0.25), mode: leaderboardMode)
+                            }
+                            .padding(.horizontal)
+                        }
+
+                        // Full leaderboard list
+                        VStack(spacing: 0) {
+                            ForEach(leaders) { entry in
+                                DUPRLeaderboardRow(entry: entry, isCurrentUser: entry.username == "pickleking", mode: leaderboardMode)
+                                if entry.id != leaders.last?.id {
+                                    Divider().padding(.horizontal)
+                                }
+                            }
+                        }
+                        .background(Color.cardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .padding(.horizontal)
+                        .padding(.bottom, 16)
                     }
                 }
-                .background(Color.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal)
-                .padding(.bottom, 16)
             }
         }
     }

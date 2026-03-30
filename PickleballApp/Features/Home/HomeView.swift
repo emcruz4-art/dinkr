@@ -12,6 +12,7 @@ struct HomeView: View {
     @State private var showHostGame = false
     @State private var showFindGame = false
     @State private var showStoriesSheet = false
+    @State private var showLogResult = false
     @State private var noShowService = NoShowService.shared
 
     var body: some View {
@@ -79,6 +80,10 @@ struct HomeView: View {
                                 onOpenPlay: {
                                     HapticManager.selection()
                                     showFindGame = true
+                                },
+                                onLogResult: {
+                                    HapticManager.medium()
+                                    showLogResult = true
                                 }
                             )
                             .padding(.horizontal, 16)
@@ -182,6 +187,9 @@ struct HomeView: View {
         .sheet(isPresented: $showMessages) {
             MessagesView()
                 .environment(authService)
+        }
+        .sheet(isPresented: $showLogResult) {
+            LogGameResultView()
         }
         .fullScreenCover(isPresented: $showHighlightsFeed) {
             VideoHighlightsFeedView(initialCategory: highlightsFeedCategory)

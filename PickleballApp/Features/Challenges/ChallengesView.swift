@@ -5,10 +5,11 @@ import SwiftUI
 struct ChallengesView: View {
     @State private var selectedSegment = 0
     @State private var showNewChallenge = false
+    @State private var showNewGroupChallenge = false
     @Namespace private var segmentNamespace
 
     private let currentUserId = "user_001"
-    private let segments = ["Active", "Pending", "History"]
+    private let segments = ["Active", "Pending", "History", "Groups"]
 
     private var activeChallenges: [Challenge] {
         Challenge.mockChallenges.filter { $0.status == .active }
@@ -60,11 +61,13 @@ struct ChallengesView: View {
                                     challenges: pendingChallenges,
                                     currentUserId: currentUserId
                                 )
-                            default:
+                            case 2:
                                 HistoryTab(
                                     challenges: historyChallenges,
                                     currentUserId: currentUserId
                                 )
+                            default:
+                                GroupChallengesView()
                             }
                         }
                         .padding(.top, 16)
@@ -78,7 +81,11 @@ struct ChallengesView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         HapticManager.medium()
-                        showNewChallenge = true
+                        if selectedSegment == 3 {
+                            showNewGroupChallenge = true
+                        } else {
+                            showNewChallenge = true
+                        }
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 22))
@@ -89,6 +96,9 @@ struct ChallengesView: View {
         }
         .sheet(isPresented: $showNewChallenge) {
             NewChallengeView()
+        }
+        .sheet(isPresented: $showNewGroupChallenge) {
+            NewGroupChallengeView()
         }
     }
 }

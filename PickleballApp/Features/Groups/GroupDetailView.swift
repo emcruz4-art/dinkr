@@ -4,6 +4,7 @@ struct GroupDetailView: View {
     let group: Group
     @State private var selectedTab = 0
     @State private var tabIndicatorOffset: CGFloat = 0
+    @State private var showCreatePoll = false
     let tabs = ["Feed", "Members", "Events"]
 
     var body: some View {
@@ -47,6 +48,13 @@ struct GroupDetailView: View {
                 .background(Color.appBackground)
                 .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
 
+                // ── Active availability poll (Feed tab) ──────────────────
+                if selectedTab == 0 {
+                    AvailabilityPollCard(poll: .mock, currentUserId: "user_001")
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+                }
+
                 // ── Tab content ──────────────────────────────────────────
                 switch selectedTab {
                 case 0:
@@ -62,6 +70,21 @@ struct GroupDetailView: View {
         }
         .navigationTitle(group.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    HapticManager.selection()
+                    showCreatePoll = true
+                } label: {
+                    Label("Schedule", systemImage: "calendar.badge.plus")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.dinkrGreen)
+                }
+            }
+        }
+        .sheet(isPresented: $showCreatePoll) {
+            CreateAvailabilityPollView()
+        }
     }
 }
 
@@ -279,6 +302,8 @@ private func groupDetailIcon(for type: GroupType) -> String {
     case .recreational:             return "figure.pickleball"
     case .competitive:              return "trophy"
     case .neighborhood:             return "house"
+    case .corporate:                return "briefcase"
+    case .internalLeague:           return "list.bullet.clipboard"
     }
 }
 
@@ -290,6 +315,8 @@ private func groupDetailColor(for type: GroupType) -> Color {
     case .recreational:             return Color.dinkrGreen
     case .competitive:              return Color.dinkrCoral
     case .neighborhood:             return .teal
+    case .corporate:                return Color.dinkrNavy
+    case .internalLeague:           return Color.dinkrAmber
     }
 }
 

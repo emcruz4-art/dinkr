@@ -243,7 +243,48 @@ struct CourtDetailView: View {
 
                 Divider().padding(.vertical, 16).padding(.horizontal, 20)
 
-                // MARK: Court Conditions Widget
+                // MARK: Regular Players Section
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "mappin.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(Color.dinkrGreen)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Regulars Here")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .textCase(.uppercase)
+                                .tracking(0.6)
+                            Text("Players who frequent this court")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 16) {
+                            ForEach(Array(User.mockPlayers.prefix(5))) { player in
+                                NavigationLink(destination: UserProfileView(user: player, currentUserId: "user_001")) {
+                                    VStack(spacing: 6) {
+                                        AvatarView(urlString: player.avatarURL, displayName: player.displayName, size: 44)
+                                        Text(player.displayName.components(separatedBy: " ").first ?? player.displayName)
+                                            .font(.caption.weight(.medium))
+                                            .foregroundStyle(Color.primary)
+                                            .lineLimit(1)
+                                        SkillBadge(level: player.skillLevel, compact: true)
+                                    }
+                                    .frame(width: 72)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    .padding(.horizontal, -20)
+                }
+                .padding(.horizontal, 20)
+
+                Divider().padding(.vertical, 16).padding(.horizontal, 20)
                 CourtConditionsWidget(court: venue)
                     .padding(.horizontal, 20)
 

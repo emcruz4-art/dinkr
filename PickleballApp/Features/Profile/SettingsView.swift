@@ -33,6 +33,9 @@ struct SettingsView: View {
     @State private var showDeleteAlert = false
     @State private var showShareSheet = false
 
+    // MARK: Company Mode
+    @State private var companyModeEnabled = true   // true by default for demo
+
     var body: some View {
         NavigationStack {
             List {
@@ -42,6 +45,7 @@ struct SettingsView: View {
                 preferencesSection
                 aboutSection
                 supportSection
+                companySection
                 dangerZoneSection
             }
             .listStyle(.insetGrouped)
@@ -289,6 +293,17 @@ struct SettingsView: View {
                 }
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Company Section
+
+    private var companySection: some View {
+        Section("Enterprise") {
+            CompanyModeToggleView(companyModeEnabled: $companyModeEnabled)
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
         }
     }
 

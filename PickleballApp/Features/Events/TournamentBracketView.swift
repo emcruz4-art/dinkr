@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Models
 
-struct BracketMatch: Identifiable {
+struct LegacyBracketMatch: Identifiable {
     var id: String
     var round: Int        // 1 = quarterfinal, 2 = semifinal, 3 = final
     var player1Name: String
@@ -12,26 +12,26 @@ struct BracketMatch: Identifiable {
     var winner: Int?      // 1 or 2, nil if not played
 }
 
-extension BracketMatch {
+extension LegacyBracketMatch {
     /// 8-player single-elimination bracket — 3 rounds, 7 matches.
     /// Some matches are complete, some are pending.
-    static let mockBracket: [BracketMatch] = [
+    static let mockBracket: [LegacyBracketMatch] = [
         // Round 1 — Quarterfinals (4 matches)
-        BracketMatch(id: "m1", round: 1, player1Name: "Alex Rivera",   player2Name: "Sam Torres",
+        LegacyBracketMatch(id: "m1", round: 1, player1Name: "Alex Rivera",   player2Name: "Sam Torres",
                      score1: "11",  score2: "7",  winner: 1),
-        BracketMatch(id: "m2", round: 1, player1Name: "Jordan Smith",  player2Name: "Casey Nguyen",
+        LegacyBracketMatch(id: "m2", round: 1, player1Name: "Jordan Smith",  player2Name: "Casey Nguyen",
                      score1: "9",   score2: "11", winner: 2),
-        BracketMatch(id: "m3", round: 1, player1Name: "Morgan Davis",  player2Name: "Riley Park",
+        LegacyBracketMatch(id: "m3", round: 1, player1Name: "Morgan Davis",  player2Name: "Riley Park",
                      score1: "11",  score2: "5",  winner: 1),
-        BracketMatch(id: "m4", round: 1, player1Name: "Taylor Kim",    player2Name: "Jamie Lee",
+        LegacyBracketMatch(id: "m4", round: 1, player1Name: "Taylor Kim",    player2Name: "Jamie Lee",
                      score1: "11",  score2: "9",  winner: 1),
         // Round 2 — Semifinals (2 matches)
-        BracketMatch(id: "m5", round: 2, player1Name: "Alex Rivera",   player2Name: "Casey Nguyen",
+        LegacyBracketMatch(id: "m5", round: 2, player1Name: "Alex Rivera",   player2Name: "Casey Nguyen",
                      score1: "11",  score2: "8",  winner: 1),
-        BracketMatch(id: "m6", round: 2, player1Name: "Morgan Davis",  player2Name: "Taylor Kim",
+        LegacyBracketMatch(id: "m6", round: 2, player1Name: "Morgan Davis",  player2Name: "Taylor Kim",
                      score1: nil,   score2: nil,  winner: nil),
         // Round 3 — Final (1 match)
-        BracketMatch(id: "m7", round: 3, player1Name: "Alex Rivera",   player2Name: "TBD",
+        LegacyBracketMatch(id: "m7", round: 3, player1Name: "Alex Rivera",   player2Name: "TBD",
                      score1: nil,   score2: nil,  winner: nil),
     ]
 }
@@ -39,7 +39,7 @@ extension BracketMatch {
 // MARK: - BracketMatchCard
 
 private struct BracketMatchCard: View {
-    let match: BracketMatch
+    let match: LegacyBracketMatch
 
     var body: some View {
         VStack(spacing: 0) {
@@ -121,7 +121,7 @@ private struct ConnectorLine: View {
 
 private struct BracketColumn: View {
     let title: String
-    let matches: [BracketMatch]
+    let matches: [LegacyBracketMatch]
     let topPadding: CGFloat
 
     var body: some View {
@@ -192,7 +192,7 @@ private struct ChampionDisplay: View {
 // MARK: - Results Row
 
 private struct BracketResultRow: View {
-    let match: BracketMatch
+    let match: LegacyBracketMatch
     let roundLabel: String
 
     var body: some View {
@@ -261,22 +261,22 @@ struct TournamentBracketView: View {
     let event: Event
     @State private var selectedTab: Int = 0
 
-    private let allMatches: [BracketMatch] = BracketMatch.mockBracket
+    private let allMatches: [LegacyBracketMatch] = LegacyBracketMatch.mockBracket
 
-    private var quarterfinals: [BracketMatch] { allMatches.filter { $0.round == 1 } }
-    private var semifinals: [BracketMatch]    { allMatches.filter { $0.round == 2 } }
-    private var finals: [BracketMatch]        { allMatches.filter { $0.round == 3 } }
+    private var quarterfinals: [LegacyBracketMatch] { allMatches.filter { $0.round == 1 } }
+    private var semifinals: [LegacyBracketMatch]    { allMatches.filter { $0.round == 2 } }
+    private var finals: [LegacyBracketMatch]        { allMatches.filter { $0.round == 3 } }
 
     private var champion: String? {
         guard let finalMatch = finals.first, let w = finalMatch.winner else { return nil }
         return w == 1 ? finalMatch.player1Name : finalMatch.player2Name
     }
 
-    private var completedMatches: [BracketMatch] {
+    private var completedMatches: [LegacyBracketMatch] {
         allMatches.filter { $0.winner != nil }
     }
 
-    private func roundLabel(for match: BracketMatch) -> String {
+    private func roundLabel(for match: LegacyBracketMatch) -> String {
         switch match.round {
         case 1: return "QF"
         case 2: return "SF"

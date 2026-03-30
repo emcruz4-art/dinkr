@@ -400,6 +400,8 @@ private func groupTypeIcon(for type: GroupType) -> String {
     case .recreational:             return "figure.pickleball"
     case .competitive:              return "trophy"
     case .neighborhood:             return "house"
+    case .corporate:                return "briefcase"
+    case .internalLeague:           return "list.bullet.clipboard"
     }
 }
 
@@ -411,6 +413,8 @@ private func groupTypeColor(for type: GroupType) -> Color {
     case .recreational:             return Color.dinkrGreen
     case .competitive:              return Color.dinkrCoral
     case .neighborhood:             return .teal
+    case .corporate:                return Color.dinkrAmber
+    case .internalLeague:           return Color.dinkrNavy
     }
 }
 

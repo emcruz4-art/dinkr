@@ -28,5 +28,13 @@ extension Group {
               description: "Early birds at Mueller. 6:30am sharp, M/W/F.",
               memberIds: [], adminIds: ["user_005"], chatThreadId: "chat_003",
               eventIds: [], isPrivate: false, bannerURL: nil, memberCount: 19),
+        Group(id: "grp_004", name: "Westlake Weekend Warriors", type: .recreational,
+              description: "Saturday/Sunday doubles at Westlake courts. All skill levels.",
+              memberIds: [], adminIds: ["user_007"], chatThreadId: "chat_004",
+              eventIds: [], isPrivate: false, bannerURL: nil, memberCount: 41),
+        Group(id: "grp_005", name: "ATX Pro Dev Squad", type: .competitive,
+              description: "High-level training group. DUPR 4.5+ only. Drill-heavy sessions.",
+              memberIds: [], adminIds: ["user_009"], chatThreadId: "chat_005",
+              eventIds: [], isPrivate: true, bannerURL: nil, memberCount: 12),
     ]
 }

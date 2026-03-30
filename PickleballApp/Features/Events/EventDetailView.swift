@@ -3,6 +3,11 @@ import MapKit
 
 struct EventDetailView: View {
     let event: Event
+    @State private var showBracketBuilder = false
+
+    private var mockBracket: Bracket? {
+        Bracket.mock.eventId == event.id ? Bracket.mock : nil
+    }
 
     var body: some View {
         ScrollView {
@@ -75,6 +80,11 @@ struct EventDetailView: View {
                     // CTA
                     Button("Register / Learn More") {}
                         .primaryButton()
+
+                    Divider()
+
+                    // MARK: Bracket Section
+                    bracketSection
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 32)
@@ -82,6 +92,108 @@ struct EventDetailView: View {
         }
         .navigationTitle(event.title)
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showBracketBuilder) {
+            BracketBuilderView()
+        }
+    }
+
+    // MARK: - Bracket Section
+
+    @ViewBuilder
+    private var bracketSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "bracket.square.fill")
+                    .foregroundStyle(Color.dinkrGreen)
+                Text("Bracket")
+                    .font(.headline)
+                Spacer()
+            }
+
+            if let bracket = mockBracket {
+                // Condensed first-round preview
+                let firstRound = bracket.rounds.first ?? []
+                let previewMatches = Array(firstRound.prefix(4))
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    ForEach(previewMatches) { match in
+                        compactMatchCard(match)
+                    }
+                }
+
+                NavigationLink {
+                    BracketView(bracket: bracket)
+                } label: {
+                    HStack {
+                        Text("View Full Bracket")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.dinkrGreen)
+                        Spacer()
+                        Image(systemName: "arrow.right")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.dinkrGreen)
+                    }
+                    .padding(.vertical, 4)
+                }
+            } else {
+                Text("No bracket published yet.")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.secondary)
+            }
+
+            // Organizer: Create Bracket button
+            Button {
+                showBracketBuilder = true
+            } label: {
+                Label("Create Bracket", systemImage: "plus.circle")
+            }
+            .secondaryButton()
+        }
+    }
+
+    // MARK: - Compact Match Card
+
+    @ViewBuilder
+    private func compactMatchCard(_ match: NewBracketMatch) -> some View {
+        VStack(spacing: 0) {
+            compactPlayerRow(
+                name: match.participantAName ?? "TBD",
+                score: match.scoreA,
+                isWinner: match.isComplete && match.winnerId == match.participantAId,
+                isTBD: match.participantAId == nil
+            )
+            Divider()
+            compactPlayerRow(
+                name: match.participantBName ?? "TBD",
+                score: match.scoreB,
+                isWinner: match.isComplete && match.winnerId == match.participantBId,
+                isTBD: match.participantBId == nil
+            )
+        }
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 1)
+    }
+
+    @ViewBuilder
+    private func compactPlayerRow(name: String, score: String, isWinner: Bool, isTBD: Bool) -> some View {
+        HStack(spacing: 4) {
+            Rectangle()
+                .fill(isWinner ? Color.dinkrGreen : Color.clear)
+                .frame(width: 3)
+            Text(isTBD ? "TBD" : name)
+                .font(.system(size: 11, weight: isWinner ? .bold : .regular))
+                .foregroundStyle(isTBD ? Color.secondary : Color.primary)
+                .lineLimit(1)
+            Spacer(minLength: 2)
+            if !score.isEmpty {
+                Text(score)
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(isWinner ? Color.dinkrGreen : Color.secondary)
+            }
+        }
+        .padding(.trailing, 6)
+        .frame(height: 26)
     }
 }
 

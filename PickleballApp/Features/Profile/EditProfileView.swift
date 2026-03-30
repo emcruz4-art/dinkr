@@ -13,6 +13,7 @@ final class EditProfileViewModel {
     var isWomenOnly: Bool
     var isPrivate: Bool
     var socialLinks: SocialLinks
+    var playStyle: PlayStyle?
     var selectedImage: UIImage?
     var uploadProgress: Double = 0
     var isLoading: Bool = false
@@ -31,6 +32,7 @@ final class EditProfileViewModel {
         self.isWomenOnly = user.isWomenOnly
         self.isPrivate = user.isPrivate
         self.socialLinks = user.socialLinks
+        self.playStyle = user.playStyle
         self.avatarURL = user.avatarURL
     }
 
@@ -80,6 +82,7 @@ final class EditProfileViewModel {
             "skillLevel": skillLevel.rawValue,
             "isWomenOnly": isWomenOnly,
             "isPrivate": isPrivate,
+            "playStyle": playStyle?.rawValue ?? "",
             "socialLinks.instagram": socialLinks.instagram,
             "socialLinks.tiktok": socialLinks.tiktok,
             "socialLinks.youtube": socialLinks.youtube,
@@ -279,6 +282,11 @@ struct EditProfileView: View {
             // Skill Level
             EditFieldCard(label: "Skill Level", required: false) {
                 SkillLevelSegmentedPicker(selection: $vm.skillLevel)
+            }
+
+            // Play Style
+            EditFieldCard(label: "Play Style", required: false) {
+                PlayStylePicker(selection: $vm.playStyle)
             }
 
             // Women's + Privacy toggles
@@ -514,6 +522,106 @@ private struct SocialLinkField: View {
                 .autocorrectionDisabled()
         }
         .padding(.vertical, 8)
+    }
+}
+
+// MARK: - PlayStylePicker
+
+private struct PlayStylePicker: View {
+    @Binding var selection: PlayStyle?
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 8),
+        GridItem(.flexible(), spacing: 8),
+        GridItem(.flexible(), spacing: 8)
+    ]
+
+    var body: some View {
+        VStack(spacing: 8) {
+            LazyVGrid(columns: columns, spacing: 8) {
+                // None option
+                PlayStyleChip(
+                    label: "None",
+                    icon: "xmark.circle",
+                    colorName: nil,
+                    isSelected: selection == nil
+                ) {
+                    HapticManager.selection()
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        selection = nil
+                    }
+                }
+
+                ForEach(PlayStyle.allCases, id: \.self) { style in
+                    PlayStyleChip(
+                        label: style.rawValue,
+                        icon: style.icon,
+                        colorName: style.color,
+                        isSelected: selection == style
+                    ) {
+                        HapticManager.selection()
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            selection = style
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - PlayStyleChip
+
+private struct PlayStyleChip: View {
+    let label: String
+    let icon: String
+    let colorName: String?
+    let isSelected: Bool
+    let action: () -> Void
+
+    private var chipColor: Color {
+        guard let name = colorName else { return Color.secondary }
+        switch name {
+        case "dinkrCoral":  return Color.dinkrCoral
+        case "dinkrGreen":  return Color.dinkrGreen
+        case "dinkrSky":    return Color.dinkrSky
+        case "dinkrAmber":  return Color.dinkrAmber
+        case "dinkrNavy":   return Color.dinkrNavy
+        default:            return Color.secondary
+        }
+    }
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(isSelected ? chipColor : Color.secondary)
+                Text(label)
+                    .font(.system(size: 11, weight: isSelected ? .bold : .medium))
+                    .foregroundStyle(isSelected ? chipColor : Color.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 6)
+            .background(
+                isSelected
+                    ? chipColor.opacity(0.15)
+                    : Color.appBackground
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(
+                        isSelected ? chipColor : Color.secondary.opacity(0.25),
+                        lineWidth: isSelected ? 1.5 : 1
+                    )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
     }
 }
 

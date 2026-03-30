@@ -66,6 +66,27 @@ struct PlayerCardView: View {
                         SkillBadge(level: player.skillLevel, compact: true)
                     }
 
+                    if let style = player.playStyle {
+                        PlayStyleBadge(style: style)
+                    }
+
+                    // Department badge — visible when player has a department set (same org)
+                    if let dept = player.department {
+                        HStack(spacing: 4) {
+                            Image(systemName: "briefcase.fill")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(Color.dinkrSky)
+                            Text(dept)
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(Color.dinkrSky)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.dinkrSky.opacity(0.1))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().strokeBorder(Color.dinkrSky.opacity(0.3), lineWidth: 0.5))
+                    }
+
                     if showPrivateGate {
                         // Private — only show city
                         HStack(spacing: 4) {
@@ -291,6 +312,37 @@ struct PublicProfileBody: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Play Style Badge
+
+struct PlayStyleBadge: View {
+    let style: PlayStyle
+
+    private var badgeColor: Color {
+        switch style.color {
+        case "dinkrCoral":  return Color.dinkrCoral
+        case "dinkrGreen":  return Color.dinkrGreen
+        case "dinkrSky":    return Color.dinkrSky
+        case "dinkrAmber":  return Color.dinkrAmber
+        case "dinkrNavy":   return Color.dinkrNavy
+        default:            return Color.dinkrGreen
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: style.icon)
+                .font(.system(size: 10, weight: .semibold))
+            Text(style.rawValue)
+                .font(.system(size: 11, weight: .medium))
+        }
+        .foregroundStyle(badgeColor)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(badgeColor.opacity(0.12))
+        .clipShape(Capsule())
     }
 }
 

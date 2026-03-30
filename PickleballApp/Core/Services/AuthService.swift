@@ -85,7 +85,9 @@ final class AuthService {
             followingCount: 0,
                 duprRating: nil,
                 isPrivate: false,
-                socialLinks: SocialLinks()
+                socialLinks: SocialLinks(),
+                playStyle: nil,
+                department: nil
         )
         try await createUserDocument(newUser)
         currentUser = newUser
@@ -159,7 +161,9 @@ final class AuthService {
                 followingCount: 0,
                 duprRating: nil,
                 isPrivate: false,
-                socialLinks: SocialLinks()
+                socialLinks: SocialLinks(),
+                playStyle: nil,
+                department: nil
             )
             try await createUserDocument(newUser)
             currentUser = newUser
@@ -215,7 +219,9 @@ final class AuthService {
                 followingCount: 0,
                 duprRating: nil,
                 isPrivate: false,
-                socialLinks: SocialLinks()
+                socialLinks: SocialLinks(),
+                playStyle: nil,
+                department: nil
             )
             try await createUserDocument(newUser)
             currentUser = newUser
@@ -252,7 +258,9 @@ final class AuthService {
                 followingCount: 0,
                 duprRating: nil,
                 isPrivate: false,
-                socialLinks: SocialLinks()
+                socialLinks: SocialLinks(),
+                playStyle: nil,
+                department: nil
             )
             currentUser = fallback
             isAuthenticated = true

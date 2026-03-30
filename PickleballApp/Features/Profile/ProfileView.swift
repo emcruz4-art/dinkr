@@ -382,6 +382,7 @@ private struct ProfileOverviewTab: View {
     let viewModel: ProfileViewModel
 
     @State private var showChallenges = false
+    @State private var showRecap = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -394,6 +395,56 @@ private struct ProfileOverviewTab: View {
             }
             .buttonStyle(.plain)
             .padding(.top, 20)
+
+            // March Recap banner
+            Button {
+                HapticManager.selection()
+                showRecap = true
+            } label: {
+                HStack(spacing: 0) {
+                    // dinkrAmber left border accent
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.dinkrAmber)
+                        .frame(width: 4)
+                        .padding(.vertical, 4)
+
+                    HStack(spacing: 12) {
+                        Image(systemName: "calendar.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundStyle(Color.dinkrAmber)
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Your March Recap is ready")
+                                .font(.subheadline.weight(.bold))
+                                .foregroundStyle(Color.primary)
+                            Text("14 games · 9 wins · +0.12 DUPR")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                }
+                .background(Color.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.dinkrAmber.opacity(0.25), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+                .padding(.horizontal, 20)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 12)
+            .sheet(isPresented: $showRecap) {
+                MonthlyRecapSheet(data: .mock(for: user))
+            }
 
             // Challenges card
             Button {

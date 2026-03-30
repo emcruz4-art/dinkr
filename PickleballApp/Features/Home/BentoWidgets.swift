@@ -198,9 +198,10 @@ struct QuickActionsWidget: View {
     var onHostGame: () -> Void = {}
     var onFindGame: () -> Void = {}
     var onOpenPlay: () -> Void = {}
+    var onLogResult: () -> Void = {}
 
     var body: some View {
-        HStack(spacing: 10) {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
             QuickActionPill(label: "Host Game",
                            icon: "plus.circle.fill",
                            gradientColors: [Color.dinkrGreen, Color.dinkrGreen.opacity(0.7)],
@@ -209,6 +210,10 @@ struct QuickActionsWidget: View {
                            icon: "magnifyingglass.circle.fill",
                            gradientColors: [Color.dinkrSky, Color.dinkrSky.opacity(0.7)],
                            action: onFindGame)
+            QuickActionPill(label: "Log Result",
+                           icon: "square.and.pencil",
+                           gradientColors: [Color.dinkrAmber, Color.dinkrAmber.opacity(0.7)],
+                           action: onLogResult)
             QuickActionPill(label: "Open Play",
                            icon: "arrow.left.arrow.right.circle.fill",
                            gradientColors: [Color.dinkrCoral, Color.dinkrCoral.opacity(0.7)],

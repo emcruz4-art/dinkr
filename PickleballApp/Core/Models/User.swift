@@ -36,6 +36,8 @@ struct User: Identifiable, Codable, Hashable {
     var duprRating: Double?
     var isPrivate: Bool
     var socialLinks: SocialLinks
+    var playStyle: PlayStyle?
+    var department: String?
 
     var winRate: Double {
         guard gamesPlayed > 0 else { return 0 }
@@ -80,7 +82,9 @@ extension User {
             linkedin: "alexrivera",
             twitter: "pickleking",
             website: "https://dinkr.app"
-        )
+        ),
+        playStyle: .dinkCulture,
+        department: "Engineering"
     )
 
     static let mockPlayers: [User] = [
@@ -91,7 +95,7 @@ extension User {
              clubIds: ["club_002"], badges: [.init(id: "b2", type: .tournamentWinner, earnedAt: Date(), label: "Tournament Winner")],
              reliabilityScore: 4.9, gamesPlayed: 203, wins: 148,
              joinedDate: Calendar.current.date(byAdding: .month, value: -18, to: Date()) ?? Date(),
-             isWomenOnly: true, followersCount: 412, followingCount: 205, duprRating: nil, isPrivate: false, socialLinks: SocialLinks()),
+             isWomenOnly: true, followersCount: 412, followingCount: 205, duprRating: nil, isPrivate: false, socialLinks: SocialLinks(), playStyle: .competitive, department: "Engineering"),
         User(id: "user_003", displayName: "Jordan Smith", username: "jordan_4point0",
              avatarURL: nil, bio: "4.0 aggressive baseliner. Let's play!",
              skillLevel: .advanced40, city: "Austin, TX",
@@ -99,7 +103,7 @@ extension User {
              clubIds: ["club_001"], badges: [],
              reliabilityScore: 4.5, gamesPlayed: 87, wins: 51,
              joinedDate: Calendar.current.date(byAdding: .month, value: -8, to: Date()) ?? Date(),
-             isWomenOnly: false, followersCount: 98, followingCount: 134, duprRating: nil, isPrivate: false, socialLinks: SocialLinks()),
+             isWomenOnly: false, followersCount: 98, followingCount: 134, duprRating: nil, isPrivate: false, socialLinks: SocialLinks(), playStyle: .allAround, department: "Sales"),
         User(id: "user_004", displayName: "Sarah Johnson", username: "sarahj_pb",
              avatarURL: nil, bio: "Community builder. 100+ women's league members 💪",
              skillLevel: .intermediate35, city: "Austin, TX",
@@ -107,7 +111,7 @@ extension User {
              clubIds: ["club_002", "club_003"], badges: [.init(id: "b3", type: .communityChampion, earnedAt: Date(), label: "Community Champion")],
              reliabilityScore: 5.0, gamesPlayed: 176, wins: 102,
              joinedDate: Calendar.current.date(byAdding: .year, value: -2, to: Date()) ?? Date(),
-             isWomenOnly: false, followersCount: 567, followingCount: 89, duprRating: nil, isPrivate: false, socialLinks: SocialLinks()),
+             isWomenOnly: false, followersCount: 567, followingCount: 89, duprRating: nil, isPrivate: false, socialLinks: SocialLinks(), playStyle: .recreational, department: "Marketing"),
         User(id: "user_005", displayName: "Chris Park", username: "chrisp_dink",
              avatarURL: nil, bio: "4.0+ doubles specialist. Kitchen magician.",
              skillLevel: .advanced40, city: "Round Rock, TX",
@@ -115,7 +119,7 @@ extension User {
              clubIds: ["club_001"], badges: [],
              reliabilityScore: 4.7, gamesPlayed: 312, wins: 198,
              joinedDate: Calendar.current.date(byAdding: .year, value: -3, to: Date()) ?? Date(),
-             isWomenOnly: false, followersCount: 289, followingCount: 211, duprRating: nil, isPrivate: true, socialLinks: SocialLinks()),
+             isWomenOnly: false, followersCount: 289, followingCount: 211, duprRating: nil, isPrivate: true, socialLinks: SocialLinks(), playStyle: nil, department: nil),
         User(id: "user_006", displayName: "Taylor Kim", username: "tkim_pickles",
              avatarURL: nil, bio: "Beginner turned 3.0. Still learning every day!",
              skillLevel: .intermediate30, city: "Cedar Park, TX",
@@ -123,7 +127,7 @@ extension User {
              clubIds: [], badges: [],
              reliabilityScore: 4.3, gamesPlayed: 34, wins: 18,
              joinedDate: Calendar.current.date(byAdding: .month, value: -4, to: Date()) ?? Date(),
-             isWomenOnly: false, followersCount: 45, followingCount: 67, duprRating: nil, isPrivate: false, socialLinks: SocialLinks()),
+             isWomenOnly: false, followersCount: 45, followingCount: 67, duprRating: nil, isPrivate: false, socialLinks: SocialLinks(), playStyle: nil, department: nil),
         User(id: "user_007", displayName: "Jamie Lee", username: "jamiepb",
              avatarURL: nil, bio: "4.5 bandit. Former tennis pro. Loves the dink battle.",
              skillLevel: .advanced45, city: "Austin, TX",
@@ -131,7 +135,7 @@ extension User {
              clubIds: ["club_001"], badges: [.init(id: "b4", type: .reliablePro, earnedAt: Date(), label: "Reliable Pro")],
              reliabilityScore: 4.6, gamesPlayed: 445, wins: 301,
              joinedDate: Calendar.current.date(byAdding: .year, value: -4, to: Date()) ?? Date(),
-             isWomenOnly: false, followersCount: 734, followingCount: 156, duprRating: nil, isPrivate: true, socialLinks: SocialLinks()),
+             isWomenOnly: false, followersCount: 734, followingCount: 156, duprRating: nil, isPrivate: true, socialLinks: SocialLinks(), playStyle: nil, department: nil),
         User(id: "user_008", displayName: "Morgan Davis", username: "morganplays",
              avatarURL: nil, bio: "3.0 and climbing. Mueller Park regular.",
              skillLevel: .intermediate30, city: "Austin, TX",
@@ -139,7 +143,7 @@ extension User {
              clubIds: [], badges: [],
              reliabilityScore: 4.4, gamesPlayed: 56, wins: 28,
              joinedDate: Calendar.current.date(byAdding: .month, value: -6, to: Date()) ?? Date(),
-             isWomenOnly: false, followersCount: 67, followingCount: 89, duprRating: nil, isPrivate: false, socialLinks: SocialLinks()),
+             isWomenOnly: false, followersCount: 67, followingCount: 89, duprRating: nil, isPrivate: false, socialLinks: SocialLinks(), playStyle: nil, department: nil),
         User(id: "user_009", displayName: "Riley Torres", username: "riley_dinkmaster",
              avatarURL: nil, bio: "Dinkmaster Level 9. Weekend warrior, weekday dreamer.",
              skillLevel: .intermediate35, city: "Austin, TX",
@@ -147,6 +151,6 @@ extension User {
              clubIds: ["club_003"], badges: [],
              reliabilityScore: 4.8, gamesPlayed: 121, wins: 73,
              joinedDate: Calendar.current.date(byAdding: .month, value: -10, to: Date()) ?? Date(),
-             isWomenOnly: false, followersCount: 189, followingCount: 145, duprRating: nil, isPrivate: false, socialLinks: SocialLinks()),
+             isWomenOnly: false, followersCount: 189, followingCount: 145, duprRating: nil, isPrivate: false, socialLinks: SocialLinks(), playStyle: nil, department: nil),
     ]
 }

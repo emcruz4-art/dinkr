@@ -11,6 +11,7 @@ struct GameSessionDetailView: View {
     @State private var reminderScheduled = false
     @State private var showToast = false
     @State private var toastMessage = ""
+    @State private var showLogResult = false
 
     private var currentUserId: String { authService.currentUser?.id ?? "user_001" }
     private var isRsvped: Bool { session.rsvps.contains(currentUserId) }
@@ -58,6 +59,9 @@ struct GameSessionDetailView: View {
 
             rsvpButton
                 .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            logResultButton
+                .padding(.horizontal, 16)
                 .padding(.bottom, 24)
                 .background(
                     LinearGradient(
@@ -79,6 +83,9 @@ struct GameSessionDetailView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: showToast)
+        .sheet(isPresented: $showLogResult) {
+            LogGameResultView()
+        }
     }
 
     // MARK: - Header
@@ -386,6 +393,28 @@ struct GameSessionDetailView: View {
                         .strokeBorder(Color.dinkrGreen, lineWidth: 1.5)
                 )
             }
+        }
+    }
+
+    // MARK: - Log Result Button
+
+    private var logResultButton: some View {
+        Button {
+            showLogResult = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "square.and.pencil")
+                    .font(.subheadline.weight(.semibold))
+                Text("Log a Result")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .foregroundStyle(Color.dinkrGreen)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(Color.dinkrGreen, lineWidth: 1.5)
+            )
         }
     }
 

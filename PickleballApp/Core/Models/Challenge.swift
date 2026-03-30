@@ -107,6 +107,57 @@ struct Challenge: Identifiable, Codable {
     }
 }
 
+// MARK: - GroupChallengeMetric
+
+enum GroupChallengeMetric: String, Codable, CaseIterable {
+    case gamesPlayed    = "Games Played"
+    case totalWins      = "Total Wins"
+    case wellnessPoints = "Wellness Points"
+    case avgImprovement = "Avg DUPR Improvement"
+    case courtHours     = "Court Hours"
+
+    var icon: String {
+        switch self {
+        case .gamesPlayed:    return "figure.pickleball"
+        case .totalWins:      return "trophy.fill"
+        case .wellnessPoints: return "heart.fill"
+        case .avgImprovement: return "chart.line.uptrend.xyaxis"
+        case .courtHours:     return "clock.fill"
+        }
+    }
+}
+
+// MARK: - GroupChallenge
+
+struct GroupChallenge: Identifiable, Codable {
+    var id: String
+    var title: String
+    var challengerGroupId: String
+    var challengerGroupName: String
+    var challengedGroupId: String
+    var challengedGroupName: String
+    var metric: GroupChallengeMetric
+    var startDate: Date
+    var endDate: Date
+    var status: ChallengeStatus
+    var challengerScore: Int
+    var challengedScore: Int
+    var challengerPlayerCount: Int
+    var challengedPlayerCount: Int
+    var stakes: String
+    var createdByUserId: String
+
+    var daysRemaining: Int {
+        max(0, Calendar.current.dateComponents([.day], from: Date(), to: endDate).day ?? 0)
+    }
+    var isExpired: Bool { Date() > endDate }
+    var leadingGroupName: String? {
+        if challengerScore > challengedScore { return challengerGroupName }
+        if challengedScore > challengerScore { return challengedGroupName }
+        return nil
+    }
+}
+
 import SwiftUI
 
 extension Challenge {
@@ -195,6 +246,47 @@ extension Challenge {
             endDate: Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
             createdAt: Calendar.current.date(byAdding: .day, value: -30, to: Date())!,
             winnerMessage: "GG! You've been putting in the work", proofVideoURL: nil, isPublic: true
+        ),
+    ]
+}
+
+extension GroupChallenge {
+    static let mockGroupChallenges: [GroupChallenge] = [
+        GroupChallenge(
+            id: "gc_001",
+            title: "South Austin vs Mueller: Win Race",
+            challengerGroupId: "grp_001",
+            challengerGroupName: "South Austin Dinkers",
+            challengedGroupId: "grp_003",
+            challengedGroupName: "Mueller Morning Crew",
+            metric: .totalWins,
+            startDate: Calendar.current.date(byAdding: .day, value: -5, to: Date())!,
+            endDate: Calendar.current.date(byAdding: .day, value: 9, to: Date())!,
+            status: .active,
+            challengerScore: 38,
+            challengedScore: 29,
+            challengerPlayerCount: 54,
+            challengedPlayerCount: 19,
+            stakes: "Winning group gets bragging rights 🏆",
+            createdByUserId: "user_003"
+        ),
+        GroupChallenge(
+            id: "gc_002",
+            title: "4.0+ Competitive vs South Austin: Court Hours",
+            challengerGroupId: "grp_002",
+            challengerGroupName: "4.0+ Competitive Pool",
+            challengedGroupId: "grp_001",
+            challengedGroupName: "South Austin Dinkers",
+            metric: .courtHours,
+            startDate: Calendar.current.date(byAdding: .day, value: 1, to: Date())!,
+            endDate: Calendar.current.date(byAdding: .day, value: 15, to: Date())!,
+            status: .pending,
+            challengerScore: 0,
+            challengedScore: 0,
+            challengerPlayerCount: 28,
+            challengedPlayerCount: 54,
+            stakes: "Losers buy coffee at next Sunday round robin ☕",
+            createdByUserId: "user_002"
         ),
     ]
 }
