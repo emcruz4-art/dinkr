@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseFirestore
 
 // MARK: - Model
 
@@ -49,11 +50,18 @@ class LiveScoreViewModel: ObservableObject {
     @Published var showScoreFlash: Bool = false
     @Published var lastScorer: ServingTeam? = nil
 
+    var gameSessionId: String? = nil
+
+    private let db = Firestore.firestore()
+    private var scoreListener: ListenerRegistration? = nil
+
     private var history: [LiveScoreGame] = []
     private var pulseTimer: Timer?
 
-    init(game: LiveScoreGame = LiveScoreGame.newGame(teamA: "Team A", teamB: "Team B")) {
+    init(game: LiveScoreGame = LiveScoreGame.newGame(teamA: "Team A", teamB: "Team B"),
+         gameSessionId: String? = nil) {
         self.game = game
+        self.gameSessionId = gameSessionId
         startPulse()
     }
 
@@ -66,6 +74,59 @@ class LiveScoreViewModel: ObservableObject {
             }
         }
     }
+
+    // MARK: - Firestore Sync
+
+    private func syncToFirestore() async {
+        guard let sessionId = gameSessionId else { return }
+        let data: [String: Any] = [
+            "liveScore": [
+                "scoreA": game.scoreA,
+                "scoreB": game.scoreB,
+                "teamAName": game.teamAName,
+                "teamBName": game.teamBName,
+                "isComplete": game.isComplete,
+                "servingTeam": game.servingTeam == .teamA ? "A" : "B"
+            ]
+        ]
+        try? await db.collection("gameSessions").document(sessionId).updateData(data)
+    }
+
+    func startListening() {
+        guard let sessionId = gameSessionId else { return }
+        scoreListener = db.collection("gameSessions").document(sessionId)
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let self, let data = snapshot?.data(),
+                      let liveScoreMap = data["liveScore"] as? [String: Any] else { return }
+
+                let remoteA = liveScoreMap["scoreA"] as? Int ?? 0
+                let remoteB = liveScoreMap["scoreB"] as? Int ?? 0
+                let remoteTeamA = liveScoreMap["teamAName"] as? String ?? self.game.teamAName
+                let remoteTeamB = liveScoreMap["teamBName"] as? String ?? self.game.teamBName
+                let remoteComplete = liveScoreMap["isComplete"] as? Bool ?? false
+                let remoteServing = liveScoreMap["servingTeam"] as? String ?? "A"
+
+                // Only update if the remote state differs from local to avoid echo loops
+                if remoteA != self.game.scoreA || remoteB != self.game.scoreB {
+                    Task { @MainActor [weak self] in
+                        guard let self else { return }
+                        self.game.scoreA = remoteA
+                        self.game.scoreB = remoteB
+                        self.game.teamAName = remoteTeamA
+                        self.game.teamBName = remoteTeamB
+                        self.game.isComplete = remoteComplete
+                        self.game.servingTeam = remoteServing == "A" ? .teamA : .teamB
+                    }
+                }
+            }
+    }
+
+    func stopListening() {
+        scoreListener?.remove()
+        scoreListener = nil
+    }
+
+    // MARK: - Game Actions
 
     func scorePoint(team: ServingTeam) {
         guard !game.isComplete else { return }
@@ -95,6 +156,7 @@ class LiveScoreViewModel: ObservableObject {
 
         _ = prevScore
         checkWinCondition()
+        Task { await syncToFirestore() }
     }
 
     func sideOut() {
@@ -105,6 +167,7 @@ class LiveScoreViewModel: ObservableObject {
         game.rallyCount = 0
         let serverName = newServer == .teamA ? game.teamAName : game.teamBName
         game.pointLog.append("Side out · \(serverName) serves")
+        Task { await syncToFirestore() }
     }
 
     func undoLastPoint() {
@@ -120,6 +183,7 @@ class LiveScoreViewModel: ObservableObject {
         showWinBanner = false
         bannerScale = 0.3
         bannerOpacity = 0
+        Task { await syncToFirestore() }
     }
 
     private func checkWinCondition() {
@@ -146,12 +210,19 @@ class LiveScoreViewModel: ObservableObject {
 // MARK: - Main View
 
 struct LiveScoreView: View {
-    @StateObject private var vm = LiveScoreViewModel()
+    @StateObject private var vm: LiveScoreViewModel
     @State private var showWinToSheet = false
     @State private var showRenameSheet = false
     @State private var tempTeamA = ""
     @State private var tempTeamB = ""
     @State private var showHistory = false
+
+    init(gameSessionId: String? = nil) {
+        _vm = StateObject(wrappedValue: LiveScoreViewModel(
+            game: LiveScoreGame.newGame(teamA: "Team A", teamB: "Team B"),
+            gameSessionId: gameSessionId
+        ))
+    }
 
     var body: some View {
         ZStack {
@@ -171,6 +242,12 @@ struct LiveScoreView: View {
         }
         .navigationTitle("Live Score")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if vm.gameSessionId != nil { vm.startListening() }
+        }
+        .onDisappear {
+            vm.stopListening()
+        }
         .sheet(isPresented: $showRenameSheet) {
             renameSheet
         }

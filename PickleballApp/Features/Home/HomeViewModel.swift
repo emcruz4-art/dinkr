@@ -80,8 +80,13 @@ final class HomeViewModel {
                 pageSize: 20
             )
             await MainActor.run {
-                posts = result.items
-                featuredPosts = Array(result.items.prefix(3))
+                var loadedPosts = result.items
+                let uid = currentUserId ?? ""
+                for i in loadedPosts.indices {
+                    loadedPosts[i].isLiked = loadedPosts[i].likedBy.contains(uid)
+                }
+                posts = loadedPosts
+                featuredPosts = Array(loadedPosts.prefix(3))
                 lastPostDocument = result.lastDocument
                 hasMorePosts = result.items.count >= 20
                 lastLoadTime = Date()
@@ -124,22 +129,73 @@ final class HomeViewModel {
 
     // MARK: - Post actions
 
-    func likePost(_ post: Post) {
+    func likePost(_ post: Post, userId: String) {
         guard let index = posts.firstIndex(where: { $0.id == post.id }) else { return }
-        posts[index].isLiked.toggle()
-        let newLikes = posts[index].likes + (posts[index].isLiked ? 1 : -1)
+        let isJoining = !posts[index].likedBy.contains(userId)
+        if isJoining {
+            posts[index].likedBy.append(userId)
+        } else {
+            posts[index].likedBy.removeAll { $0 == userId }
+        }
+        posts[index].isLiked = isJoining
+        let newLikes = posts[index].likes + (isJoining ? 1 : -1)
         posts[index].likes = newLikes
         // Mirror change into featuredPosts if present
         if let fi = featuredPosts.firstIndex(where: { $0.id == post.id }) {
-            featuredPosts[fi].isLiked = posts[index].isLiked
+            featuredPosts[fi].isLiked = isJoining
+            featuredPosts[fi].likedBy = posts[index].likedBy
             featuredPosts[fi].likes = newLikes
         }
         Task {
             try? await firestoreService.updateDocument(
                 collection: FirestoreCollections.posts,
                 documentId: post.id,
-                data: ["likes": newLikes]
+                data: [
+                    "likedBy": isJoining
+                        ? FieldValue.arrayUnion([userId])
+                        : FieldValue.arrayRemove([userId]),
+                    "likes": FieldValue.increment(isJoining ? Int64(1) : Int64(-1))
+                ]
             )
+        }
+    }
+
+    func loadComments(for postId: String) async throws -> [Comment] {
+        try await firestoreService.queryCollectionOrdered(
+            collection: "posts/\(postId)/comments",
+            orderBy: "createdAt",
+            descending: false
+        )
+    }
+
+    func addComment(to postId: String, content: String, authorId: String, authorName: String, authorAvatarURL: String?) async throws {
+        let commentId = UUID().uuidString
+        let comment = Comment(
+            id: commentId,
+            postId: postId,
+            authorId: authorId,
+            authorName: authorName,
+            authorAvatarURL: authorAvatarURL,
+            content: content,
+            createdAt: Date()
+        )
+        try await firestoreService.setDocument(
+            comment,
+            collection: "posts/\(postId)/comments",
+            documentId: commentId
+        )
+        try await firestoreService.updateDocument(
+            collection: FirestoreCollections.posts,
+            documentId: postId,
+            data: ["commentCount": FieldValue.increment(Int64(1))]
+        )
+        await MainActor.run {
+            if let index = posts.firstIndex(where: { $0.id == postId }) {
+                posts[index].commentCount += 1
+            }
+            if let fi = featuredPosts.firstIndex(where: { $0.id == postId }) {
+                featuredPosts[fi].commentCount += 1
+            }
         }
     }
 
@@ -171,5 +227,6 @@ final class HomeViewModel {
     }
 
     var currentUserName: String? = nil
+    var currentUserId: String? = nil
 }
 

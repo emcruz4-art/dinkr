@@ -11,14 +11,15 @@ struct Post: Identifiable, Codable, Hashable {
     var likes: Int
     var commentCount: Int
     var createdAt: Date
-    var isLiked: Bool = false
+    var likedBy: [String] = []
+    var isLiked: Bool = false   // client-side only — derived from likedBy, excluded from Firestore encoding
     var tags: [String]
     var groupId: String?
 
     // isLiked is client-side only — exclude from Firestore encoding
     private enum CodingKeys: String, CodingKey {
         case id, authorId, authorName, authorAvatarURL, content, mediaURLs,
-             postType, likes, commentCount, createdAt, tags, groupId
+             postType, likes, commentCount, createdAt, likedBy, tags, groupId
     }
 }
 

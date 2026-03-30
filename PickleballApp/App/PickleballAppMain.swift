@@ -1,6 +1,7 @@
 import SwiftUI
 import FirebaseCore
 import FirebaseCrashlytics
+import FirebaseMessaging
 import GoogleSignIn
 
 @main
@@ -12,6 +13,7 @@ struct PickleballAppMain: App {
 
     init() {
         FirebaseApp.configure()
+        MessagingService.shared.setup()
 
         #if !DEBUG
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
@@ -127,6 +129,10 @@ struct AppRootView: View {
             await authService.restoreSession()
             await SeedService.shared.seedIfNeeded()
             await storeService.loadProducts()
+            await MessagingService.shared.requestPermission()
+            if let userId = authService.currentUser?.id {
+                await MessagingService.shared.saveTokenToFirestore(userId: userId)
+            }
         }
         // Analytics screen tracking — add .onAppear to individual views, e.g.:
         // .onAppear { AnalyticsService.logScreen("Home") }

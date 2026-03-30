@@ -14,9 +14,11 @@ struct ProfileView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     if let user = viewModel.user {
-                        PremiumProfileHeaderView(user: user) {
-                            viewModel.showEditProfile = true
-                        }
+                        PremiumProfileHeaderView(
+                            user: user,
+                            currentUserId: authService.currentUser?.id,
+                            onEditTapped: { viewModel.showEditProfile = true }
+                        )
 
                         // Custom segmented tab bar
                         PremiumTabBar(tabs: tabs, selectedTab: $selectedTab, namespace: tabNamespace)
@@ -72,7 +74,15 @@ struct ProfileView: View {
 
 struct PremiumProfileHeaderView: View {
     let user: User
-    let onEditTapped: () -> Void
+    /// The ID of the currently signed-in user. Pass `nil` when auth is unavailable.
+    var currentUserId: String? = nil
+    /// Called when the Edit pill is tapped (only shown when viewing own profile).
+    var onEditTapped: (() -> Void)? = nil
+
+    private var isOwnProfile: Bool {
+        guard let currentUserId else { return true }
+        return currentUserId == user.id
+    }
 
     @State private var drawProgress: Double = 0
     @State private var glowPulse: Bool = false
@@ -132,23 +142,32 @@ struct PremiumProfileHeaderView: View {
                             .shadow(color: Color.dinkrNavy.opacity(0.5), radius: 8, x: 0, y: 4)
                     }
 
-                    // Edit pill button
-                    Button(action: onEditTapped) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "pencil")
-                                .font(.system(size: 11, weight: .bold))
-                            Text("Edit")
-                                .font(.caption.weight(.semibold))
+                    // Edit pill (own profile) or Follow button (other user)
+                    if isOwnProfile {
+                        Button(action: { onEditTapped?() }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 11, weight: .bold))
+                                Text("Edit")
+                                    .font(.caption.weight(.semibold))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(.ultraThinMaterial.opacity(0.8))
+                            .background(Color.white.opacity(0.15))
+                            .clipShape(Capsule())
+                            .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
                         }
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(.ultraThinMaterial.opacity(0.8))
-                        .background(Color.white.opacity(0.15))
-                        .clipShape(Capsule())
-                        .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
+                        .offset(x: 4, y: 4)
+                    } else if let currentId = currentUserId {
+                        FollowButton(
+                            currentUserId: currentId,
+                            targetUserId: user.id,
+                            size: .regular
+                        )
+                        .offset(x: 4, y: 4)
                     }
-                    .offset(x: 4, y: 4)
                 }
                 .padding(.bottom, 12)
 

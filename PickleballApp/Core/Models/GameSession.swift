@@ -15,24 +15,38 @@ struct GameSession: Identifiable, Codable, Hashable {
     var isPublic: Bool
     var notes: String
     var fee: Double?
+    var liveScore: LiveScoreSnapshot? = nil
 
     var spotsRemaining: Int { max(0, totalSpots - rsvps.count) }
     var isFull: Bool { spotsRemaining == 0 }
+
+    // MARK: - LiveScoreSnapshot
+
+    struct LiveScoreSnapshot: Codable, Hashable {
+        var scoreA: Int
+        var scoreB: Int
+        var teamAName: String
+        var teamBName: String
+        var isComplete: Bool
+        var servingTeam: String // "A" or "B"
+    }
 
     // Custom Codable for ClosedRange
     private enum CodingKeys: String, CodingKey {
         case id, hostId, hostName, courtId, courtName, dateTime, format
         case skillMin, skillMax, totalSpots, rsvps, waitlist, isPublic, notes, fee
+        case liveScore
     }
 
     init(id: String, hostId: String, hostName: String, courtId: String, courtName: String,
          dateTime: Date, format: GameFormat, skillRange: ClosedRange<SkillLevel>,
-         totalSpots: Int, rsvps: [String], waitlist: [String], isPublic: Bool, notes: String, fee: Double? = nil) {
+         totalSpots: Int, rsvps: [String], waitlist: [String], isPublic: Bool, notes: String,
+         fee: Double? = nil, liveScore: LiveScoreSnapshot? = nil) {
         self.id = id; self.hostId = hostId; self.hostName = hostName
         self.courtId = courtId; self.courtName = courtName; self.dateTime = dateTime
         self.format = format; self.skillRange = skillRange; self.totalSpots = totalSpots
         self.rsvps = rsvps; self.waitlist = waitlist; self.isPublic = isPublic
-        self.notes = notes; self.fee = fee
+        self.notes = notes; self.fee = fee; self.liveScore = liveScore
     }
 
     init(from decoder: Decoder) throws {
@@ -53,6 +67,7 @@ struct GameSession: Identifiable, Codable, Hashable {
         isPublic = try c.decode(Bool.self, forKey: .isPublic)
         notes = try c.decode(String.self, forKey: .notes)
         fee = try c.decodeIfPresent(Double.self, forKey: .fee)
+        liveScore = try c.decodeIfPresent(LiveScoreSnapshot.self, forKey: .liveScore)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -65,6 +80,7 @@ struct GameSession: Identifiable, Codable, Hashable {
         try c.encode(rsvps, forKey: .rsvps); try c.encode(waitlist, forKey: .waitlist)
         try c.encode(isPublic, forKey: .isPublic); try c.encode(notes, forKey: .notes)
         try c.encodeIfPresent(fee, forKey: .fee)
+        try c.encodeIfPresent(liveScore, forKey: .liveScore)
     }
 }
 

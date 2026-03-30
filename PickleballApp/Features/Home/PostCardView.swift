@@ -3,6 +3,7 @@ import SwiftUI
 struct PostCardView: View {
     let post: Post
     let onLike: () -> Void
+    let onComment: () -> Void
 
     var body: some View {
         PickleballCard {
@@ -44,12 +45,12 @@ struct PostCardView: View {
                     Button(action: onLike) {
                         Label("\(post.likes)", systemImage: post.isLiked ? "heart.fill" : "heart")
                             .font(.subheadline)
-                            .foregroundStyle(post.isLiked ? .red : .secondary)
+                            .foregroundStyle(post.isLiked ? Color.dinkrCoral : .secondary)
                     }
                     .buttonStyle(.plain)
 
                     Button {
-                        // comment
+                        onComment()
                     } label: {
                         Label("\(post.commentCount)", systemImage: "bubble.left")
                             .font(.subheadline)
@@ -152,6 +153,6 @@ struct PostTypeBadge: View {
 }
 
 #Preview {
-    PostCardView(post: Post.mockPosts[0], onLike: {})
+    PostCardView(post: Post.mockPosts[0], onLike: {}, onComment: {})
         .padding()
 }

@@ -48,6 +48,7 @@ struct GameSessionDetailView: View {
                         notesCard
                     }
                     reminderButton
+                    liveScoreSection
                     // Bottom padding so the RSVP button doesn't overlap content
                     Color.clear.frame(height: 88)
                 }
@@ -319,6 +320,72 @@ struct GameSessionDetailView: View {
                         lineWidth: 1.5
                     )
             )
+        }
+    }
+
+    // MARK: - Live Score Section
+
+    @ViewBuilder
+    private var liveScoreSection: some View {
+        // Active live game — show "Watch Live Score" for everyone
+        if let live = session.liveScore, !live.isComplete {
+            NavigationLink(destination: LiveScoreView(gameSessionId: session.id)) {
+                HStack(spacing: 10) {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 8, height: 8)
+                    Text("Watch Live Score")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.dinkrGreen)
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Text("\(live.teamAName) \(live.scoreA)")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.dinkrGreen)
+                        Text("–")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("\(live.scoreB) \(live.teamBName)")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.dinkrCoral)
+                    }
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 14)
+                .padding(.horizontal, 16)
+                .background(Color.dinkrGreen.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.dinkrGreen.opacity(0.3), lineWidth: 1)
+                )
+            }
+        }
+
+        // Host can always start score tracking
+        if session.hostId == currentUserId {
+            NavigationLink(destination: LiveScoreView(gameSessionId: session.id)) {
+                HStack(spacing: 10) {
+                    Image(systemName: "sportscourt.fill")
+                        .foregroundStyle(Color.dinkrGreen)
+                    Text(session.liveScore == nil ? "Start Score Tracking" : "Manage Live Score")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.dinkrGreen)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .padding(.horizontal, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.dinkrGreen, lineWidth: 1.5)
+                )
+            }
         }
     }
 

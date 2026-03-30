@@ -45,6 +45,26 @@ struct GameCardView: View {
         return Double(session.rsvps.count) / Double(session.totalSpots)
     }
 
+    @State private var livePulse: Bool = false
+
+    private var liveBadge: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(Color.red)
+                .frame(width: 6, height: 6)
+                .scaleEffect(livePulse ? 1.4 : 0.7)
+                .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: livePulse)
+                .onAppear { livePulse = true }
+            Text("LIVE")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Color.dinkrCoral)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.dinkrCoral.opacity(0.12))
+        .clipShape(Capsule())
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -90,14 +110,21 @@ struct GameCardView: View {
                     }
                     Spacer()
 
-                    // Countdown pill — coral if urgent, green otherwise
-                    Text(countdownText)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 4)
-                        .background(isUrgent ? Color.dinkrCoral : Color.dinkrGreen)
-                        .clipShape(Capsule())
+                    HStack(spacing: 6) {
+                        // LIVE pill — shown when an active live score is present
+                        if let live = session.liveScore, !live.isComplete {
+                            liveBadge
+                        }
+
+                        // Countdown pill — coral if urgent, green otherwise
+                        Text(countdownText)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 4)
+                            .background(isUrgent ? Color.dinkrCoral : Color.dinkrGreen)
+                            .clipShape(Capsule())
+                    }
                 }
 
                 // Row 2: Format label + skill range pills
@@ -192,6 +219,15 @@ struct GameCardView: View {
                         }
                     }
                     .frame(height: 4)
+
+                    // Live score line — shown when a liveScore snapshot exists
+                    if let live = session.liveScore {
+                        Text(live.isComplete
+                            ? "Final · \(live.scoreA)–\(live.scoreB)"
+                            : "In Progress · \(live.scoreA)–\(live.scoreB)")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(live.isComplete ? .secondary : Color.dinkrCoral)
+                    }
                 }
             }
             .padding(14)

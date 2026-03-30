@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PlayView: View {
     @State private var viewModel = PlayViewModel()
+    @Environment(AuthService.self) private var authService
 
     // MARK: - Segment icons
     private func segmentIcon(_ seg: PlayViewModel.PlaySegment) -> String {
@@ -103,7 +104,7 @@ struct PlayView: View {
                 case .courts:
                     CourtDiscoveryView(venues: viewModel.nearbyVenues)
                 case .players:
-                    FindPlayersView(players: viewModel.nearbyPlayers)
+                    FindPlayersView(players: viewModel.nearbyPlayers, currentUserId: authService.currentUser?.id ?? "")
                 case .match:
                     PlayerMatchView()
                 case .leaderboard:

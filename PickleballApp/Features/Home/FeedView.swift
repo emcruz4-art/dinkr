@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FeedView: View {
     var viewModel: HomeViewModel
+    @State private var commentPost: Post? = nil
 
     var body: some View {
         ScrollView {
@@ -20,9 +21,15 @@ struct FeedView: View {
                     .padding(.top, 40)
                 } else {
                     ForEach(viewModel.posts) { post in
-                        PostCardView(post: post) {
-                            viewModel.likePost(post)
-                        }
+                        PostCardView(
+                            post: post,
+                            onLike: {
+                                viewModel.likePost(post, userId: viewModel.currentUserId ?? "")
+                            },
+                            onComment: {
+                                commentPost = post
+                            }
+                        )
                         .padding(.horizontal)
                     }
                 }
@@ -30,5 +37,13 @@ struct FeedView: View {
             .padding(.vertical, 8)
         }
         .refreshable { await viewModel.loadFeed() }
+        .sheet(item: $commentPost) { post in
+            CommentSheet(
+                post: post,
+                currentUserId: viewModel.currentUserId ?? "",
+                currentUserName: viewModel.currentUserName ?? "You",
+                currentUserAvatarURL: nil
+            )
+        }
     }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FindPlayersView: View {
     let players: [User]
+    let currentUserId: String
 
     var body: some View {
         ScrollView {
@@ -15,7 +16,7 @@ struct FindPlayersView: View {
                     .padding(.top, 40)
                 } else {
                     ForEach(players) { player in
-                        PlayerCardView(player: player)
+                        PlayerCardView(player: player, currentUserId: currentUserId)
                             .padding(.horizontal)
                     }
                 }
@@ -27,6 +28,7 @@ struct FindPlayersView: View {
 
 struct PlayerCardView: View {
     let player: User
+    let currentUserId: String
 
     var body: some View {
         PickleballCard {
@@ -51,12 +53,13 @@ struct PlayerCardView: View {
                     }
                 }
                 Spacer()
-                Button("Connect") {}
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color.pickleballGreen)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.pickleballGreen.opacity(0.1), in: Capsule())
+                if currentUserId != player.id {
+                    FollowButton(
+                        currentUserId: currentUserId,
+                        targetUserId: player.id,
+                        size: .compact
+                    )
+                }
             }
             .padding(14)
         }
@@ -64,6 +67,6 @@ struct PlayerCardView: View {
 }
 
 #Preview {
-    FindPlayersView(players: [User.mockCurrentUser])
+    FindPlayersView(players: [User.mockCurrentUser], currentUserId: "preview_user")
         .padding()
 }
