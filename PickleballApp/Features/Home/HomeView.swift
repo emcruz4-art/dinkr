@@ -12,6 +12,7 @@ struct HomeView: View {
     @State private var showHostGame = false
     @State private var showFindGame = false
     @State private var showStoriesSheet = false
+    @State private var noShowService = NoShowService.shared
 
     var body: some View {
         NavigationStack {
@@ -57,6 +58,13 @@ struct HomeView: View {
                                 gameCount: viewModel.upcomingGameCount
                             )
                             .padding(.horizontal, 16)
+
+                            // Attendance confirmation banner (shown when a past session needs confirming)
+                            ForEach(noShowService.pendingPrompts) { prompt in
+                                AttendanceBanner(prompt: prompt)
+                                    .padding(.horizontal, 16)
+                                    .transition(.move(edge: .top).combined(with: .opacity))
+                            }
 
                             // Quick actions
                             QuickActionsWidget(
@@ -184,6 +192,8 @@ struct HomeView: View {
             let lon = locationService.currentLocation?.coordinate.longitude ?? -97.7431
             await viewModel.fetchWeather(latitude: lat, longitude: lon)
             await viewModel.loadVideoHighlights()
+            let userId = authService.currentUser?.id ?? User.mockCurrentUser.id
+            await noShowService.loadPendingPrompts(for: userId)
         }
     }
 }

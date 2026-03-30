@@ -76,6 +76,7 @@
 		5F26E596AAB4F9925AD0CA09 /* GroupEventsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56B98290BACC0CE09D44A177 /* GroupEventsView.swift */; };
 		65004708A87DAF946DF5525D /* CourtDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C359BF26148460AA762A0B2 /* CourtDetailView.swift */; };
 		662C1E3700DA2BD220B37521 /* PickleballAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FEC09B58BAD9B9EF802C8A7 /* PickleballAppTests.swift */; };
+		67C0F7A6D432FB584CB67DD5 /* NoShowService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE75EA0886CABC6E8BB1EF74 /* NoShowService.swift */; };
 		6883AFC2212552C35AF66EAB /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 58CCE99C5D1CD8EAF9704AD8 /* GoogleService-Info.plist */; };
 		68CD169262D9C7C0F61B2647 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5275C927F785C13E2175E1AD /* Assets.xcassets */; };
 		6985008889ACAAFD0C98AAB9 /* QRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15DA1CCE454A908B75FA7DC /* QRCodeView.swift */; };
@@ -158,6 +159,7 @@
 		D971ABD97032F0386DF26A04 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B8F02B4B3435B0CD618417 /* LocationService.swift */; };
 		DB98E3EF9A387A0B2F92C68C /* TrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 829D926E263871EAFF15B673 /* TrainingView.swift */; };
 		DD74FC7C975E32B834659D72 /* Post.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9783B63A0702A98CBDA22AA4 /* Post.swift */; };
+		DEE9933C310C501D84F18605 /* AttendanceConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 393253BDCD46BD8BF2B2D5A2 /* AttendanceConfirmationView.swift */; };
 		E1749B453561D7FD923900C9 /* CheckInStoriesBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FA5B2AFC0F807B46A47BC7 /* CheckInStoriesBar.swift */; };
 		E4F3AB9120DA6B1549357FAB /* ChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17AB9483E28004D3267D4A73 /* ChallengeView.swift */; };
 		E8185D6510F1A29E41D00D07 /* EventCalendarStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = A645DF0D7BD5545160A9B4BC /* EventCalendarStrip.swift */; };
@@ -246,6 +248,7 @@
 		3170A4C6B97CB95CF2DA506B /* MarketViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketViewModel.swift; sourceTree = "<group>"; };
 		37634FFD5655064084D95E17 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		38E80A41E970CA1D209A0A84 /* PaddleCompareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaddleCompareView.swift; sourceTree = "<group>"; };
+		393253BDCD46BD8BF2B2D5A2 /* AttendanceConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendanceConfirmationView.swift; sourceTree = "<group>"; };
 		3A7B82E2FF2DCE2B84E4E262 /* HighlightReelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HighlightReelView.swift; sourceTree = "<group>"; };
 		3AFE93675B9B7263837F63CE /* CreatePostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePostView.swift; sourceTree = "<group>"; };
 		3CED674E47C622C78A1A2B3C /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
@@ -324,6 +327,7 @@
 		AA22E0111F957DD046DEEAE4 /* SkillBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillBadge.swift; sourceTree = "<group>"; };
 		AA428296B50345158EAC4AED /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
 		ABA90AD9DAAD78AEA80E264C /* MarketCategoryGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketCategoryGrid.swift; sourceTree = "<group>"; };
+		AE75EA0886CABC6E8BB1EF74 /* NoShowService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoShowService.swift; sourceTree = "<group>"; };
 		B29303610DD44F94624E1937 /* BentoWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BentoWidgets.swift; sourceTree = "<group>"; };
 		B4AECC94A84F86D253A4CCF6 /* Club.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Club.swift; sourceTree = "<group>"; };
 		B5D496E453EBAC820D83F72A /* DirectMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectMessage.swift; sourceTree = "<group>"; };
@@ -412,6 +416,7 @@
 				A3B8F02B4B3435B0CD618417 /* LocationService.swift */,
 				D9C8A12D948B4A48783F40B8 /* MessagingService.swift */,
 				6428D31953C494434F4AE0F0 /* NetworkMonitor.swift */,
+				AE75EA0886CABC6E8BB1EF74 /* NoShowService.swift */,
 				57ED3A10D7B2852C696B1454 /* NotificationService.swift */,
 				8868A271AAD40EAAAD00BFAB /* OfferService.swift */,
 				96CED5B3377A4487C6E7586F /* SearchService.swift */,
@@ -478,6 +483,7 @@
 		29859DA4CBEC540FC0A971F4 /* Play */ = {
 			isa = PBXGroup;
 			children = (
+				393253BDCD46BD8BF2B2D5A2 /* AttendanceConfirmationView.swift */,
 				11066FA07B419DF676C50370 /* AvailabilityView.swift */,
 				17AB9483E28004D3267D4A73 /* ChallengeView.swift */,
 				4C359BF26148460AA762A0B2 /* CourtDetailView.swift */,
@@ -909,6 +915,7 @@
 				8A2B8C40CCE42A3CE58C0003 /* AchievementsView.swift in Sources */,
 				3D18B2347DFB10BAF4F6127E /* AnalyticsService.swift in Sources */,
 				8BD1CDA56339D0C66AB780C6 /* AppIconView.swift in Sources */,
+				DEE9933C310C501D84F18605 /* AttendanceConfirmationView.swift in Sources */,
 				C7AD85314B6735626EBB75B2 /* AuthService.swift in Sources */,
 				86FEFDAB4AC24A32D4B35E05 /* AvailabilityView.swift in Sources */,
 				0C686F82FA606A481A3F0FE5 /* AvatarView.swift in Sources */,
@@ -1007,6 +1014,7 @@
 				4C6956DFA2E1CC1B0A0D3C0C /* NewChallengeView.swift in Sources */,
 				4439C33BA473D782A89FE485 /* NewsArticle.swift in Sources */,
 				3492C2A507A4B2F97695A838 /* NewsRowView.swift in Sources */,
+				67C0F7A6D432FB584CB67DD5 /* NoShowService.swift in Sources */,
 				9B59DA79A9FCE111EA020261 /* NotificationCenterView.swift in Sources */,
 				D1CF89F8A7469BDEA5FAB489 /* NotificationService.swift in Sources */,
 				00FFD31038A205C9E8EA100F /* OfferService.swift in Sources */,

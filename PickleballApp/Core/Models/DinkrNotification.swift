@@ -12,6 +12,8 @@ enum DinkrNotificationType: String, Codable {
     case newChallenger  // leaderboard challenge
     case challengeReceived   // someone sent you a challenge
     case challengeCompleted  // a challenge you're in finished
+    case attendanceConfirmation  // session ended — confirm who showed up
+    case noShowReported      // you were reported as a no-show
 }
 
 struct DinkrNotification: Identifiable, Hashable {
@@ -83,6 +85,8 @@ extension DinkrNotification {
         case .newChallenger: return "flame.fill"
         case .challengeReceived: return "trophy.fill"
         case .challengeCompleted: return "checkmark.seal.fill"
+        case .attendanceConfirmation: return "person.fill.questionmark"
+        case .noShowReported: return "exclamationmark.circle.fill"
         }
     }
 
@@ -99,6 +103,8 @@ extension DinkrNotification {
         case .newChallenger: return "dinkrCoral"
         case .challengeReceived: return "dinkrAmber"
         case .challengeCompleted: return "dinkrGreen"
+        case .attendanceConfirmation: return "dinkrAmber"
+        case .noShowReported: return "dinkrCoral"
         }
     }
 }
