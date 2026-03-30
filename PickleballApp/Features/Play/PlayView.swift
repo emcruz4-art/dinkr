@@ -331,55 +331,103 @@ struct LivePlayView: View {
 
 // MARK: - Leaderboard View
 struct LeaderboardView: View {
+    @State private var leaderboardMode = 0   // 0 = DUPR, 1 = Win Rate
     @State private var selectedPeriod = 0
     let periods = ["This Week", "This Month", "All Time"]
 
     struct LeaderEntry: Identifiable {
         let id: String
-        let rank: Int
         let name: String
+        let username: String
+        let duprRating: Double
         let wins: Int
         let games: Int
         let winRate: Double
         let streak: Int
+        var rank: Int = 0
     }
 
-    let leaders: [LeaderEntry] = [
-        LeaderEntry(id: "1", rank: 1, name: "Jamie Lee",     wins: 18, games: 21, winRate: 0.857, streak: 7),
-        LeaderEntry(id: "2", rank: 2, name: "Maria Chen",    wins: 15, games: 19, winRate: 0.789, streak: 4),
-        LeaderEntry(id: "3", rank: 3, name: "Chris Park",    wins: 14, games: 18, winRate: 0.778, streak: 3),
-        LeaderEntry(id: "4", rank: 4, name: "Alex Rivera",   wins: 12, games: 17, winRate: 0.706, streak: 2),
-        LeaderEntry(id: "5", rank: 5, name: "Jordan Smith",  wins: 11, games: 16, winRate: 0.688, streak: 1),
-        LeaderEntry(id: "6", rank: 6, name: "Sarah Johnson", wins: 10, games: 15, winRate: 0.667, streak: 0),
-        LeaderEntry(id: "7", rank: 7, name: "Riley Torres",  wins: 9,  games: 14, winRate: 0.643, streak: 0),
-        LeaderEntry(id: "8", rank: 8, name: "Morgan Davis",  wins: 6,  games: 12, winRate: 0.500, streak: 0),
+    // Sorted by DUPR descending
+    let allEntries: [LeaderEntry] = [
+        LeaderEntry(id: "1", name: "Alex Rivera",   username: "pickleking",      duprRating: 4.69, wins: 12, games: 17, winRate: 0.706, streak: 2),
+        LeaderEntry(id: "2", name: "Jamie Lee",     username: "jamiepb",         duprRating: 4.52, wins: 18, games: 21, winRate: 0.857, streak: 7),
+        LeaderEntry(id: "3", name: "Jordan Smith",  username: "jordan_4point0",  duprRating: 4.21, wins: 11, games: 16, winRate: 0.688, streak: 1),
+        LeaderEntry(id: "4", name: "Chris Park",    username: "chrisp_dink",     duprRating: 4.05, wins: 14, games: 18, winRate: 0.778, streak: 3),
+        LeaderEntry(id: "5", name: "Maria Chen",    username: "maria_plays",     duprRating: 3.87, wins: 15, games: 19, winRate: 0.789, streak: 4),
+        LeaderEntry(id: "6", name: "Sarah Johnson", username: "sarahj_pb",       duprRating: 3.65, wins: 10, games: 15, winRate: 0.667, streak: 0),
+        LeaderEntry(id: "7", name: "Riley Torres",  username: "riley_dinkmaster",duprRating: 3.55, wins: 9,  games: 14, winRate: 0.643, streak: 0),
+        LeaderEntry(id: "8", name: "Taylor Kim",    username: "tkim_pickles",    duprRating: 2.98, wins: 6,  games: 12, winRate: 0.500, streak: 0),
     ]
+
+    var duprRanked: [LeaderEntry] {
+        allEntries.sorted { $0.duprRating > $1.duprRating }
+            .enumerated().map { i, e in
+                var e = e; e.rank = i + 1; return e
+            }
+    }
+
+    var winRateRanked: [LeaderEntry] {
+        allEntries.sorted { $0.winRate > $1.winRate }
+            .enumerated().map { i, e in
+                var e = e; e.rank = i + 1; return e
+            }
+    }
+
+    var leaders: [LeaderEntry] { leaderboardMode == 0 ? duprRanked : winRateRanked }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // Period picker
-                Picker("Period", selection: $selectedPeriod) {
-                    ForEach(0..<periods.count, id: \.self) { i in
-                        Text(periods[i]).tag(i)
-                    }
+                // Mode toggle
+                Picker("Mode", selection: $leaderboardMode) {
+                    Text("DUPR Rating").tag(0)
+                    Text("Win Rate").tag(1)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
-                .padding(.top)
+                .padding(.top, 12)
+
+                // Period picker (win rate only)
+                if leaderboardMode == 1 {
+                    Picker("Period", selection: $selectedPeriod) {
+                        ForEach(0..<periods.count, id: \.self) { i in
+                            Text(periods[i]).tag(i)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
+                }
+
+                // DUPR info banner
+                if leaderboardMode == 0 {
+                    HStack(spacing: 10) {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundStyle(Color.dinkrAmber)
+                            .font(.subheadline)
+                        Text("DUPR (Dynamic Universal Pickleball Rating) is the world's most accurate pickleball rating system.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(12)
+                    .background(Color.dinkrAmber.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal)
+                }
 
                 // Top 3 podium
-                HStack(alignment: .bottom, spacing: 12) {
-                    PodiumCard(entry: leaders[1], medalColor: Color.secondary)
-                    PodiumCard(entry: leaders[0], medalColor: Color.dinkrAmber, isFirst: true)
-                    PodiumCard(entry: leaders[2], medalColor: Color(red: 0.8, green: 0.5, blue: 0.2))
+                if leaders.count >= 3 {
+                    HStack(alignment: .bottom, spacing: 10) {
+                        DUPRPodiumCard(entry: leaders[1], medalColor: Color(red: 0.75, green: 0.75, blue: 0.78), mode: leaderboardMode)
+                        DUPRPodiumCard(entry: leaders[0], medalColor: Color.dinkrAmber, isFirst: true, mode: leaderboardMode)
+                        DUPRPodiumCard(entry: leaders[2], medalColor: Color(red: 0.80, green: 0.52, blue: 0.25), mode: leaderboardMode)
+                    }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
 
-                // Full leaderboard
+                // Full leaderboard list
                 VStack(spacing: 0) {
                     ForEach(leaders) { entry in
-                        LeaderboardRow(entry: entry, isCurrentUser: entry.name == "Alex Rivera")
+                        DUPRLeaderboardRow(entry: entry, isCurrentUser: entry.username == "pickleking", mode: leaderboardMode)
                         if entry.id != leaders.last?.id {
                             Divider().padding(.horizontal)
                         }
@@ -394,59 +442,90 @@ struct LeaderboardView: View {
     }
 }
 
-struct PodiumCard: View {
+struct DUPRPodiumCard: View {
     let entry: LeaderboardView.LeaderEntry
     let medalColor: Color
     var isFirst: Bool = false
+    let mode: Int
 
     var body: some View {
         VStack(spacing: 6) {
+            // Avatar circle
             ZStack {
                 Circle()
-                    .fill(medalColor.opacity(0.15))
-                    .frame(width: isFirst ? 64 : 52, height: isFirst ? 64 : 52)
+                    .fill(entry.username == "pickleking" ? Color.dinkrGreen.opacity(0.18) : medalColor.opacity(0.15))
+                    .frame(width: isFirst ? 68 : 54, height: isFirst ? 68 : 54)
+                    .overlay(
+                        Circle().stroke(
+                            entry.username == "pickleking" ? Color.dinkrGreen : medalColor,
+                            lineWidth: isFirst ? 2.5 : 1.5
+                        )
+                    )
                 Text(String(entry.name.prefix(1)))
                     .font(isFirst ? .title.weight(.heavy) : .title2.weight(.bold))
-                    .foregroundStyle(medalColor)
+                    .foregroundStyle(entry.username == "pickleking" ? Color.dinkrGreen : medalColor)
             }
+
             Text(entry.name.components(separatedBy: " ").first ?? "")
                 .font(.caption.weight(.semibold))
                 .lineLimit(1)
-            Text("\(entry.wins)W")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+
+            // Rating or win stat
+            if mode == 0 {
+                HStack(spacing: 3) {
+                    Text("DUPR")
+                        .font(.system(size: 8, weight: .black))
+                        .foregroundStyle(Color.dinkrAmber)
+                    Text(String(format: "%.2f", entry.duprRating))
+                        .font(.system(size: 11, weight: .bold))
+                }
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Color.dinkrAmber.opacity(0.12))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(Color.dinkrAmber.opacity(0.3), lineWidth: 1))
+            } else {
+                Text("\(entry.wins)W · \(Int(entry.winRate * 100))%")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
             Text(entry.rank == 1 ? "🥇" : entry.rank == 2 ? "🥈" : "🥉")
                 .font(.title3)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, isFirst ? 16 : 10)
-        .background(isFirst ? medalColor.opacity(0.08) : Color.cardBackground)
+        .background(isFirst ? medalColor.opacity(0.06) : Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 
-struct LeaderboardRow: View {
+struct DUPRLeaderboardRow: View {
     let entry: LeaderboardView.LeaderEntry
     let isCurrentUser: Bool
+    let mode: Int
 
     var body: some View {
         HStack(spacing: 12) {
+            // Rank
             Text("#\(entry.rank)")
                 .font(.subheadline.weight(.bold))
                 .foregroundStyle(entry.rank <= 3 ? Color.dinkrAmber : .secondary)
-                .frame(width: 28)
+                .frame(width: 30, alignment: .leading)
 
+            // Avatar
             ZStack {
                 Circle()
                     .fill(isCurrentUser ? Color.dinkrGreen.opacity(0.15) : Color.secondary.opacity(0.1))
-                    .frame(width: 36, height: 36)
+                    .frame(width: 38, height: 38)
                 Text(String(entry.name.prefix(1)))
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(isCurrentUser ? Color.dinkrGreen : .secondary)
             }
 
+            // Name + subtitle
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 4) {
+                HStack(spacing: 5) {
                     Text(entry.name)
                         .font(.subheadline.weight(isCurrentUser ? .bold : .regular))
                     if isCurrentUser {
@@ -459,21 +538,49 @@ struct LeaderboardRow: View {
                             .clipShape(Capsule())
                     }
                 }
-                Text("\(entry.wins)W \(entry.games - entry.wins)L · \(Int(entry.winRate * 100))% win rate")
+                Text("@\(entry.username)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
 
-            if entry.streak > 0 {
-                VStack(spacing: 1) {
-                    Text("🔥 \(entry.streak)")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(Color.dinkrCoral)
-                    Text("streak")
-                        .font(.system(size: 8))
+            // Right side metric
+            if mode == 0 {
+                // DUPR rating pill
+                HStack(spacing: 3) {
+                    Text("DUPR")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(Color.dinkrAmber)
+                    Text(String(format: "%.2f", entry.duprRating))
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(isCurrentUser ? Color.dinkrAmber : Color.primary)
+                }
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background(Color.dinkrAmber.opacity(isCurrentUser ? 0.18 : 0.08))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(Color.dinkrAmber.opacity(isCurrentUser ? 0.5 : 0.2), lineWidth: 1))
+            } else {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(Int(entry.winRate * 100))%")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(isCurrentUser ? Color.dinkrGreen : Color.primary)
+                    Text("\(entry.wins)W \(entry.games - entry.wins)L")
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
+                }
+
+                if entry.streak > 0 {
+                    VStack(spacing: 1) {
+                        Text("🔥\(entry.streak)")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.dinkrCoral)
+                        Text("streak")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.leading, 6)
                 }
             }
         }
