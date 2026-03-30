@@ -384,6 +384,13 @@ private struct ProfileOverviewTab: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
 
+            // Social Links
+            if !user.socialLinks.isEmpty {
+                SocialLinksCard(links: user.socialLinks)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+            }
+
             Divider()
                 .padding(.horizontal, 20)
                 .padding(.vertical, 20)
@@ -731,6 +738,120 @@ struct StreakPreviewCard: View {
                 )
         )
         .onAppear { barAnimated = true }
+    }
+}
+
+// MARK: - Social Links Card
+
+struct SocialLinksCard: View {
+    let links: SocialLinks
+
+    struct PlatformLink: Identifiable {
+        let id: String
+        let icon: String
+        let label: String
+        let handle: String
+        let color: Color
+        let urlPrefix: String
+    }
+
+    private var platforms: [PlatformLink] {
+        var result: [PlatformLink] = []
+        if !links.instagram.isEmpty {
+            result.append(.init(id: "ig", icon: "camera.fill", label: "Instagram",
+                                handle: "@\(links.instagram)", color: Color(red: 0.83, green: 0.19, blue: 0.55),
+                                urlPrefix: "https://instagram.com/"))
+        }
+        if !links.tiktok.isEmpty {
+            result.append(.init(id: "tt", icon: "music.note", label: "TikTok",
+                                handle: "@\(links.tiktok)", color: .black,
+                                urlPrefix: "https://tiktok.com/@"))
+        }
+        if !links.youtube.isEmpty {
+            result.append(.init(id: "yt", icon: "play.rectangle.fill", label: "YouTube",
+                                handle: "@\(links.youtube)", color: Color(red: 0.93, green: 0.16, blue: 0.16),
+                                urlPrefix: "https://youtube.com/@"))
+        }
+        if !links.linkedin.isEmpty {
+            result.append(.init(id: "li", icon: "briefcase.fill", label: "LinkedIn",
+                                handle: links.linkedin, color: Color(red: 0.05, green: 0.46, blue: 0.74),
+                                urlPrefix: "https://linkedin.com/in/"))
+        }
+        if !links.twitter.isEmpty {
+            result.append(.init(id: "tw", icon: "text.bubble.fill", label: "X (Twitter)",
+                                handle: "@\(links.twitter)", color: .black,
+                                urlPrefix: "https://x.com/"))
+        }
+        if !links.website.isEmpty {
+            let display = links.website
+                .replacingOccurrences(of: "https://", with: "")
+                .replacingOccurrences(of: "http://", with: "")
+            result.append(.init(id: "web", icon: "globe", label: "Website",
+                                handle: display, color: Color.dinkrSky,
+                                urlPrefix: ""))
+        }
+        return result
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Image(systemName: "link")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+                Text("Social & Links")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+                    .tracking(0.3)
+            }
+
+            VStack(spacing: 0) {
+                ForEach(Array(platforms.enumerated()), id: \.element.id) { idx, platform in
+                    Link(destination: URL(string: platform.urlPrefix.isEmpty
+                                         ? links.website
+                                         : platform.urlPrefix + (platform.id == "tt"
+                                            ? links.tiktok
+                                            : platform.handle.replacingOccurrences(of: "@", with: "")))
+                         ?? URL(string: "https://dinkr.app")!) {
+                        HStack(spacing: 14) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(platform.color.opacity(0.12))
+                                    .frame(width: 36, height: 36)
+                                Image(systemName: platform.icon)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(platform.color)
+                            }
+
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(platform.label)
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(Color.primary)
+                                Text(platform.handle)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    if idx < platforms.count - 1 {
+                        Divider().padding(.leading, 64)
+                    }
+                }
+            }
+            .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+        }
     }
 }
 

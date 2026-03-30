@@ -82,7 +82,8 @@ final class AuthService {
             followersCount: 0,
             followingCount: 0,
                 duprRating: nil,
-                isPrivate: false
+                isPrivate: false,
+                socialLinks: SocialLinks()
         )
         try await createUserDocument(newUser)
         currentUser = newUser
@@ -155,7 +156,8 @@ final class AuthService {
                 followersCount: 0,
                 followingCount: 0,
                 duprRating: nil,
-                isPrivate: false
+                isPrivate: false,
+                socialLinks: SocialLinks()
             )
             try await createUserDocument(newUser)
             currentUser = newUser
@@ -210,7 +212,8 @@ final class AuthService {
                 followersCount: 0,
                 followingCount: 0,
                 duprRating: nil,
-                isPrivate: false
+                isPrivate: false,
+                socialLinks: SocialLinks()
             )
             try await createUserDocument(newUser)
             currentUser = newUser

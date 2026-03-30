@@ -12,6 +12,7 @@ final class EditProfileViewModel {
     var skillLevel: SkillLevel
     var isWomenOnly: Bool
     var isPrivate: Bool
+    var socialLinks: SocialLinks
     var selectedImage: UIImage?
     var uploadProgress: Double = 0
     var isLoading: Bool = false
@@ -29,6 +30,7 @@ final class EditProfileViewModel {
         self.skillLevel = user.skillLevel
         self.isWomenOnly = user.isWomenOnly
         self.isPrivate = user.isPrivate
+        self.socialLinks = user.socialLinks
         self.avatarURL = user.avatarURL
     }
 
@@ -78,6 +80,12 @@ final class EditProfileViewModel {
             "skillLevel": skillLevel.rawValue,
             "isWomenOnly": isWomenOnly,
             "isPrivate": isPrivate,
+            "socialLinks.instagram": socialLinks.instagram,
+            "socialLinks.tiktok": socialLinks.tiktok,
+            "socialLinks.youtube": socialLinks.youtube,
+            "socialLinks.linkedin": socialLinks.linkedin,
+            "socialLinks.twitter": socialLinks.twitter,
+            "socialLinks.website": socialLinks.website,
         ]
         if let url = resolvedAvatarURL {
             fields["avatarURL"] = url
@@ -307,6 +315,30 @@ struct EditProfileView: View {
                 }
             }
 
+            // Social Links
+            EditFieldCard(label: "Social & Links", required: false) {
+                VStack(spacing: 0) {
+                    SocialLinkField(icon: "camera.fill", color: Color(red: 0.83, green: 0.19, blue: 0.55),
+                                    placeholder: "Instagram username", text: $vm.socialLinks.instagram)
+                    Divider().padding(.leading, 40)
+                    SocialLinkField(icon: "music.note", color: .black,
+                                    placeholder: "TikTok username", text: $vm.socialLinks.tiktok)
+                    Divider().padding(.leading, 40)
+                    SocialLinkField(icon: "play.rectangle.fill", color: Color(red: 0.93, green: 0.16, blue: 0.16),
+                                    placeholder: "YouTube handle", text: $vm.socialLinks.youtube)
+                    Divider().padding(.leading, 40)
+                    SocialLinkField(icon: "briefcase.fill", color: Color(red: 0.05, green: 0.46, blue: 0.74),
+                                    placeholder: "LinkedIn username", text: $vm.socialLinks.linkedin)
+                    Divider().padding(.leading, 40)
+                    SocialLinkField(icon: "text.bubble.fill", color: .black,
+                                    placeholder: "X (Twitter) username", text: $vm.socialLinks.twitter)
+                    Divider().padding(.leading, 40)
+                    SocialLinkField(icon: "globe", color: Color.dinkrSky,
+                                    placeholder: "https://yourwebsite.com", text: $vm.socialLinks.website,
+                                    keyboardType: .URL)
+                }
+            }
+
             // Error banner
             if let errMsg = vm.errorMessage {
                 HStack(spacing: 8) {
@@ -453,6 +485,35 @@ private struct SkillLevelSegmentedPicker: View {
         case "red":   return Color.dinkrCoral
         default:      return Color.dinkrGreen
         }
+    }
+}
+
+// MARK: - SocialLinkField
+
+private struct SocialLinkField: View {
+    let icon: String
+    let color: Color
+    let placeholder: String
+    @Binding var text: String
+    var keyboardType: UIKeyboardType = .default
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(color.opacity(0.12))
+                    .frame(width: 30, height: 30)
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(color)
+            }
+            TextField(placeholder, text: $text)
+                .font(.body)
+                .keyboardType(keyboardType)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+        }
+        .padding(.vertical, 8)
     }
 }
 
