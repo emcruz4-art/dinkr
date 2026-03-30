@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct AchievementsView: View {
+    var user: User = User.mockCurrentUser
+    var gameResults: [GameResult] = GameResult.mockResults
+
     struct Achievement: Identifiable {
         let id: String
         let icon: String
@@ -10,36 +13,70 @@ struct AchievementsView: View {
         let unlockedAt: Date?
     }
 
-    let achievements: [Achievement] = [
-        Achievement(id: "a1", icon: "figure.pickleball", name: "First Dink",
-                    description: "Play your first game on Dinkr", isUnlocked: true,
-                    unlockedAt: Calendar.current.date(byAdding: .month, value: -11, to: Date())),
-        Achievement(id: "a2", icon: "trophy.fill", name: "Tournament Victor",
-                    description: "Win a tournament event", isUnlocked: true,
-                    unlockedAt: Calendar.current.date(byAdding: .month, value: -6, to: Date())),
-        Achievement(id: "a3", icon: "person.3.fill", name: "Community Pillar",
-                    description: "Join 3 or more groups", isUnlocked: true,
-                    unlockedAt: Calendar.current.date(byAdding: .month, value: -8, to: Date())),
-        Achievement(id: "a4", icon: "star.fill", name: "Reliable Pro",
-                    description: "Maintain a 4.8+ reliability score over 50 games", isUnlocked: true,
-                    unlockedAt: Calendar.current.date(byAdding: .month, value: -3, to: Date())),
-        Achievement(id: "a5", icon: "100.circle.fill", name: "Centurion",
-                    description: "Play 100 games on Dinkr", isUnlocked: false, unlockedAt: nil),
-        Achievement(id: "a6", icon: "flame.fill", name: "On Fire",
-                    description: "Win 5 games in a row", isUnlocked: false, unlockedAt: nil),
-        Achievement(id: "a7", icon: "graduationcap.fill", name: "Level Master",
-                    description: "Reach Level 10", isUnlocked: false, unlockedAt: nil),
-        Achievement(id: "a8", icon: "heart.fill", name: "Court Regular",
-                    description: "Play at 10 different courts", isUnlocked: false, unlockedAt: nil),
-        Achievement(id: "a9", icon: "globe", name: "Social Butterfly",
-                    description: "Follow 20 players", isUnlocked: false, unlockedAt: nil),
-        Achievement(id: "a10", icon: "calendar.badge.checkmark", name: "Consistent Player",
-                    description: "Play at least once per week for 4 weeks", isUnlocked: false, unlockedAt: nil),
-        Achievement(id: "a11", icon: "crown.fill", name: "Dinkr Champion",
-                    description: "Reach #1 on your local leaderboard", isUnlocked: false, unlockedAt: nil),
-        Achievement(id: "a12", icon: "sparkles", name: "Legend",
-                    description: "Play 500 games on Dinkr", isUnlocked: false, unlockedAt: nil),
-    ]
+    private var currentWinStreak: Int {
+        var streak = 0
+        for result in gameResults.sorted(by: { $0.playedAt > $1.playedAt }) {
+            if result.isWin { streak += 1 } else { break }
+        }
+        return streak
+    }
+
+    private var uniqueCourts: Int {
+        Set(gameResults.map { $0.courtName }).count
+    }
+
+    var achievements: [Achievement] {
+        [
+            Achievement(id: "a1", icon: "figure.pickleball", name: "First Dink",
+                        description: "Play your first game on Dinkr",
+                        isUnlocked: user.gamesPlayed >= 1,
+                        unlockedAt: user.gamesPlayed >= 1 ? user.joinedDate : nil),
+            Achievement(id: "a2", icon: "trophy.fill", name: "Tournament Victor",
+                        description: "Win a tournament event",
+                        isUnlocked: user.badges.contains(where: { $0.type == .tournamentWinner }),
+                        unlockedAt: user.badges.first(where: { $0.type == .tournamentWinner })?.earnedAt),
+            Achievement(id: "a3", icon: "person.3.fill", name: "Community Pillar",
+                        description: "Join 3 or more groups",
+                        isUnlocked: user.clubIds.count >= 2,
+                        unlockedAt: user.clubIds.count >= 2 ? user.joinedDate : nil),
+            Achievement(id: "a4", icon: "star.fill", name: "Reliable Pro",
+                        description: "Maintain a 4.8+ reliability score over 50 games",
+                        isUnlocked: user.reliabilityScore >= 4.8 && user.gamesPlayed >= 50,
+                        unlockedAt: user.reliabilityScore >= 4.8 ? user.joinedDate : nil),
+            Achievement(id: "a5", icon: "100.circle.fill", name: "Centurion",
+                        description: "Play 100 games on Dinkr",
+                        isUnlocked: user.gamesPlayed >= 100,
+                        unlockedAt: nil),
+            Achievement(id: "a6", icon: "flame.fill", name: "On Fire",
+                        description: "Win 5 games in a row",
+                        isUnlocked: currentWinStreak >= 5,
+                        unlockedAt: nil),
+            Achievement(id: "a7", icon: "graduationcap.fill", name: "Level Master",
+                        description: "Reach Level 10",
+                        isUnlocked: user.gamesPlayed >= 300,
+                        unlockedAt: nil),
+            Achievement(id: "a8", icon: "heart.fill", name: "Court Regular",
+                        description: "Play at 10 different courts",
+                        isUnlocked: uniqueCourts >= 10,
+                        unlockedAt: nil),
+            Achievement(id: "a9", icon: "globe", name: "Social Butterfly",
+                        description: "Follow 20 players",
+                        isUnlocked: user.followingCount >= 20,
+                        unlockedAt: nil),
+            Achievement(id: "a10", icon: "calendar.badge.checkmark", name: "Consistent Player",
+                        description: "Play at least once per week for 4 weeks",
+                        isUnlocked: user.gamesPlayed >= 4,
+                        unlockedAt: nil),
+            Achievement(id: "a11", icon: "crown.fill", name: "Dinkr Champion",
+                        description: "Reach #1 on your local leaderboard",
+                        isUnlocked: user.followersCount >= 500,
+                        unlockedAt: nil),
+            Achievement(id: "a12", icon: "sparkles", name: "Legend",
+                        description: "Play 500 games on Dinkr",
+                        isUnlocked: user.gamesPlayed >= 500,
+                        unlockedAt: nil),
+        ]
+    }
 
     let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
 

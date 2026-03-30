@@ -7,6 +7,7 @@ import PhotosUI
 final class ProfileViewModel {
     var user: User? = nil
     var posts: [Post] = []
+    var gameResults: [GameResult] = []
     var isLoading = false
     var showEditProfile = false
 
@@ -22,6 +23,9 @@ final class ProfileViewModel {
         user = authService.currentUser
         #endif
         await loadPosts()
+        if let userId = user?.id {
+            gameResults = await GameResultService.shared.loadResults(for: userId)
+        }
     }
 
     func loadPosts() async {

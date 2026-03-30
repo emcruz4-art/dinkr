@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MarketView: View {
     @State private var viewModel = MarketViewModel()
+    @State private var showMyOffers = false
 
     var hotListings: [MarketListing] {
         viewModel.filteredListings.filter { $0.viewCount > 30 }
@@ -143,6 +144,18 @@ struct MarketView: View {
             }
             .navigationTitle("Market")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showMyOffers = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "tag")
+                            Text("My Offers")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                    }
+                    .tint(Color.dinkrNavy)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         viewModel.showCreateListing = true
@@ -159,6 +172,9 @@ struct MarketView: View {
         }
         .sheet(isPresented: $viewModel.showCreateListing) {
             CreateListingView()
+        }
+        .sheet(isPresented: $showMyOffers) {
+            MyOffersView(userId: User.mockCurrentUser.id)
         }
         .task { await viewModel.load() }
     }

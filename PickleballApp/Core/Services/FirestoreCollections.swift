@@ -11,4 +11,5 @@ enum FirestoreCollections {
     static let gameResults = "gameResults"
     static let follows = "follows"
     static let conversations = "conversations"
+    static let offers = "offers"
 }

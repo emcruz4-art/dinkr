@@ -1,37 +1,73 @@
 import SwiftUI
 
 struct GameHistoryView: View {
-    let results: [GameResult] = GameResult.mockResults
+    var userId: String = User.mockCurrentUser.id
+    @State private var results: [GameResult] = []
+    @State private var isLoading = true
 
     var wins: Int { results.filter { $0.isWin }.count }
     var losses: Int { results.filter { !$0.isWin }.count }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                // Stats summary card
-                HStack(spacing: 0) {
-                    StatPillCard(value: "\(wins)", label: "Wins", color: Color.dinkrGreen)
-                    Divider().frame(height: 40)
-                    StatPillCard(value: "\(losses)", label: "Losses", color: Color.dinkrCoral)
-                    Divider().frame(height: 40)
-                    StatPillCard(value: "\(Int(Double(wins) / Double(max(results.count, 1)) * 100))%", label: "Win Rate", color: Color.dinkrSky)
-                }
-                .padding(.horizontal)
-                .background(Color.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal)
-                .padding(.top, 12)
-
-                // Game history timeline
-                LazyVStack(spacing: 10) {
-                    ForEach(results) { result in
-                        GameResultRow(result: result)
-                            .padding(.horizontal)
+        ZStack {
+            if isLoading {
+                VStack(spacing: 16) {
+                    ForEach(0..<5, id: \.self) { _ in
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.cardBackground)
+                            .frame(height: 72)
+                            .redacted(reason: .placeholder)
                     }
                 }
-                .padding(.bottom, 16)
+                .padding(.horizontal)
+                .padding(.top, 12)
+            } else {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        // Stats summary card
+                        HStack(spacing: 0) {
+                            StatPillCard(value: "\(wins)", label: "Wins", color: Color.dinkrGreen)
+                            Divider().frame(height: 40)
+                            StatPillCard(value: "\(losses)", label: "Losses", color: Color.dinkrCoral)
+                            Divider().frame(height: 40)
+                            StatPillCard(value: "\(Int(Double(wins) / Double(max(results.count, 1)) * 100))%", label: "Win Rate", color: Color.dinkrSky)
+                        }
+                        .padding(.horizontal)
+                        .background(Color.cardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .padding(.horizontal)
+                        .padding(.top, 12)
+
+                        if results.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "figure.pickleball")
+                                    .font(.system(size: 44, weight: .thin))
+                                    .foregroundStyle(Color.dinkrNavy.opacity(0.3))
+                                Text("No Games Yet")
+                                    .font(.headline)
+                                    .foregroundStyle(Color.dinkrNavy.opacity(0.6))
+                                Text("Play your first game to see your history here")
+                                    .font(.subheadline)
+                                    .foregroundStyle(Color.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.top, 40)
+                        } else {
+                            LazyVStack(spacing: 10) {
+                                ForEach(results) { result in
+                                    GameResultRow(result: result)
+                                        .padding(.horizontal)
+                                }
+                            }
+                            .padding(.bottom, 16)
+                        }
+                    }
+                }
             }
+        }
+        .task {
+            results = await GameResultService.shared.loadResults(for: userId)
+            isLoading = false
         }
     }
 }

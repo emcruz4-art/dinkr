@@ -6,13 +6,14 @@ import SwiftUI
 final class SearchViewModel {
     var query: String = ""
     var recentSearches: [String] = ["Ben Johns", "Austin Open", "Selkirk paddle", "4.0 doubles"]
+    var isLoading: Bool = false
 
     var isSearching: Bool { !query.isEmpty }
 
     var playerResults: [User] {
         guard !query.isEmpty else { return [] }
         let q = query.lowercased()
-        return User.mockPlayers.filter {
+        return SearchService.shared.cachedUsers.filter {
             $0.displayName.lowercased().contains(q) ||
             $0.username.lowercased().contains(q)
         }
@@ -21,7 +22,7 @@ final class SearchViewModel {
     var eventResults: [Event] {
         guard !query.isEmpty else { return [] }
         let q = query.lowercased()
-        return Event.mockEvents.filter {
+        return SearchService.shared.cachedEvents.filter {
             $0.title.lowercased().contains(q) ||
             $0.location.lowercased().contains(q)
         }
@@ -30,7 +31,7 @@ final class SearchViewModel {
     var courtResults: [CourtVenue] {
         guard !query.isEmpty else { return [] }
         let q = query.lowercased()
-        return CourtVenue.mockVenues.filter {
+        return SearchService.shared.cachedCourts.filter {
             $0.name.lowercased().contains(q) ||
             $0.address.lowercased().contains(q)
         }
@@ -39,7 +40,7 @@ final class SearchViewModel {
     var listingResults: [MarketListing] {
         guard !query.isEmpty else { return [] }
         let q = query.lowercased()
-        return MarketListing.mockListings.filter {
+        return SearchService.shared.cachedListings.filter {
             $0.brand.lowercased().contains(q) ||
             $0.model.lowercased().contains(q)
         }
@@ -51,6 +52,13 @@ final class SearchViewModel {
 
     func selectRecentSearch(_ term: String) {
         query = term
+    }
+
+    func loadAll() async {
+        guard !SearchService.shared.isLoaded else { return }
+        isLoading = true
+        await SearchService.shared.loadAll()
+        isLoading = false
     }
 }
 
@@ -98,6 +106,7 @@ struct SearchView: View {
             .background(Color.appBackground)
             .navigationTitle("Search")
             .navigationBarTitleDisplayMode(.large)
+            .task { await viewModel.loadAll() }
         }
     }
 
@@ -106,9 +115,22 @@ struct SearchView: View {
     private var discoveryContent: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 24) {
-                recentSearchesSection
-                trendingSection
-                exploreCategoriesSection
+                if viewModel.isLoading || !SearchService.shared.isLoaded {
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .tint(Color.dinkrGreen)
+                        Text("Loading…")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 60)
+                    .redacted(reason: .placeholder)
+                } else {
+                    recentSearchesSection
+                    trendingSection
+                    exploreCategoriesSection
+                }
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 32)

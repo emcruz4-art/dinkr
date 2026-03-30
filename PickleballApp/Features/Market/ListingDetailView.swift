@@ -3,6 +3,7 @@ import SwiftUI
 struct ListingDetailView: View {
     let listing: MarketListing
     @State private var showMakeOffer = false
+    @State private var messageSent = false
 
     var body: some View {
         ScrollView {
@@ -107,13 +108,25 @@ struct ListingDetailView: View {
 
                     // CTA buttons
                     VStack(spacing: 10) {
-                        Button {} label: {
-                            Text("Message Seller")
+                        Button {
+                            Task {
+                                _ = await DMService.shared.startConversation(
+                                    currentUserId: User.mockCurrentUser.id,
+                                    currentUserName: User.mockCurrentUser.displayName,
+                                    targetUserId: listing.sellerId,
+                                    targetUserName: listing.sellerName
+                                )
+                                messageSent = true
+                                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                                messageSent = false
+                            }
+                        } label: {
+                            Text(messageSent ? "Message Sent ✓" : "Message Seller")
                                 .font(.headline)
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background(Color.dinkrGreen)
+                                .background(messageSent ? Color.dinkrSky : Color.dinkrGreen)
                                 .clipShape(RoundedRectangle(cornerRadius: 14))
                         }
                         .buttonStyle(.plain)
@@ -165,97 +178,154 @@ struct MakeOfferSheet: View {
     let listing: MarketListing
     @State private var offerAmount = ""
     @State private var message = ""
+    @State private var isSubmitting = false
+    @State private var didSubmit = false
     @Environment(\.dismiss) private var dismiss
 
     var suggestedOffer: Int { Int(listing.price * 0.85) }
+    var parsedAmount: Double? { Double(offerAmount) }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Item summary
-                    HStack(spacing: 12) {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.cardBackground)
-                            .frame(width: 60, height: 60)
-                            .overlay(
-                                Image(systemName: "figure.pickleball")
-                                    .foregroundStyle(Color.dinkrCoral.opacity(0.4))
-                            )
-                        VStack(alignment: .leading, spacing: 4) {
-                            let itemName = listing.brand + " " + listing.model
-                            Text(itemName)
-                                .font(.subheadline.weight(.semibold))
-                            Text("Listed at $\(Int(listing.price))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+            if didSubmit {
+                // Success state
+                VStack(spacing: 20) {
+                    Spacer()
+                    ZStack {
+                        Circle().fill(Color.dinkrGreen.opacity(0.15)).frame(width: 88, height: 88)
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 48))
+                            .foregroundStyle(Color.dinkrGreen)
                     }
-                    .padding(.horizontal)
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Your Offer")
-                            .font(.headline)
-
-                        HStack {
-                            Text("$")
-                                .font(.title.weight(.bold))
-                                .foregroundStyle(Color.dinkrCoral)
-                            TextField("0", text: $offerAmount)
-                                .font(.title.weight(.bold))
-                                .keyboardType(.numberPad)
+                    Text("Offer Sent!")
+                        .font(.title2.weight(.bold))
+                    Text("Your offer of $\(offerAmount) has been sent to \(listing.sellerName). They'll respond shortly.")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                    Spacer()
+                }
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Item summary
+                        HStack(spacing: 12) {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.cardBackground)
+                                .frame(width: 60, height: 60)
+                                .overlay(
+                                    Image(systemName: "figure.pickleball")
+                                        .foregroundStyle(Color.dinkrCoral.opacity(0.4))
+                                )
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("\(listing.brand) \(listing.model)")
+                                    .font(.subheadline.weight(.semibold))
+                                Text("Listed at $\(Int(listing.price))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
-                        .padding(14)
-                        .background(Color.cardBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal)
 
-                        Button {
-                            offerAmount = "\(suggestedOffer)"
-                        } label: {
-                            Text("Use suggested offer: $\(suggestedOffer)")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(Color.dinkrGreen)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal)
+                        Divider()
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Message (optional)")
-                            .font(.headline)
-                        TextEditor(text: $message)
-                            .frame(height: 100)
-                            .padding(10)
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Your Offer")
+                                .font(.headline)
+
+                            HStack {
+                                Text("$")
+                                    .font(.title.weight(.bold))
+                                    .foregroundStyle(Color.dinkrCoral)
+                                TextField("0", text: $offerAmount)
+                                    .font(.title.weight(.bold))
+                                    .keyboardType(.numberPad)
+                            }
+                            .padding(14)
                             .background(Color.cardBackground)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .overlay(alignment: .topLeading) {
-                                if message.isEmpty {
-                                    Text("Hi! I'd like to make an offer on your item...")
-                                        .foregroundStyle(.secondary)
-                                        .padding(14)
-                                        .allowsHitTesting(false)
-                                }
+
+                            Button {
+                                offerAmount = "\(suggestedOffer)"
+                            } label: {
+                                Text("Use suggested offer: $\(suggestedOffer)")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(Color.dinkrGreen)
                             }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Message (optional)")
+                                .font(.headline)
+                            TextEditor(text: $message)
+                                .frame(height: 100)
+                                .padding(10)
+                                .background(Color.cardBackground)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(alignment: .topLeading) {
+                                    if message.isEmpty {
+                                        Text("Hi! I'd like to make an offer on your item...")
+                                            .foregroundStyle(.secondary)
+                                            .padding(14)
+                                            .allowsHitTesting(false)
+                                    }
+                                }
+                        }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
+                    .padding(.top)
                 }
-                .padding(.top)
-            }
-            .navigationTitle("Make an Offer")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Send Offer") { dismiss() }
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(offerAmount.isEmpty ? Color.secondary : Color.dinkrCoral)
-                        .disabled(offerAmount.isEmpty)
+                .navigationTitle("Make an Offer")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Cancel") { dismiss() }
+                            .disabled(isSubmitting)
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            Task { await sendOffer() }
+                        } label: {
+                            if isSubmitting {
+                                ProgressView()
+                                    .tint(Color.dinkrCoral)
+                            } else {
+                                Text("Send Offer")
+                                    .font(.subheadline.weight(.bold))
+                                    .foregroundStyle(offerAmount.isEmpty ? Color.secondary : Color.dinkrCoral)
+                            }
+                        }
+                        .disabled(offerAmount.isEmpty || isSubmitting)
+                    }
                 }
             }
         }
+    }
+
+    private func sendOffer() async {
+        guard let amount = parsedAmount, amount > 0 else { return }
+        isSubmitting = true
+        let offer = MarketOffer(
+            id: UUID().uuidString,
+            listingId: listing.id,
+            listingTitle: "\(listing.brand) \(listing.model)",
+            buyerId: User.mockCurrentUser.id,
+            buyerName: User.mockCurrentUser.displayName,
+            sellerId: listing.sellerId,
+            sellerName: listing.sellerName,
+            amount: amount,
+            message: message.isEmpty ? "Hi! I'd like to make an offer on your item." : message,
+            status: .pending,
+            createdAt: Date(),
+            respondedAt: nil
+        )
+        try? await OfferService.shared.submitOffer(offer)
+        isSubmitting = false
+        withAnimation { didSubmit = true }
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        dismiss()
     }
 }

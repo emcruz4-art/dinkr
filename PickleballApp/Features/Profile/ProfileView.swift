@@ -30,9 +30,9 @@ struct ProfileView: View {
                         case 0:
                             ProfileOverviewTab(user: user, viewModel: viewModel)
                         case 1:
-                            GameHistoryView()
+                            GameHistoryView(userId: authService.currentUser?.id ?? User.mockCurrentUser.id)
                         case 2:
-                            AchievementsView()
+                            AchievementsView(user: viewModel.user ?? User.mockCurrentUser, gameResults: viewModel.gameResults)
                         default:
                             EmptyView()
                         }
