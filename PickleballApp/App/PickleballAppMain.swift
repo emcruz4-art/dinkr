@@ -1,6 +1,7 @@
 import SwiftUI
 import FirebaseCore
 import FirebaseCrashlytics
+import GoogleSignIn
 
 @main
 struct PickleballAppMain: App {
@@ -101,6 +102,9 @@ struct PickleballAppMain: App {
                 .environment(locationService)
                 .environment(networkMonitor)
                 .environment(storeService)
+                .onOpenURL { url in
+                    GIDSignIn.sharedInstance.handle(url)
+                }
         }
     }
 }

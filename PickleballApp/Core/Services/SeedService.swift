@@ -32,7 +32,8 @@ final class SeedService {
         async let c: Void = seedCollection(FirestoreCollections.courtVenues, docs: CourtVenue.mockVenues)
         async let p: Void = seedPostsCollection()
         async let m: Void = seedCollection(FirestoreCollections.marketListings, docs: MarketListing.mockListings)
-        _ = try await (u, e, g, c, p, m)
+        async let gr: Void = seedCollection(FirestoreCollections.groups, docs: Group.mockGroups)
+        _ = try await (u, e, g, c, p, m, gr)
     }
 
     // Generic helper — writes each doc using its id field

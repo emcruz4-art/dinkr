@@ -199,6 +199,7 @@
 		552A8108B63FF1E97C477302 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
 		56B98290BACC0CE09D44A177 /* GroupEventsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupEventsView.swift; sourceTree = "<group>"; };
 		57ED3A10D7B2852C696B1454 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		57FC0EA8C10289C63FF7C4CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		58CCE99C5D1CD8EAF9704AD8 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		5B25E71503EE48961DCD3D37 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		5EB3CCB7003BADA3D047D94E /* MarketView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketView.swift; sourceTree = "<group>"; };
@@ -608,6 +609,7 @@
 			children = (
 				5275C927F785C13E2175E1AD /* Assets.xcassets */,
 				58CCE99C5D1CD8EAF9704AD8 /* GoogleService-Info.plist */,
+				57FC0EA8C10289C63FF7C4CF /* Info.plist */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -1027,6 +1029,7 @@
 				CODE_SIGN_IDENTITY = "";
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PickleballApp/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Dinkr;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Used to show nearby courts and games";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Used to upload photos for posts and listings";
@@ -1054,6 +1057,7 @@
 				CODE_SIGN_IDENTITY = "";
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PickleballApp/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Dinkr;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Used to show nearby courts and games";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Used to upload photos for posts and listings";

@@ -58,6 +58,15 @@ targets:
         CODE_SIGN_IDENTITY: ""
         CODE_SIGNING_REQUIRED: NO
         CODE_SIGNING_ALLOWED: NO
+    info:
+      path: PickleballApp/Resources/Info.plist
+      properties:
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Editor
+            CFBundleURLSchemes:
+              # Paste your REVERSED_CLIENT_ID from GoogleService-Info.plist here
+              # e.g. com.googleusercontent.apps.758874225321-xxxxxxxxxxxxxxxxxxxxxxxx
+              - $(REVERSED_CLIENT_ID)
 
   DinkrTests:
     type: bundle.unit-test
