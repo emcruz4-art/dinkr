@@ -19,6 +19,7 @@ struct User: Identifiable, Codable, Hashable {
     var isWomenOnly: Bool
     var followersCount: Int
     var followingCount: Int
+    var duprRating: Double?
 
     var winRate: Double {
         guard gamesPlayed > 0 else { return 0 }
@@ -53,7 +54,8 @@ extension User {
         joinedDate: Calendar.current.date(byAdding: .year, value: -1, to: Date()) ?? Date(),
         isWomenOnly: false,
         followersCount: 234,
-        followingCount: 178
+        followingCount: 178,
+        duprRating: 4.69
     )
 
     static let mockPlayers: [User] = [

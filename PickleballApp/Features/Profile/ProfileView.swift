@@ -182,9 +182,25 @@ struct PremiumProfileHeaderView: View {
                     .foregroundStyle(.white.opacity(0.65))
                     .padding(.top, 1)
 
-                // Skill badge + city
+                // Skill badge + DUPR + city
                 HStack(spacing: 10) {
                     SkillBadge(level: user.skillLevel)
+
+                    if let dupr = user.duprRating {
+                        HStack(spacing: 4) {
+                            Text("DUPR")
+                                .font(.system(size: 10, weight: .black))
+                                .foregroundStyle(Color.dinkrAmber)
+                            Text(String(format: "%.2f", dupr))
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .background(Color.dinkrAmber.opacity(0.18))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color.dinkrAmber.opacity(0.5), lineWidth: 1))
+                    }
 
                     if !user.city.isEmpty {
                         HStack(spacing: 3) {
