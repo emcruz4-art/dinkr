@@ -12,6 +12,7 @@ enum FollowButtonSize {
 struct FollowButton: View {
     let currentUserId: String
     let targetUserId: String
+    var isPrivateAccount: Bool = false
     var size: FollowButtonSize = .regular
 
     @State private var isFollowing: Bool = false
@@ -48,9 +49,9 @@ struct FollowButton: View {
 
     private var followLabel: some View {
         HStack(spacing: size == .compact ? 4 : 5) {
-            Image(systemName: "plus")
+            Image(systemName: isPrivateAccount ? "person.badge.plus" : "plus")
                 .font(.system(size: size == .compact ? 10 : 12, weight: .bold))
-            Text("Follow")
+            Text(isPrivateAccount ? "Request" : "Follow")
                 .font(size == .compact ? .caption.weight(.semibold) : .subheadline.weight(.semibold))
         }
         .foregroundStyle(Color.dinkrGreen)

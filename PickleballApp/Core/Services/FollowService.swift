@@ -84,4 +84,14 @@ final class FollowService {
             return []
         }
     }
+
+    // MARK: - Mutual Follow (Friends)
+
+    /// Returns true if both users follow each other (i.e. they are friends).
+    func isMutualFollow(currentUserId: String, targetUserId: String) async -> Bool {
+        let iFollow = await isFollowing(currentUserId: currentUserId, targetUserId: targetUserId)
+        guard iFollow else { return false }
+        let theyFollow = await isFollowing(currentUserId: targetUserId, targetUserId: currentUserId)
+        return theyFollow
+    }
 }

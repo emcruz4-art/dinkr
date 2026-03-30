@@ -80,7 +80,9 @@ final class AuthService {
             joinedDate: Date(),
             isWomenOnly: false,
             followersCount: 0,
-            followingCount: 0
+            followingCount: 0,
+                duprRating: nil,
+                isPrivate: false
         )
         try await createUserDocument(newUser)
         currentUser = newUser
@@ -151,7 +153,9 @@ final class AuthService {
                 joinedDate: Date(),
                 isWomenOnly: false,
                 followersCount: 0,
-                followingCount: 0
+                followingCount: 0,
+                duprRating: nil,
+                isPrivate: false
             )
             try await createUserDocument(newUser)
             currentUser = newUser
@@ -204,7 +208,9 @@ final class AuthService {
                 joinedDate: Date(),
                 isWomenOnly: false,
                 followersCount: 0,
-                followingCount: 0
+                followingCount: 0,
+                duprRating: nil,
+                isPrivate: false
             )
             try await createUserDocument(newUser)
             currentUser = newUser

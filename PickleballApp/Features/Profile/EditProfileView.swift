@@ -11,6 +11,7 @@ final class EditProfileViewModel {
     var city: String
     var skillLevel: SkillLevel
     var isWomenOnly: Bool
+    var isPrivate: Bool
     var selectedImage: UIImage?
     var uploadProgress: Double = 0
     var isLoading: Bool = false
@@ -27,6 +28,7 @@ final class EditProfileViewModel {
         self.city = user.city
         self.skillLevel = user.skillLevel
         self.isWomenOnly = user.isWomenOnly
+        self.isPrivate = user.isPrivate
         self.avatarURL = user.avatarURL
     }
 
@@ -75,6 +77,7 @@ final class EditProfileViewModel {
             "city": city,
             "skillLevel": skillLevel.rawValue,
             "isWomenOnly": isWomenOnly,
+            "isPrivate": isPrivate,
         ]
         if let url = resolvedAvatarURL {
             fields["avatarURL"] = url
@@ -270,17 +273,38 @@ struct EditProfileView: View {
                 SkillLevelSegmentedPicker(selection: $vm.skillLevel)
             }
 
-            // Women's player toggle
+            // Women's + Privacy toggles
             EditFieldCard(label: "Player Preferences", required: false) {
-                Toggle(isOn: $vm.isWomenOnly) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "figure.stand")
-                            .foregroundStyle(Color.dinkrSky)
-                        Text("Women's player")
-                            .font(.body)
+                VStack(spacing: 12) {
+                    Toggle(isOn: $vm.isWomenOnly) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "figure.stand")
+                                .foregroundStyle(Color.dinkrSky)
+                            Text("Women's player")
+                                .font(.body)
+                        }
                     }
+                    .tint(Color.dinkrGreen)
+
+                    Divider()
+
+                    Toggle(isOn: $vm.isPrivate) {
+                        HStack(spacing: 8) {
+                            Image(systemName: vm.isPrivate ? "lock.fill" : "lock.open.fill")
+                                .foregroundStyle(vm.isPrivate ? Color.dinkrAmber : Color.secondary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Private account")
+                                    .font(.body)
+                                Text(vm.isPrivate
+                                     ? "Only mutual friends can view your profile"
+                                     : "Anyone can view your profile")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .tint(Color.dinkrAmber)
                 }
-                .tint(Color.dinkrGreen)
             }
 
             // Error banner
