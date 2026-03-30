@@ -1,8 +1,10 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Environment(AuthService.self) private var authService
     @State private var viewModel = HomeViewModel()
     @State private var showNotifications = false
+    @State private var showMessages = false
     @State private var feedMode = 0
 
     var body: some View {
@@ -23,7 +25,7 @@ struct HomeView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         // Header
-                        DinkrHeaderView(city: "Austin")
+                        DinkrHeaderView(city: "Austin", onMessagesTap: { showMessages = true })
                             .padding(.horizontal, 16)
                             .padding(.top, 8)
 
@@ -99,7 +101,7 @@ struct HomeView: View {
                             // Feed preview
                             FeedPreviewWidget(
                                 posts: Array(viewModel.posts.prefix(3)),
-                                onLike: { viewModel.likePost($0) }
+                                onLike: { viewModel.likePost($0, userId: viewModel.currentUserId ?? "") }
                             )
                             .padding(.horizontal, 16)
                         }
@@ -116,6 +118,10 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showNotifications) {
             NotificationCenterView()
+        }
+        .sheet(isPresented: $showMessages) {
+            MessagesView()
+                .environment(authService)
         }
         .task { await viewModel.loadFeed() }
     }

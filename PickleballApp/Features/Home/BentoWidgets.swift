@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - 1. DinkrHeaderView
 struct DinkrHeaderView: View {
     let city: String
+    var onMessagesTap: (() -> Void)? = nil
 
     var body: some View {
         HStack {
@@ -22,6 +23,15 @@ struct DinkrHeaderView: View {
             .padding(.vertical, 5)
             .background(Color.cardBackground)
             .clipShape(Capsule())
+
+            Button {
+                onMessagesTap?()
+            } label: {
+                Image(systemName: "bubble.left.and.bubble.right.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.dinkrNavy)
+            }
+            .padding(.leading, 4)
 
             AvatarView(urlString: nil, displayName: "Alex Rivera", size: 36)
         }

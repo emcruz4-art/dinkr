@@ -88,6 +88,7 @@
 		933DFD5F8A32F6A55946FF78 /* DirectMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D496E453EBAC820D83F72A /* DirectMessage.swift */; };
 		944E609928CA16E3E96D1CA3 /* EventsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95BAF4DDF1EE47D7CB600A6 /* EventsView.swift */; };
 		95FD53BDEE99AF1352FF9118 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 642CE80F78968679E8670D69 /* RootTabView.swift */; };
+		964619E3CAEC49399A79D52F /* DMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649A70864DD90F9DEBD4F0D6 /* DMService.swift */; };
 		9796D3CA69F034C3A7C092AD /* Comment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 295A5A7CD2AE5B57179804E0 /* Comment.swift */; };
 		982EBE2D42CB609ACBC11A82 /* View+Modifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C4C0702B2865830BE46E07 /* View+Modifiers.swift */; };
 		9926FF521FA16C6598CCE876 /* ErrorBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 126BB30D14DDF55E4E705ACA /* ErrorBannerView.swift */; };
@@ -215,6 +216,7 @@
 		630B1D0A76875C9E85B21E41 /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
 		6428D31953C494434F4AE0F0 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		642CE80F78968679E8670D69 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
+		649A70864DD90F9DEBD4F0D6 /* DMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DMService.swift; sourceTree = "<group>"; };
 		64B5BFC1C7CD816AB3B76EF2 /* PlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayView.swift; sourceTree = "<group>"; };
 		659C74EF8C755ACC2163760F /* NewsRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsRowView.swift; sourceTree = "<group>"; };
 		68BF80E2DE229A0ABDBDCCB4 /* Event.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Event.swift; sourceTree = "<group>"; };
@@ -326,6 +328,7 @@
 				F4296D6022C33BC7E8D2FFF5 /* AnalyticsService.swift */,
 				1ACE17F36E640206D5741D8D /* AuthService.swift */,
 				6FFC6C56B0CCBE889AC05E95 /* CrashlyticsService.swift */,
+				649A70864DD90F9DEBD4F0D6 /* DMService.swift */,
 				06E901721D1B3E52B017F5D7 /* FirestoreCollections.swift */,
 				AA428296B50345158EAC4AED /* FirestoreService.swift */,
 				780F4217E618D0987909D6BC /* FollowService.swift */,
@@ -767,6 +770,7 @@
 				A81EB666080730ED4FB5CECC /* CreateGroupView.swift in Sources */,
 				79207921234754861BA28815 /* CreateListingView.swift in Sources */,
 				D7021FADB3FBEACD85DBA7E4 /* CreatePostView.swift in Sources */,
+				964619E3CAEC49399A79D52F /* DMService.swift in Sources */,
 				6B50F025A2D99729E802BF35 /* DailyChallenge.swift in Sources */,
 				C68C97C18C9F6CDA84DF82D9 /* Date+Helpers.swift in Sources */,
 				F26C5910569DFD5887B3AA38 /* DinkrIconView.swift in Sources */,

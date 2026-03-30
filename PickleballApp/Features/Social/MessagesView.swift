@@ -1,11 +1,16 @@
 import SwiftUI
+import FirebaseFirestore
 
 // MARK: - MessagesView
 
 struct MessagesView: View {
+    @Environment(AuthService.self) private var authService
     @State private var searchText = ""
-    @State private var conversations: [DMConversation] = DMConversation.mockConversations
+    @State private var conversations: [DMConversation] = []
+    @State private var conversationListener: ListenerRegistration? = nil
     @State private var showNewMessage = false
+
+    private var currentUserId: String { authService.currentUser?.id ?? "" }
 
     var filteredConversations: [DMConversation] {
         if searchText.isEmpty { return conversations }
@@ -105,11 +110,25 @@ struct MessagesView: View {
                 NewMessageSheet { selected in
                     showNewMessage = false
                 }
+                .environment(authService)
+            }
+            .task {
+                guard !currentUserId.isEmpty else { return }
+                conversationListener = DMService.shared.startConversationsListener(
+                    userId: currentUserId
+                ) { updated in
+                    self.conversations = updated
+                }
+            }
+            .onDisappear {
+                conversationListener?.remove()
+                conversationListener = nil
             }
         }
     }
 
     private func deleteConversation(_ conversation: DMConversation) {
+        // Remove locally — full subcollection deletion requires a Cloud Function
         withAnimation {
             conversations.removeAll { $0.id == conversation.id }
         }
@@ -238,13 +257,17 @@ private struct ConversationRow: View {
 struct DMChatView: View {
     let conversation: DMConversation
 
+    @Environment(AuthService.self) private var authService
     @State private var messages: [DMMessage] = []
     @State private var inputText = ""
     @State private var showEmojiPicker: String? = nil  // message id
     @State private var scrollProxy: ScrollViewProxy? = nil
+    @State private var messageListener: ListenerRegistration? = nil
 
     private let emojis = ["❤️", "🔥", "😂", "👏", "🎯", "🏓"]
     private let quickReplies = ["Want to play?", "Great game!", "Count me in 🏓", "Can't make it"]
+
+    private var currentUserId: String { authService.currentUser?.id ?? "" }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -292,9 +315,23 @@ struct DMChatView: View {
                     .padding(.vertical, 8)
                 }
                 .onAppear {
-                    messages = DMMessage.mockMessages(for: conversation.id)
                     scrollProxy = proxy
-                    scrollToBottom(proxy: proxy, animated: false)
+                    let convId = conversation.id
+                    let userId = currentUserId
+                    Task {
+                        messages = await DMService.shared.loadMessages(conversationId: convId)
+                        scrollToBottom(proxy: proxy, animated: false)
+                        await DMService.shared.markAsRead(conversationId: convId, userId: userId)
+                    }
+                    messageListener = DMService.shared.startMessagesListener(
+                        conversationId: convId
+                    ) { updated in
+                        self.messages = updated
+                    }
+                }
+                .onDisappear {
+                    messageListener?.remove()
+                    messageListener = nil
                 }
                 .onChange(of: messages.count) { _, _ in
                     scrollToBottom(proxy: proxy, animated: true)
@@ -390,25 +427,34 @@ struct DMChatView: View {
     private func sendMessage(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        let newMsg = DMMessage(
-            id: UUID().uuidString,
-            conversationId: conversation.id,
-            senderId: "me",
-            text: trimmed,
-            timestamp: Date(),
-            isRead: false,
-            reaction: nil
-        )
-        withAnimation {
-            messages.append(newMsg)
-        }
         inputText = ""
         showEmojiPicker = nil
+        let userId = authService.currentUser?.id ?? "me"
+        let userName = authService.currentUser?.displayName ?? "Me"
+        let convId = conversation.id
+        Task {
+            try? await DMService.shared.sendMessage(
+                conversationId: convId,
+                senderId: userId,
+                senderName: userName,
+                content: trimmed
+            )
+        }
+        // The real-time listener will append the sent message automatically
     }
 
     private func applyReaction(_ emoji: String, to messageId: String) {
         if let idx = messages.firstIndex(where: { $0.id == messageId }) {
             messages[idx].reaction = messages[idx].reaction == emoji ? nil : emoji
+            let convId = conversation.id
+            let reaction = messages[idx].reaction
+            Task {
+                await DMService.shared.reactToMessage(
+                    conversationId: convId,
+                    messageId: messageId,
+                    reaction: reaction
+                )
+            }
         }
         withAnimation {
             showEmojiPicker = nil
@@ -582,6 +628,7 @@ struct NewMessageSheet: View {
     let onSelect: (DMConversation) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthService.self) private var authService
     @State private var searchText = ""
     @State private var navigateToChat: DMConversation? = nil
 
@@ -600,9 +647,28 @@ struct NewMessageSheet: View {
             List {
                 ForEach(filteredPlayers) { player in
                     Button {
-                        let conv = conversationFor(player: player)
-                        onSelect(conv)
-                        navigateToChat = conv
+                        let currentUserId = authService.currentUser?.id ?? ""
+                        let currentUserName = authService.currentUser?.displayName ?? "Me"
+                        Task {
+                            let convId = await DMService.shared.startConversation(
+                                currentUserId: currentUserId,
+                                currentUserName: currentUserName,
+                                targetUserId: player.id,
+                                targetUserName: player.displayName
+                            )
+                            let conv = DMConversation(
+                                id: convId,
+                                otherUserId: player.id,
+                                otherUserName: player.displayName,
+                                otherUserInitial: String(player.displayName.prefix(1)),
+                                lastMessage: "",
+                                lastMessageTime: Date(),
+                                unreadCount: 0,
+                                isOnline: false
+                            )
+                            onSelect(conv)
+                            navigateToChat = conv
+                        }
                     } label: {
                         HStack(spacing: 12) {
                             Circle()
@@ -663,37 +729,23 @@ struct NewMessageSheet: View {
             }
         }
     }
-
-    private func conversationFor(player: User) -> DMConversation {
-        // Return existing conversation if one exists, otherwise create a stub
-        if let existing = DMConversation.mockConversations.first(where: { $0.otherUserId == player.id }) {
-            return existing
-        }
-        return DMConversation(
-            id: "new_\(player.id)",
-            otherUserId: player.id,
-            otherUserName: player.displayName,
-            otherUserInitial: String(player.displayName.prefix(1)),
-            lastMessage: "",
-            lastMessageTime: Date(),
-            unreadCount: 0,
-            isOnline: false
-        )
-    }
 }
 
 // MARK: - Preview
 
 #Preview("Messages") {
     MessagesView()
+        .environment(AuthService())
 }
 
 #Preview("Chat") {
     NavigationStack {
         DMChatView(conversation: DMConversation.mockConversations[0])
     }
+    .environment(AuthService())
 }
 
 #Preview("New Message") {
     NewMessageSheet { _ in }
+        .environment(AuthService())
 }

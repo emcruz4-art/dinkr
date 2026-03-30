@@ -383,7 +383,7 @@ private struct ProfileOverviewTab: View {
             } else {
                 LazyVStack(spacing: 12) {
                     ForEach(viewModel.posts) { post in
-                        PostCardView(post: post, onLike: {})
+                        PostCardView(post: post, onLike: {}, onComment: {})
                             .padding(.horizontal, 20)
                     }
                 }

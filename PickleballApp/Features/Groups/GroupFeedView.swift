@@ -16,7 +16,7 @@ struct GroupFeedView: View {
                     .padding(.top, 40)
                 } else {
                     ForEach(posts) { post in
-                        PostCardView(post: post, onLike: {})
+                        PostCardView(post: post, onLike: {}, onComment: {})
                             .padding(.horizontal)
                     }
                 }

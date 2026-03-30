@@ -1,8 +1,8 @@
 import SwiftUI
 
-// MARK: - Comment Model
+// MARK: - Comment Model (local UI model for PostDetailView)
 
-struct Comment: Identifiable {
+struct PostDetailComment: Identifiable {
     var id: String
     var authorName: String
     var authorInitial: Character
@@ -12,9 +12,9 @@ struct Comment: Identifiable {
     var isLiked: Bool
 }
 
-extension Comment {
-    static let mockComments: [Comment] = [
-        Comment(
+extension PostDetailComment {
+    static let mockComments: [PostDetailComment] = [
+        PostDetailComment(
             id: "c1",
             authorName: "Maria Chen",
             authorInitial: "M",
@@ -23,7 +23,7 @@ extension Comment {
             likesCount: 12,
             isLiked: false
         ),
-        Comment(
+        PostDetailComment(
             id: "c2",
             authorName: "Jordan Smith",
             authorInitial: "J",
@@ -32,7 +32,7 @@ extension Comment {
             likesCount: 5,
             isLiked: true
         ),
-        Comment(
+        PostDetailComment(
             id: "c3",
             authorName: "Sarah Johnson",
             authorInitial: "S",
@@ -41,7 +41,7 @@ extension Comment {
             likesCount: 8,
             isLiked: false
         ),
-        Comment(
+        PostDetailComment(
             id: "c4",
             authorName: "Chris Park",
             authorInitial: "C",
@@ -50,7 +50,7 @@ extension Comment {
             likesCount: 19,
             isLiked: false
         ),
-        Comment(
+        PostDetailComment(
             id: "c5",
             authorName: "Taylor Kim",
             authorInitial: "T",
@@ -59,7 +59,7 @@ extension Comment {
             likesCount: 3,
             isLiked: false
         ),
-        Comment(
+        PostDetailComment(
             id: "c6",
             authorName: "Jamie Lee",
             authorInitial: "J",
@@ -68,7 +68,7 @@ extension Comment {
             likesCount: 27,
             isLiked: true
         ),
-        Comment(
+        PostDetailComment(
             id: "c7",
             authorName: "Morgan Davis",
             authorInitial: "M",
@@ -77,7 +77,7 @@ extension Comment {
             likesCount: 9,
             isLiked: false
         ),
-        Comment(
+        PostDetailComment(
             id: "c8",
             authorName: "Riley Torres",
             authorInitial: "R",
@@ -94,7 +94,7 @@ extension Comment {
 struct PostDetailView: View {
     let post: Post
 
-    @State private var comments: [Comment] = Comment.mockComments
+    @State private var comments: [PostDetailComment] = PostDetailComment.mockComments
     @State private var commentText = ""
     @State private var replyPrefix = ""
     @FocusState private var inputFocused: Bool
@@ -249,7 +249,7 @@ struct PostDetailView: View {
                     }
 
                 Button {
-                    submitComment()
+                    submitPostDetailComment()
                 } label: {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.title2)
@@ -269,12 +269,12 @@ struct PostDetailView: View {
 
     // MARK: - Submit Comment
 
-    private func submitComment() {
+    private func submitPostDetailComment() {
         let trimmed = commentText.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
 
         let newId = UUID().uuidString
-        let newComment = Comment(
+        let newComment = PostDetailComment(
             id: newId,
             authorName: User.mockCurrentUser.displayName,
             authorInitial: User.mockCurrentUser.displayName.first ?? "A",
@@ -303,7 +303,7 @@ struct PostDetailView: View {
 // MARK: - Comment Row
 
 private struct CommentRow: View {
-    @Binding var comment: Comment
+    @Binding var comment: PostDetailComment
     let isNew: Bool
     let onReply: (String) -> Void
 
