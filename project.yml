@@ -57,9 +57,10 @@ targets:
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Used to show nearby courts and games"
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Used to upload photos for posts and listings"
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        CODE_SIGN_IDENTITY: ""
-        CODE_SIGNING_REQUIRED: NO
-        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_REQUIRED: YES
+        CODE_SIGNING_ALLOWED: YES
+        CODE_SIGN_ENTITLEMENTS: PickleballApp/Resources/Dinkr.entitlements
     info:
       path: PickleballApp/Resources/Info.plist
       properties:

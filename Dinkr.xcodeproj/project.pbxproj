@@ -191,6 +191,7 @@
 		1DCA88A45B3F129CCFC8EBB1 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		20F37086088624CD95828A9C /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
 		223D49F0E298C7D83632FC4C /* FindPlayersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindPlayersView.swift; sourceTree = "<group>"; };
+		23DA4F103B7BF10E2BA991A6 /* Dinkr.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Dinkr.entitlements; sourceTree = "<group>"; };
 		23EE2F244742E0312CFD7BD4 /* DinkrLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DinkrLogoView.swift; sourceTree = "<group>"; };
 		256EB693FDAA93992BA57A55 /* CachedAsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAsyncImage.swift; sourceTree = "<group>"; };
 		28C778610E676CF419E61183 /* PickleballCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleballCard.swift; sourceTree = "<group>"; };
@@ -663,6 +664,7 @@
 			isa = PBXGroup;
 			children = (
 				5275C927F785C13E2175E1AD /* Assets.xcassets */,
+				23DA4F103B7BF10E2BA991A6 /* Dinkr.entitlements */,
 				58CCE99C5D1CD8EAF9704AD8 /* GoogleService-Info.plist */,
 				57FC0EA8C10289C63FF7C4CF /* Info.plist */,
 			);
@@ -1095,9 +1097,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGNING_REQUIRED = NO;
-				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGNING_REQUIRED = YES;
+				CODE_SIGN_ENTITLEMENTS = PickleballApp/Resources/Dinkr.entitlements;
+				CODE_SIGN_IDENTITY = "-";
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PickleballApp/Resources/Info.plist;
@@ -1123,9 +1126,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGNING_REQUIRED = NO;
-				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGNING_REQUIRED = YES;
+				CODE_SIGN_ENTITLEMENTS = PickleballApp/Resources/Dinkr.entitlements;
+				CODE_SIGN_IDENTITY = "-";
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PickleballApp/Resources/Info.plist;
