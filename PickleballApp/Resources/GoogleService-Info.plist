@@ -3,28 +3,32 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>REPLACE_WITH_YOUR_FIREBASE_API_KEY</string>
+	<string>AIzaSyDCmiaaeGPyN57zFsdWjnpVMolQqqZvLQk</string>
 	<key>GCM_SENDER_ID</key>
-	<string>REPLACE_WITH_SENDER_ID</string>
+	<string>758874225321</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.pickleballapp.ios</string>
+	<string>com.dinkr.ios</string>
 	<key>PROJECT_ID</key>
-	<string>REPLACE_WITH_PROJECT_ID</string>
+	<string>dinkr-432b5</string>
 	<key>STORAGE_BUCKET</key>
-	<string>REPLACE_WITH_PROJECT_ID.appspot.com</string>
+	<string>dinkr-432b5.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_APPINVITE_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>IS_GCM_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>IS_SIGNIN_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>REPLACE_WITH_APP_ID</string>
+	<string>1:758874225321:ios:1a47082d1dc663b7b647b8</string>
+	<key>CLIENT_ID</key>
+	<string>758874225321-n4asdjde9utasat9tnf7h3omfmgcsm5s.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.758874225321-n4asdjde9utasat9tnf7h3omfmgcsm5s</string>
 </dict>
 </plist>

@@ -64,9 +64,7 @@ targets:
         CFBundleURLTypes:
           - CFBundleTypeRole: Editor
             CFBundleURLSchemes:
-              # Paste your REVERSED_CLIENT_ID from GoogleService-Info.plist here
-              # e.g. com.googleusercontent.apps.758874225321-xxxxxxxxxxxxxxxxxxxxxxxx
-              - $(REVERSED_CLIENT_ID)
+          - com.googleusercontent.apps.758874225321-n4asdjde9utasat9tnf7h3omfmgcsm5s
 
   DinkrTests:
     type: bundle.unit-test
