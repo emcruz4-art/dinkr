@@ -2,16 +2,74 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users: any authenticated user can read; only owner can write
+    function isAuth() { return request.auth != null; }
+    function isOwner(uid) { return isAuth() && request.auth.uid == uid; }
+
+    // Users
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isAuth();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if false;
     }
 
-    // All other collections: any authenticated user can read/write
-    match /{collection}/{document} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+    // Posts
+    match /posts/{postId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isAuth() && (
+        resource.data.authorId == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'isLiked', 'commentCount'])
+      );
+      allow delete: if isAuth() && resource.data.authorId == request.auth.uid;
+    }
+
+    // Game Sessions
+    match /gameSessions/{sessionId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.hostId == request.auth.uid;
+      allow update: if isAuth() && (
+        resource.data.hostId == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rsvps', 'waitlist'])
+      );
+      allow delete: if isAuth() && resource.data.hostId == request.auth.uid;
+    }
+
+    // Events (admin-managed)
+    match /events/{eventId} {
+      allow read: if isAuth();
+      allow write: if false;
+    }
+
+    // Court Venues (admin-managed)
+    match /courtVenues/{venueId} {
+      allow read: if isAuth();
+      allow write: if false;
+    }
+
+    // Market Listings
+    match /marketListings/{listingId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.sellerId == request.auth.uid;
+      allow update, delete: if isAuth() && resource.data.sellerId == request.auth.uid;
+    }
+
+    // Groups
+    match /groups/{groupId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAuth() && (
+        resource.data.adminIds.hasAny([request.auth.uid]) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds', 'memberCount'])
+      );
+      allow delete: if isAuth() && resource.data.adminIds.hasAny([request.auth.uid]);
+    }
+
+    // Game Results
+    match /gameResults/{resultId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update, delete: if false;
     }
   }
 }

@@ -1,5 +1,7 @@
 import SwiftUI
 
+// MARK: - PickleballCard
+
 struct PickleballCard<Content: View>: View {
     let content: Content
 
@@ -9,11 +11,58 @@ struct PickleballCard<Content: View>: View {
 
     var body: some View {
         content
-            .background(Color.cardBackground)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.cardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+            )
             .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+            .shadow(color: .black.opacity(0.07), radius: 12, x: 0, y: 4)
     }
 }
+
+// MARK: - PickleballCardPressable
+
+struct PickleballCardPressable<Content: View>: View {
+    let content: Content
+    let action: () -> Void
+
+    @State private var isPressed = false
+
+    init(action: @escaping () -> Void, @ViewBuilder content: () -> Content) {
+        self.action = action
+        self.content = content()
+    }
+
+    var body: some View {
+        Button(action: action) {
+            content
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.cardBackground)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+                        )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: .black.opacity(0.07), radius: 12, x: 0, y: 4)
+                .scaleEffect(isPressed ? 0.97 : 1.0)
+                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+    }
+}
+
+// MARK: - MapPinView
 
 struct MapPinView: View {
     let label: String
@@ -36,6 +85,8 @@ struct MapPinView: View {
     }
 }
 
+// MARK: - Triangle
+
 struct Triangle: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
@@ -47,6 +98,8 @@ struct Triangle: Shape {
     }
 }
 
+// MARK: - EmptyStateView
+
 struct EmptyStateView: View {
     let icon: String
     let title: String
@@ -55,24 +108,33 @@ struct EmptyStateView: View {
     var action: (() -> Void)? = nil
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Image(systemName: icon)
-                .font(.system(size: 52))
-                .foregroundStyle(.secondary)
-            Text(title)
-                .font(.title3.weight(.semibold))
-            Text(message)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+                .font(.system(size: 56, weight: .light))
+                .foregroundStyle(Color.dinkrGreen.opacity(0.75))
+                .symbolEffect(.pulse, options: .repeating)
+
+            VStack(spacing: 8) {
+                Text(title)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.primary)
+
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .padding(.horizontal, 32)
+            }
+
             if let actionLabel, let action {
                 Button(actionLabel, action: action)
                     .buttonStyle(.borderedProminent)
-                    .tint(.pickleballGreen)
+                    .tint(Color.dinkrGreen)
+                    .padding(.top, 4)
             }
         }
-        .padding()
+        .padding(24)
         .frame(maxWidth: .infinity)
     }
 }

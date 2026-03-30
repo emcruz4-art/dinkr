@@ -3,42 +3,99 @@ import SwiftUI
 struct PlayView: View {
     @State private var viewModel = PlayViewModel()
 
+    // MARK: - Segment icons
+    private func segmentIcon(_ seg: PlayViewModel.PlaySegment) -> String {
+        switch seg {
+        case .games:       return "figure.pickleball"
+        case .live:        return "dot.radiowaves.left.and.right"
+        case .courts:      return "mappin.and.ellipse"
+        case .players:     return "person.2.fill"
+        case .match:       return "arrow.left.arrow.right.circle.fill"
+        case .leaderboard: return "trophy.fill"
+        }
+    }
+
+    // Strip emoji from rawValue for clean pill labels
+    private func segmentLabel(_ seg: PlayViewModel.PlaySegment) -> String {
+        switch seg {
+        case .games:       return "Games"
+        case .live:        return "Live"
+        case .courts:      return "Courts"
+        case .players:     return "Players"
+        case .match:       return "Match"
+        case .leaderboard: return "Rankings"
+        }
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Segment picker — 5 segments
+
+                // ── Premium pill segment selector ──────────────────────────
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 0) {
+                    HStack(spacing: 6) {
                         ForEach(PlayViewModel.PlaySegment.allCases, id: \.self) { seg in
+                            let isSelected = viewModel.selectedSegment == seg
                             Button {
-                                viewModel.selectedSegment = seg
-                            } label: {
-                                VStack(spacing: 4) {
-                                    Text(seg.rawValue)
-                                        .font(.caption.weight(viewModel.selectedSegment == seg ? .bold : .regular))
-                                        .foregroundStyle(viewModel.selectedSegment == seg ? Color.dinkrGreen : .secondary)
-                                    Rectangle()
-                                        .fill(viewModel.selectedSegment == seg ? Color.dinkrGreen : Color.clear)
-                                        .frame(height: 2)
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.72)) {
+                                    viewModel.selectedSegment = seg
                                 }
-                                .frame(minWidth: 70)
+                            } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: segmentIcon(seg))
+                                        .font(.system(size: 11, weight: isSelected ? .bold : .regular))
+                                        .foregroundStyle(
+                                            isSelected ? .white : Color.secondary
+                                        )
+                                    Text(segmentLabel(seg))
+                                        .font(.system(size: 13, weight: isSelected ? .bold : .regular))
+                                        .foregroundStyle(
+                                            isSelected ? .white : Color.secondary
+                                        )
+                                }
+                                .padding(.horizontal, 14)
                                 .padding(.vertical, 8)
-                                .padding(.horizontal, 4)
+                                .background(
+                                    isSelected
+                                        ? Color.dinkrGreen
+                                        : Color.clear
+                                )
+                                .clipShape(Capsule())
+                                // Subtle border on unselected pills
+                                .overlay(
+                                    Capsule()
+                                        .strokeBorder(
+                                            isSelected
+                                                ? Color.clear
+                                                : Color.secondary.opacity(0.2),
+                                            lineWidth: 1
+                                        )
+                                )
                             }
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
                 }
                 .background(Color.appBackground)
 
-                Divider()
+                // Subtle gradient separator below the pill bar
+                LinearGradient(
+                    colors: [Color.dinkrGreen.opacity(0.12), Color.clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 6)
 
+                // ── Content area ───────────────────────────────────────────
                 switch viewModel.selectedSegment {
                 case .games:
                     VStack(spacing: 0) {
-                        GameFilterBar(selectedFormat: $viewModel.selectedFormat,
-                                      todayOnly: $viewModel.todayOnly)
+                        GameFilterBar(
+                            selectedFormat: $viewModel.selectedFormat,
+                            todayOnly: $viewModel.todayOnly
+                        )
                         NearbyGamesView(viewModel: viewModel)
                     }
                 case .live:
@@ -271,154 +328,6 @@ struct LivePlayView: View {
     }
 }
 
-// MARK: - Court Discovery View
-struct CourtDiscoveryView: View {
-    let venues: [CourtVenue]
-    @State private var searchText = ""
-    @State private var showFreeOnly = false
-    @State private var showIndoorOnly = false
-
-    var filteredVenues: [CourtVenue] {
-        venues.filter { venue in
-            (searchText.isEmpty || venue.name.localizedCaseInsensitiveContains(searchText)) &&
-            (!showIndoorOnly || venue.isIndoor)
-        }
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Search bar
-            HStack {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search courts...", text: $searchText)
-            }
-            .padding(10)
-            .background(Color.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-
-            // Filter chips
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    FilterChip(label: "Free / Public", isSelected: showFreeOnly, color: Color.dinkrGreen) {
-                        showFreeOnly.toggle()
-                    }
-                    FilterChip(label: "Indoor", isSelected: showIndoorOnly, color: Color.dinkrSky) {
-                        showIndoorOnly.toggle()
-                    }
-                    FilterChip(label: "Lit Courts", isSelected: false, color: Color.dinkrAmber) {}
-                    FilterChip(label: "Open Now", isSelected: false, color: Color.dinkrCoral) {}
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 8)
-            }
-
-            Divider()
-
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(filteredVenues) { venue in
-                        NavigationLink {
-                            CourtDetailView(venue: venue)
-                        } label: {
-                            CourtDiscoveryCard(venue: venue)
-                                .padding(.horizontal)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.vertical, 8)
-            }
-        }
-    }
-}
-
-struct CourtDiscoveryCard: View {
-    let venue: CourtVenue
-
-    var body: some View {
-        PickleballCard {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 12) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.dinkrSky.opacity(0.15))
-                            .frame(width: 52, height: 52)
-                        Image(systemName: venue.isIndoor ? "building.2" : "sportscourt")
-                            .foregroundStyle(Color.dinkrSky)
-                            .font(.title3)
-                    }
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(venue.name)
-                            .font(.subheadline.weight(.semibold))
-                            .lineLimit(1)
-                        Text(venue.address)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                        HStack(spacing: 8) {
-                            Label("\(venue.courtCount) courts", systemImage: "sportscourt")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            if venue.isIndoor {
-                                Label("Indoor", systemImage: "building.2")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            if venue.hasLighting {
-                                Label("Lights", systemImage: "lightbulb.fill")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 4) {
-                        HStack(spacing: 2) {
-                            Image(systemName: "star.fill").font(.caption2).foregroundStyle(.yellow)
-                            Text(String(format: "%.1f", venue.rating)).font(.caption.weight(.semibold))
-                        }
-                        // Availability badge
-                        Text("Open")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 3)
-                            .background(Color.dinkrGreen)
-                            .clipShape(Capsule())
-                    }
-                }
-
-                // Map / Directions buttons
-                HStack(spacing: 8) {
-                    // Apple Maps link
-                    Link(destination: URL(string: "maps://maps.apple.com/?q=\(venue.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")")!) {
-                        Label("Apple Maps", systemImage: "map.fill")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.dinkrSky)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                    // Google Maps link
-                    Link(destination: URL(string: "https://maps.google.com/?q=\(venue.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")")!) {
-                        Label("Google Maps", systemImage: "globe")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color.dinkrSky)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.dinkrSky.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                }
-            }
-            .padding(14)
-        }
-    }
-}
-
 // MARK: - Leaderboard View
 struct LeaderboardView: View {
     @State private var selectedPeriod = 0
@@ -584,7 +493,7 @@ struct CourtListView: View {
 struct CourtRowCard: View {
     let venue: CourtVenue
     var body: some View {
-        CourtDiscoveryCard(venue: venue)
+        CourtVenueRow(venue: venue, onDirections: {})
     }
 }
 

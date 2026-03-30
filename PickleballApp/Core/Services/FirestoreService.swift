@@ -95,6 +95,81 @@ final class FirestoreService {
             onChange(items)
         }
     }
+
+    // MARK: - Listen to filtered/ordered collection
+
+    func listenToCollectionWhere<T: Decodable>(
+        collection: String,
+        whereField: String,
+        isGreaterThanOrEqualTo value: Any,
+        orderBy orderField: String,
+        onChange: @escaping ([T]) -> Void
+    ) -> ListenerRegistration {
+        db.collection(collection)
+            .whereField(whereField, isGreaterThanOrEqualTo: value)
+            .order(by: orderField, descending: false)
+            .addSnapshotListener { snapshot, _ in
+                guard let snapshot else { return }
+                let items = snapshot.documents.compactMap { try? $0.data(as: T.self) }
+                onChange(items)
+            }
+    }
+
+    // MARK: - Listen to ordered collection with optional limit
+
+    func listenToCollectionOrdered<T: Decodable>(
+        collection: String,
+        orderBy field: String,
+        descending: Bool = false,
+        limit: Int? = nil,
+        onChange: @escaping ([T]) -> Void
+    ) -> ListenerRegistration {
+        var query: Query = db.collection(collection).order(by: field, descending: descending)
+        if let limit { query = query.limit(to: limit) }
+        return query.addSnapshotListener { snapshot, _ in
+            guard let snapshot else { return }
+            let items = snapshot.documents.compactMap { try? $0.data(as: T.self) }
+            onChange(items)
+        }
+    }
+
+    // MARK: - Cursor-based pagination
+
+    /// Fetches a page of documents ordered by `field`, optionally starting after `lastDocument`.
+    func getPage<T: Decodable>(
+        collection: String,
+        orderBy field: String,
+        descending: Bool,
+        pageSize: Int,
+        after lastDocument: DocumentSnapshot?
+    ) async throws -> (items: [T], lastDocument: DocumentSnapshot?) {
+        var query: Query = db.collection(collection)
+            .order(by: field, descending: descending)
+            .limit(to: pageSize)
+        if let lastDocument {
+            query = query.start(afterDocument: lastDocument)
+        }
+        let snapshot = try await query.getDocuments()
+        let items = try snapshot.documents.map { try $0.data(as: T.self) }
+        let newLastDocument = snapshot.documents.last
+        return (items: items, lastDocument: newLastDocument)
+    }
+
+    /// Convenience wrapper: fetches the first page (no cursor).
+    func getFirstPage<T: Decodable>(
+        collection: String,
+        orderBy field: String,
+        descending: Bool,
+        pageSize: Int
+    ) async throws -> (items: [T], lastDocument: DocumentSnapshot?) {
+        try await getPage(
+            collection: collection,
+            orderBy: field,
+            descending: descending,
+            pageSize: pageSize,
+            after: nil
+        )
+    }
 }
 
 enum FirestoreError: LocalizedError {

@@ -1,70 +1,92 @@
-import Foundation
-import SwiftUI
-import PhotosUI
 import FirebaseStorage
+import UIKit
 
-@Observable
 final class ImageService {
-    var isUploading: Bool = false
-    var uploadProgress: Double = 0
-    var error: String? = nil
+    static let shared = ImageService()
+    private let storage = Storage.storage()
+    private var cache = NSCache<NSString, UIImage>()
 
-    // MARK: - PhotosUI Picker Support
-
-    func loadImage(from item: PhotosPickerItem) async -> UIImage? {
-        guard let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data) else { return nil }
-        return image
+    private init() {
+        cache.countLimit = 100
     }
 
-    // MARK: - Firebase Storage Upload
+    // MARK: - Upload
 
-    func uploadImage(_ image: UIImage, path: String) async throws -> URL {
-        isUploading = true
-        uploadProgress = 0
-        defer { isUploading = false; uploadProgress = 0 }
-
+    /// Compresses and uploads a UIImage to the given storage path.
+    /// Returns the public download URL string.
+    func upload(_ image: UIImage, path: String) async throws -> String {
         guard let data = image.jpegData(compressionQuality: 0.8) else {
             throw ImageError.compressionFailed
         }
 
-        let storageRef = Storage.storage().reference().child(path)
+        let ref = storage.reference().child(path)
         let metadata = StorageMetadata()
         metadata.contentType = "image/jpeg"
 
-        let uploadTask = storageRef.putData(data, metadata: metadata)
-        uploadTask.observe(.progress) { [weak self] snapshot in
-            let progress = Double(snapshot.progress?.completedUnitCount ?? 0) /
-                           Double(snapshot.progress?.totalUnitCount ?? 1)
-            self?.uploadProgress = progress
-        }
-
-        _ = try await storageRef.putDataAsync(data, metadata: metadata)
-        return try await storageRef.downloadURL()
-    }
-
-    // MARK: - Upload and return String URL
-
-    func uploadAndGetURL(_ image: UIImage, path: String) async throws -> String {
-        let url = try await uploadImage(image, path: path)
+        _ = try await ref.putDataAsync(data, metadata: metadata)
+        let url = try await ref.downloadURL()
         return url.absoluteString
     }
 
-    // MARK: - Delete from Storage
+    // MARK: - Fetch & Cache
 
-    func deleteImage(at url: String) async throws {
-        try await Storage.storage().reference(forURL: url).delete()
+    /// Downloads a UIImage from the given URL string, caching the result.
+    /// Subsequent calls for the same URL return the cached copy immediately.
+    func fetchImage(urlString: String) async throws -> UIImage {
+        let key = urlString as NSString
+
+        if let cached = cache.object(forKey: key) {
+            return cached
+        }
+
+        guard let url = URL(string: urlString) else {
+            throw ImageError.invalidURL
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw ImageError.downloadFailed("Non-2xx response from server")
+        }
+
+        guard let image = UIImage(data: data) else {
+            throw ImageError.downloadFailed("Could not decode image data")
+        }
+
+        cache.setObject(image, forKey: key)
+        return image
+    }
+
+    // MARK: - Delete
+
+    /// Deletes the file at the given storage path (not a download URL).
+    func delete(path: String) async throws {
+        try await storage.reference().child(path).delete()
     }
 }
 
+// MARK: - Storage Path Helpers
+
+enum StoragePaths {
+    static func avatar(userId: String) -> String { "avatars/\(userId).jpg" }
+    static func postMedia(postId: String, index: Int) -> String { "posts/\(postId)/\(index).jpg" }
+    static func listingPhoto(listingId: String, index: Int) -> String { "listings/\(listingId)/\(index).jpg" }
+}
+
+// MARK: - Errors
+
 enum ImageError: LocalizedError {
     case compressionFailed
+    case invalidURL
+    case downloadFailed(String)
     case uploadFailed(String)
 
     var errorDescription: String? {
         switch self {
-        case .compressionFailed: return "Image compression failed."
-        case .uploadFailed(let msg): return "Upload failed: \(msg)"
+        case .compressionFailed:        return "Image compression failed."
+        case .invalidURL:               return "The image URL is invalid."
+        case .downloadFailed(let msg):  return "Download failed: \(msg)"
+        case .uploadFailed(let msg):    return "Upload failed: \(msg)"
         }
     }
 }

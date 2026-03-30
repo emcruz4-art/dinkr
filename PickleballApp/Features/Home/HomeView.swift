@@ -7,74 +7,109 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    DinkrHeaderView(city: "Austin")
-                        .padding(.horizontal)
-                        .padding(.top, 8)
+            ZStack {
+                // Rich app background gradient
+                LinearGradient(
+                    colors: [
+                        Color.dinkrNavy.opacity(0.04),
+                        Color.appBackground,
+                        Color.dinkrGreen.opacity(0.02)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
 
-                    // Instagram-style check-in stories bar
-                    CheckInStoriesBar(checkIns: CheckInStoriesBar.mockCheckIns)
-                        .padding(.top, 4)
+                ScrollView {
+                    VStack(spacing: 0) {
+                        // Header
+                        DinkrHeaderView(city: "Austin")
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
 
-                    // For You / Following toggle
-                    Picker("Feed", selection: $feedMode) {
-                        Text("For You").tag(0)
-                        Text("Following").tag(1)
+                        // Check-in stories bar
+                        CheckInStoriesBar(checkIns: CheckInStoriesBar.mockCheckIns)
+                            .padding(.top, 6)
+
+                        // For You / Following toggle
+                        Picker("Feed", selection: $feedMode) {
+                            Text("For You").tag(0)
+                            Text("Following").tag(1)
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+
+                        // Bento grid
+                        LazyVStack(spacing: 14) {
+                            // Hero banner
+                            WelcomeHeroWidget(
+                                greeting: viewModel.greetingText,
+                                gameCount: viewModel.upcomingGameCount
+                            )
+                            .padding(.horizontal, 16)
+
+                            // Quick actions
+                            QuickActionsWidget()
+                                .padding(.horizontal, 16)
+
+                            // Featured event + Nearby games
+                            HStack(alignment: .top, spacing: 12) {
+                                FeaturedEventWidget(event: viewModel.featuredEvent)
+                                NearbyGamesWidget(
+                                    count: viewModel.nearbyGameCount,
+                                    distance: viewModel.nearestDistance
+                                )
+                                .frame(width: 130)
+                            }
+                            .padding(.horizontal, 16)
+
+                            // Community spotlight
+                            if let spotlight = viewModel.spotlight {
+                                CommunitySpotlightWidget(spotlight: spotlight)
+                                    .padding(.horizontal, 16)
+                            }
+
+                            // News + Players side by side
+                            HStack(alignment: .top, spacing: 12) {
+                                TopNewsWidget(articles: Array(viewModel.newsArticles.prefix(3)))
+                                FindPlayersNearbyWidget(
+                                    count: viewModel.nearbyPlayerCount,
+                                    newThisWeek: viewModel.newPlayersThisWeek
+                                )
+                                .frame(width: 130)
+                            }
+                            .padding(.horizontal, 16)
+
+                            // Groups horizontal scroll
+                            MyGroupsWidget(groups: viewModel.myGroups)
+                                .padding(.horizontal, 16)
+
+                            // Explore
+                            ExploreSection()
+                                .padding(.horizontal, 16)
+
+                            // Women's corner + Court vibes
+                            HStack(alignment: .top, spacing: 12) {
+                                WomensCornerWidget()
+                                CourtVibesWidget()
+                            }
+                            .padding(.horizontal, 16)
+
+                            // Feed preview
+                            FeedPreviewWidget(
+                                posts: Array(viewModel.posts.prefix(3)),
+                                onLike: { viewModel.likePost($0) }
+                            )
+                            .padding(.horizontal, 16)
+                        }
+                        .padding(.top, 12)
+                        .padding(.bottom, 36)
                     }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-
-                    LazyVStack(spacing: 12) {
-                        WelcomeHeroWidget(greeting: viewModel.greetingText,
-                                         gameCount: viewModel.upcomingGameCount)
-                            .padding(.horizontal)
-
-                        QuickActionsWidget()
-                            .padding(.horizontal)
-
-                        HStack(spacing: 10) {
-                            FeaturedEventWidget(event: viewModel.featuredEvent)
-                            NearbyGamesWidget(count: viewModel.nearbyGameCount,
-                                             distance: viewModel.nearestDistance)
-                        }
-                        .padding(.horizontal)
-
-                        if let spotlight = viewModel.spotlight {
-                            CommunitySpotlightWidget(spotlight: spotlight)
-                                .padding(.horizontal)
-                        }
-
-                        HStack(spacing: 10) {
-                            TopNewsWidget(articles: Array(viewModel.newsArticles.prefix(3)))
-                            FindPlayersNearbyWidget(count: viewModel.nearbyPlayerCount,
-                                                   newThisWeek: viewModel.newPlayersThisWeek)
-                        }
-                        .padding(.horizontal)
-
-                        MyGroupsWidget(groups: viewModel.myGroups)
-                            .padding(.horizontal)
-
-                        ExploreSection()
-                            .padding(.horizontal)
-
-                        HStack(spacing: 10) {
-                            WomensCornerWidget()
-                            CourtVibesWidget()
-                        }
-                        .padding(.horizontal)
-
-                        FeedPreviewWidget(posts: Array(viewModel.posts.prefix(3)),
-                                         onLike: { viewModel.likePost($0) })
-                            .padding(.horizontal)
-                    }
-                    .padding(.top, 12)
-                    .padding(.bottom, 32)
                 }
+                .refreshable { await viewModel.loadFeed() }
+                .navigationBarHidden(true)
             }
-            .refreshable { await viewModel.loadFeed() }
-            .navigationBarHidden(true)
         }
         .sheet(isPresented: $viewModel.showCreatePost) {
             CreatePostView()

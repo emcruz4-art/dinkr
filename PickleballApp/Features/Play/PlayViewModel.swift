@@ -12,6 +12,7 @@ final class PlayViewModel {
     var showHostGame = false
     var selectedFormat: GameFormat? = nil
     var todayOnly: Bool = false
+    var joinToast: String? = nil
 
     enum PlaySegment: String, CaseIterable {
         case games = "Games"
@@ -23,17 +24,71 @@ final class PlayViewModel {
     }
 
     private let firestoreService = FirestoreService.shared
+    private var sessionListener: ListenerRegistration?
+
+    // Tracks rsvp counts from the previous snapshot so we can detect joins
+    private var previousRsvpCounts: [String: Int] = [:]
+
+    // MARK: - Real-time session listener
+
+    func startListening() {
+        sessionListener?.remove()
+        sessionListener = firestoreService.listenToCollectionWhere(
+            collection: FirestoreCollections.gameSessions,
+            whereField: "dateTime",
+            isGreaterThanOrEqualTo: Timestamp(date: Date()),
+            orderBy: "dateTime"
+        ) { [weak self] (sessions: [GameSession]) in
+            guard let self else { return }
+            DispatchQueue.main.async {
+                self.handleSessionUpdate(sessions)
+            }
+        }
+    }
+
+    func stopListening() {
+        sessionListener?.remove()
+        sessionListener = nil
+    }
+
+    private func handleSessionUpdate(_ sessions: [GameSession]) {
+        // Detect any session where the rsvp count grew since last snapshot
+        for session in sessions {
+            let previousCount = previousRsvpCounts[session.id] ?? -1
+            let currentCount = session.rsvps.count
+            // Only fire the toast if we had a prior reading (not on first load)
+            // and the count genuinely increased
+            if previousCount >= 0 && currentCount > previousCount {
+                // Use the most-recently-joined rsvp id as a display name stub,
+                // since we only have the id array; real apps would resolve the name.
+                let joinerDisplay = session.rsvps.last.map { id in
+                    // Strip the "user_" prefix and capitalise for a readable label
+                    let trimmed = id.replacingOccurrences(of: "user_", with: "")
+                    return "Player \(trimmed)"
+                } ?? "Someone"
+                joinToast = "\(joinerDisplay) just joined · \(session.courtName)"
+                break   // one toast at a time
+            }
+        }
+
+        // Commit new rsvp counts for the next diff
+        for session in sessions {
+            previousRsvpCounts[session.id] = session.rsvps.count
+        }
+
+        nearbySessions = sessions
+    }
+
+    // MARK: - Load (one-shot + kicks off live listener)
 
     func load() async {
         isLoading = true
         defer { isLoading = false }
-        async let sessions: [GameSession] = (try? firestoreService.queryCollectionWhere(
-            collection: FirestoreCollections.gameSessions,
-            whereField: "dateTime",
-            isGreaterThanOrEqualTo: Timestamp(date: Date()),
-            orderBy: "dateTime",
-            descending: false
-        )) ?? []
+
+        // Kick off the real-time sessions listener
+        startListening()
+
+        // One-shot fetches for venues and players (these don't need live updates)
         async let venues: [CourtVenue] = (try? firestoreService.queryCollectionOrdered(
             collection: FirestoreCollections.courtVenues,
             orderBy: "name"
@@ -43,8 +98,10 @@ final class PlayViewModel {
             orderBy: "displayName",
             limit: 20
         )) ?? []
-        (nearbySessions, nearbyVenues, nearbyPlayers) = await (sessions, venues, players)
+        (nearbyVenues, nearbyPlayers) = await (venues, players)
     }
+
+    // MARK: - RSVP
 
     func rsvp(to session: GameSession, currentUserId: String) async {
         guard let index = nearbySessions.firstIndex(where: { $0.id == session.id }) else { return }

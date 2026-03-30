@@ -17,15 +17,9 @@ final class AuthService {
     private var authStateListener: AuthStateDidChangeListenerHandle?
 
     init() {
-        authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
-            guard let self else { return }
-            if let firebaseUser {
-                Task { await self.fetchAndSetUser(uid: firebaseUser.uid) }
-            } else {
-                self.currentUser = nil
-                self.isAuthenticated = false
-            }
-        }
+        // Auth.auth() cannot be called here — FirebaseApp.configure() hasn't
+        // run yet when @State properties are initialized. Listener is attached
+        // in restoreSession(), which is called from AppRootView after launch.
     }
 
     deinit {
@@ -37,6 +31,18 @@ final class AuthService {
     // MARK: - Restore Session
 
     func restoreSession() async {
+        // Attach auth state listener now that FirebaseApp is configured.
+        if authStateListener == nil {
+            authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
+                guard let self else { return }
+                if let firebaseUser {
+                    Task { await self.fetchAndSetUser(uid: firebaseUser.uid) }
+                } else {
+                    self.currentUser = nil
+                    self.isAuthenticated = false
+                }
+            }
+        }
         guard let firebaseUser = Auth.auth().currentUser else { return }
         await fetchAndSetUser(uid: firebaseUser.uid)
     }

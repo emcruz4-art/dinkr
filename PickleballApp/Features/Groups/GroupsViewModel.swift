@@ -26,6 +26,11 @@ final class GroupsViewModel {
             discoverGroups = allGroups
         } catch {
             print("[GroupsViewModel] load error: \(error)")
+            #if DEBUG
+            let all = Group.mockGroups
+            myGroups = currentUserId != nil ? Array(all.prefix(2)) : []
+            discoverGroups = all
+            #endif
         }
     }
 }

@@ -20,7 +20,7 @@ struct NearbyGamesView: View {
                 } else {
                     ForEach(viewModel.nearbySessions) { session in
                         NavigationLink {
-                            GameDetailView(session: session, viewModel: viewModel)
+                            GameSessionDetailView(session: session, viewModel: viewModel)
                         } label: {
                             GameCardView(session: session)
                                 .padding(.horizontal)

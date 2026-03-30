@@ -3,38 +3,51 @@ import SwiftUI
 struct GroupDetailView: View {
     let group: Group
     @State private var selectedTab = 0
+    @State private var tabIndicatorOffset: CGFloat = 0
     let tabs = ["Feed", "Members", "Events"]
 
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // Hero header
+
+                // ── Gradient hero header ─────────────────────────────────
                 GroupDetailHeader(group: group)
 
-                // Tab bar
-                HStack(spacing: 0) {
-                    ForEach(tabs.indices, id: \.self) { i in
-                        Button {
-                            selectedTab = i
-                        } label: {
-                            VStack(spacing: 4) {
-                                Text(tabs[i])
-                                    .font(.subheadline.weight(selectedTab == i ? .bold : .regular))
-                                    .foregroundStyle(selectedTab == i ? Color.dinkrGreen : .secondary)
-                                Rectangle()
-                                    .fill(selectedTab == i ? Color.dinkrGreen : Color.clear)
-                                    .frame(height: 2)
+                // ── Custom animated tab selector ─────────────────────────
+                VStack(spacing: 0) {
+                    HStack(spacing: 0) {
+                        ForEach(tabs.indices, id: \.self) { i in
+                            Button {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                    selectedTab = i
+                                }
+                            } label: {
+                                VStack(spacing: 5) {
+                                    Text(tabs[i])
+                                        .font(.subheadline.weight(selectedTab == i ? .bold : .regular))
+                                        .foregroundStyle(selectedTab == i ? Color.dinkrGreen : .secondary)
+                                        .animation(.easeInOut(duration: 0.2), value: selectedTab)
+
+                                    // Animated indicator pill
+                                    Capsule()
+                                        .fill(selectedTab == i ? Color.dinkrGreen : Color.clear)
+                                        .frame(height: 3)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .contentShape(Rectangle())
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
+                    .padding(.horizontal)
+
+                    Divider()
                 }
-                .padding(.horizontal)
+                .background(Color.appBackground)
+                .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
 
-                Divider()
-
+                // ── Tab content ──────────────────────────────────────────
                 switch selectedTab {
                 case 0:
                     GroupFeedView(group: group)
@@ -52,25 +65,93 @@ struct GroupDetailView: View {
     }
 }
 
+// MARK: - Premium Group Detail Header
+
 struct GroupDetailHeader: View {
     let group: Group
 
-    var body: some View {
-        VStack(spacing: 16) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(groupColor.opacity(0.12))
-                    .frame(width: 80, height: 80)
-                Image(systemName: groupIcon)
-                    .foregroundStyle(groupColor)
-                    .font(.largeTitle)
-            }
+    var accentColor: Color { groupDetailColor(for: group.type) }
 
-            VStack(spacing: 6) {
-                HStack(spacing: 6) {
-                    Text(group.name).font(.title2.weight(.bold))
+    var body: some View {
+        ZStack(alignment: .bottom) {
+
+            // ── Hero gradient background ─────────────────────────────────
+            ZStack(alignment: .topTrailing) {
+                LinearGradient(
+                    colors: [Color.dinkrNavy, accentColor.opacity(0.85)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+
+                // Decorative large icon watermark
+                Image(systemName: groupDetailIcon(for: group.type))
+                    .font(.system(size: 130, weight: .black))
+                    .foregroundStyle(.white.opacity(0.05))
+                    .padding(.top, 8)
+                    .padding(.trailing, 8)
+            }
+            .frame(height: 220)
+
+            // Bottom-of-hero vignette
+            LinearGradient(
+                colors: [.clear, Color.appBackground.opacity(0.85)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 80)
+
+            // Activity badge in hero
+            HStack {
+                Spacer()
+                Label("Active", systemImage: "circle.fill")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.dinkrGreen.opacity(0.85))
+                    .clipShape(Capsule())
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 16)
+            }
+        }
+
+        // ── Below-hero content ───────────────────────────────────────────
+        VStack(spacing: 16) {
+
+            // Group icon avatar — overlapping the hero
+            ZStack {
+                Circle()
+                    .fill(Color.appBackground)
+                    .frame(width: 88, height: 88)
+
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [accentColor, Color.dinkrNavy],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 78, height: 78)
+                    Image(systemName: groupDetailIcon(for: group.type))
+                        .foregroundStyle(.white)
+                        .font(.system(size: 30, weight: .semibold))
+                }
+            }
+            .shadow(color: accentColor.opacity(0.35), radius: 12, x: 0, y: 6)
+            .offset(y: -44)
+            .padding(.bottom, -44)
+
+            // Name + privacy
+            VStack(spacing: 5) {
+                HStack(spacing: 8) {
+                    Text(group.name)
+                        .font(.title2.weight(.bold))
                     if group.isPrivate {
-                        Image(systemName: "lock.fill").foregroundStyle(.secondary)
+                        Image(systemName: "lock.fill")
+                            .foregroundStyle(.secondary)
+                            .font(.subheadline)
                     }
                 }
                 Text(group.type.rawValue)
@@ -82,73 +163,127 @@ struct GroupDetailHeader: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
+                        .padding(.horizontal, 28)
+                        .padding(.top, 2)
                 }
             }
 
-            // Stats row
-            HStack(spacing: 40) {
-                StatColumn(value: "\(group.memberCount)", label: "Members")
-                StatColumn(value: group.isPrivate ? "Private" : "Public", label: "Access")
-                StatColumn(value: "Active", label: "Status")
+            // ── Stats chips ───────────────────────────────────────────────
+            HStack(spacing: 12) {
+                GroupStatChip(value: "\(group.memberCount)", label: "Members", icon: "person.2.fill", color: accentColor)
+                GroupStatChip(value: "24", label: "Posts", icon: "bubble.left.fill", color: Color.dinkrSky)
+                GroupStatChip(value: group.isPrivate ? "Private" : "Public", label: "Access", icon: group.isPrivate ? "lock.fill" : "globe", color: Color.dinkrAmber)
             }
 
-            // Member avatar row preview
-            HStack(spacing: -8) {
-                ForEach(0..<min(5, group.memberCount), id: \.self) { i in
-                    Circle()
-                        .fill(Color.dinkrGreen.opacity(0.2 + Double(i) * 0.08))
-                        .frame(width: 32, height: 32)
-                        .overlay(Circle().stroke(Color.appBackground, lineWidth: 2))
-                }
-                if group.memberCount > 5 {
-                    Circle()
-                        .fill(Color.secondary.opacity(0.15))
-                        .frame(width: 32, height: 32)
-                        .overlay(
-                            Text("+\(group.memberCount - 5)")
+            // ── Member avatar stack ──────────────────────────────────────
+            VStack(spacing: 6) {
+                HStack(spacing: -9) {
+                    ForEach(0..<min(6, max(0, group.memberCount)), id: \.self) { i in
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [accentColor.opacity(0.4 + Double(i) * 0.08), accentColor.opacity(0.2)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 34, height: 34)
+                            .overlay(Circle().stroke(Color.appBackground, lineWidth: 2.5))
+                    }
+                    if group.memberCount > 6 {
+                        ZStack {
+                            Circle()
+                                .fill(Color.secondary.opacity(0.15))
+                                .frame(width: 34, height: 34)
+                            Text("+\(group.memberCount - 6)")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundStyle(.secondary)
-                        )
-                        .overlay(Circle().stroke(Color.appBackground, lineWidth: 2))
+                        }
+                        .overlay(Circle().stroke(Color.appBackground, lineWidth: 2.5))
+                    }
                 }
+
+                Text("\(group.memberCount) members")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
+            // ── Join / Joined CTA ─────────────────────────────────────────
             Button {} label: {
-                Text("Join Group")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.dinkrGreen)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                HStack(spacing: 8) {
+                    Image(systemName: "person.badge.plus")
+                    Text("Join Group")
+                }
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    LinearGradient(
+                        colors: [accentColor, accentColor.opacity(0.75)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .shadow(color: accentColor.opacity(0.4), radius: 8, x: 0, y: 4)
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 40)
+            .padding(.horizontal, 32)
         }
-        .padding()
+        .padding(.top, 8)
+        .padding(.bottom, 20)
     }
+}
 
-    var groupIcon: String {
-        switch group.type {
-        case .publicClub, .privateClub: return "building.2"
-        case .womenOnly: return "figure.stand"
-        case .ageGroup: return "person.3"
-        case .recreational: return "figure.pickleball"
-        case .competitive: return "trophy"
-        case .neighborhood: return "house"
+// MARK: - Group Stat Chip
+
+struct GroupStatChip: View {
+    let value: String
+    let label: String
+    let icon: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(color)
+            Text(value)
+                .font(.subheadline.weight(.bold))
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
+        .frame(minWidth: 72)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(color.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
+}
 
-    var groupColor: Color {
-        switch group.type {
-        case .publicClub, .privateClub: return Color.dinkrSky
-        case .womenOnly: return .pink
-        case .ageGroup: return .purple
-        case .recreational: return Color.dinkrGreen
-        case .competitive: return Color.dinkrCoral
-        case .neighborhood: return .teal
-        }
+// MARK: - Helpers (module-level free functions mirroring GroupsView helpers)
+
+private func groupDetailIcon(for type: GroupType) -> String {
+    switch type {
+    case .publicClub, .privateClub: return "building.2"
+    case .womenOnly:                return "figure.stand"
+    case .ageGroup:                 return "person.3"
+    case .recreational:             return "figure.pickleball"
+    case .competitive:              return "trophy"
+    case .neighborhood:             return "house"
+    }
+}
+
+private func groupDetailColor(for type: GroupType) -> Color {
+    switch type {
+    case .publicClub, .privateClub: return Color.dinkrSky
+    case .womenOnly:                return .pink
+    case .ageGroup:                 return .purple
+    case .recreational:             return Color.dinkrGreen
+    case .competitive:              return Color.dinkrCoral
+    case .neighborhood:             return .teal
     }
 }
 

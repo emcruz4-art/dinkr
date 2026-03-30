@@ -11,12 +11,16 @@ final class ProfileViewModel {
     var showEditProfile = false
 
     private let firestoreService = FirestoreService.shared
-    private let imageService = ImageService()
+    private let imageService = ImageService.shared
 
     func load(authService: AuthService) async {
         isLoading = true
         defer { isLoading = false }
+        #if DEBUG
+        user = authService.currentUser ?? User.mockCurrentUser
+        #else
         user = authService.currentUser
+        #endif
         await loadPosts()
     }
 
@@ -37,7 +41,7 @@ final class ProfileViewModel {
         guard let uid = user?.id else { return }
         do {
             let path = "avatars/\(uid)/profile.jpg"
-            let urlString = try await imageService.uploadAndGetURL(image, path: path)
+            let urlString = try await imageService.upload(image, path: path)
             user?.avatarURL = urlString
             try await firestoreService.updateDocument(
                 collection: FirestoreCollections.users,
