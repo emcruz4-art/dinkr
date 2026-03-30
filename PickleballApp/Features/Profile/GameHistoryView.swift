@@ -93,6 +93,8 @@ struct StatPillCard: View {
 
 struct GameResultRow: View {
     let result: GameResult
+    var player: User = User.mockCurrentUser
+    @State private var showShareSheet = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -127,17 +129,34 @@ struct GameResultRow: View {
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(result.scoreDisplay)
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(result.isWin ? Color.dinkrGreen : Color.dinkrCoral)
-                Text(result.playedAt, style: .relative)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text(result.scoreDisplay)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(result.isWin ? Color.dinkrGreen : Color.dinkrCoral)
+                    Text(result.playedAt, style: .relative)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Button {
+                    HapticManager.selection()
+                    showShareSheet = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.dinkrGreen)
+                        .frame(width: 30, height: 30)
+                        .background(Color.dinkrGreen.opacity(0.1), in: Circle())
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(12)
         .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14))
+        .sheet(isPresented: $showShareSheet) {
+            MatchShareSheet(result: result, player: player)
+        }
     }
 }

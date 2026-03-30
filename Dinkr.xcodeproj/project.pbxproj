@@ -70,6 +70,7 @@
 		526A15AD03CBABB05604019B /* PickleballAppMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C151EE9A43C31D46BF6531FC /* PickleballAppMain.swift */; };
 		54FB3C0D02FA065E32A71FBA /* PaddleCompareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38E80A41E970CA1D209A0A84 /* PaddleCompareView.swift */; };
 		55BDCE1102EDFA797DC3EE23 /* GroupMembersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 153A23C992764C010B0DDE86 /* GroupMembersView.swift */; };
+		5D74F3644045B24F4EAC87DC /* MatchShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6018BD0E6921326CD2BC0B36 /* MatchShareCard.swift */; };
 		5DE4CCA42D55433C03283DFD /* Challenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91D01125CEF11A22D3D9D7B /* Challenge.swift */; };
 		5E7857B76C2953BCDCEE0774 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CED674E47C622C78A1A2B3C /* HomeViewModel.swift */; };
 		5F26E596AAB4F9925AD0CA09 /* GroupEventsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56B98290BACC0CE09D44A177 /* GroupEventsView.swift */; };
@@ -267,6 +268,7 @@
 		58CCE99C5D1CD8EAF9704AD8 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		5B25E71503EE48961DCD3D37 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		5EB3CCB7003BADA3D047D94E /* MarketView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketView.swift; sourceTree = "<group>"; };
+		6018BD0E6921326CD2BC0B36 /* MatchShareCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchShareCard.swift; sourceTree = "<group>"; };
 		619A736ED243498DB055175F /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		61D56B4467EC7272F685C113 /* DinkrIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DinkrIconView.swift; sourceTree = "<group>"; };
 		630B1D0A76875C9E85B21E41 /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
@@ -592,6 +594,7 @@
 				85CAACB101A39E809BF129C1 /* FollowButton.swift */,
 				6FC367B2CD6DCB39239D457B /* HapticManager.swift */,
 				FDC232BEB2B1751764F8FA55 /* ImagePickerView.swift */,
+				6018BD0E6921326CD2BC0B36 /* MatchShareCard.swift */,
 				19D97FF21208856D693B7B33 /* OfflineBannerView.swift */,
 				B7EF7CDEA4ED22E0927CB4D8 /* PaginatedListView.swift */,
 				28C778610E676CF419E61183 /* PickleballCard.swift */,
@@ -995,6 +998,7 @@
 				13322626B6DD56159E224ECA /* MarketOffer.swift in Sources */,
 				A62E419C4DFAA5A232FAD068 /* MarketView.swift in Sources */,
 				090446B67E7BEED93972BB6E /* MarketViewModel.swift in Sources */,
+				5D74F3644045B24F4EAC87DC /* MatchShareCard.swift in Sources */,
 				D079EBD419B98870059DA05D /* MessagesView.swift in Sources */,
 				2CF21CC2EA490B51386E8A07 /* MessagingService.swift in Sources */,
 				74553F831575A904AEF5AFE7 /* MyOffersView.swift in Sources */,
