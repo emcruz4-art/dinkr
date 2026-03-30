@@ -1,6 +1,6 @@
 import Foundation
 
-enum SkillLevel: String, Codable, CaseIterable, Hashable {
+enum SkillLevel: String, Codable, CaseIterable, Hashable, Comparable {
     case beginner20 = "2.0"
     case beginner25 = "2.5"
     case intermediate30 = "3.0"
@@ -10,6 +10,23 @@ enum SkillLevel: String, Codable, CaseIterable, Hashable {
     case pro50 = "5.0+"
 
     var label: String { rawValue }
+
+    /// Numeric position used for sort scoring and match-quality calculation.
+    var sortIndex: Int {
+        switch self {
+        case .beginner20: return 0
+        case .beginner25: return 1
+        case .intermediate30: return 2
+        case .intermediate35: return 3
+        case .advanced40: return 4
+        case .advanced45: return 5
+        case .pro50: return 6
+        }
+    }
+
+    static func < (lhs: SkillLevel, rhs: SkillLevel) -> Bool {
+        lhs.sortIndex < rhs.sortIndex
+    }
 
     var color: String {
         switch self {

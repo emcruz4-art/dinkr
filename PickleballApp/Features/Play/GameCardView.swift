@@ -2,6 +2,7 @@ import SwiftUI
 
 struct GameCardView: View {
     let session: GameSession
+    var matchScore: Double? = nil
     @State private var isPressed = false
 
     // MARK: - Computed helpers
@@ -127,7 +128,7 @@ struct GameCardView: View {
                     }
                 }
 
-                // Row 2: Format label + skill range pills
+                // Row 2: Format label + skill range pills + match quality badge
                 HStack(spacing: 6) {
                     Text(session.format.rawValue.capitalized)
                         .font(.system(size: 10, weight: .semibold))
@@ -148,6 +149,10 @@ struct GameCardView: View {
                     .clipShape(Capsule())
 
                     Spacer()
+
+                    if let score = matchScore {
+                        MatchQualityBadge(score: score)
+                    }
                 }
 
                 // Row 3: Host avatar + name + star rating | fee badge
@@ -253,9 +258,47 @@ struct GameCardView: View {
     ScrollView {
         VStack(spacing: 14) {
             ForEach(GameSession.mockSessions) { session in
-                GameCardView(session: session)
+                GameCardView(session: session, matchScore: 1.0)
             }
         }
         .padding()
+    }
+}
+
+// MARK: - Match Quality Badge
+
+struct MatchQualityBadge: View {
+    let score: Double   // 0.0 – 1.0
+
+    private var label: String {
+        switch score {
+        case 1.0:        return "Perfect"
+        case 0.75..<1.0: return "Great"
+        case 0.5..<0.75: return "Good"
+        default:         return "Stretch"
+        }
+    }
+
+    private var badgeColor: Color {
+        switch score {
+        case 1.0:        return Color.dinkrGreen
+        case 0.75..<1.0: return Color.dinkrSky
+        case 0.5..<0.75: return Color.dinkrAmber
+        default:         return Color.secondary
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Circle()
+                .fill(badgeColor)
+                .frame(width: 6, height: 6)
+            Text(label)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(badgeColor)
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
+        .background(badgeColor.opacity(0.12), in: Capsule())
     }
 }

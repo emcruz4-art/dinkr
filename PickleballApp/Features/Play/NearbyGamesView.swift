@@ -2,13 +2,23 @@ import SwiftUI
 
 struct NearbyGamesView: View {
     var viewModel: PlayViewModel
+    private let currentUser = User.mockCurrentUser
+
+    private var sessions: [GameSession] {
+        viewModel.sortedSessions(playerSkill: currentUser.skillLevel)
+    }
 
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
+                // Sort bar
+                sortBar
+                    .padding(.horizontal)
+                    .padding(.top, 4)
+
                 if viewModel.isLoading {
                     ProgressView().padding(.top, 40)
-                } else if viewModel.nearbySessions.isEmpty {
+                } else if sessions.isEmpty {
                     EmptyStateView(
                         icon: "figure.pickleball",
                         title: "No Games Nearby",
@@ -18,12 +28,17 @@ struct NearbyGamesView: View {
                     )
                     .padding(.top, 40)
                 } else {
-                    ForEach(viewModel.nearbySessions) { session in
+                    ForEach(sessions) { session in
                         NavigationLink {
                             GameSessionDetailView(session: session, viewModel: viewModel)
                         } label: {
-                            GameCardView(session: session)
-                                .padding(.horizontal)
+                            GameCardView(
+                                session: session,
+                                matchScore: viewModel.sortMode == .skillMatch
+                                    ? viewModel.matchScore(session: session, playerSkill: currentUser.skillLevel)
+                                    : nil
+                            )
+                            .padding(.horizontal)
                         }
                         .buttonStyle(.plain)
                     }
@@ -33,7 +48,43 @@ struct NearbyGamesView: View {
         }
         .refreshable { await viewModel.load() }
     }
+
+    // MARK: - Sort Bar
+
+    private var sortBar: some View {
+        HStack(spacing: 0) {
+            ForEach(PlayViewModel.GameSortMode.allCases, id: \.self) { mode in
+                let isSelected = viewModel.sortMode == mode
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        viewModel.sortMode = mode
+                        HapticManager.selection()
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: mode.icon)
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(mode.rawValue)
+                            .font(.system(size: 12, weight: isSelected ? .bold : .medium))
+                    }
+                    .foregroundStyle(isSelected ? .white : Color.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(
+                        isSelected ? Color.dinkrGreen : Color.clear,
+                        in: Capsule()
+                    )
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(4)
+        .background(Color(UIColor.secondarySystemBackground), in: Capsule())
+    }
 }
+
+// MARK: - GameDetailView (legacy, kept for backward compat)
 
 struct GameDetailView: View {
     let session: GameSession

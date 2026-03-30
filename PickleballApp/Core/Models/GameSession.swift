@@ -136,10 +136,3 @@ extension GameSession {
                     isPublic: true, notes: "Outdoor sunset open play! All welcome. Food trucks nearby!", fee: 0.00),
     ]
 }
-
-extension SkillLevel: Comparable {
-    public static func < (lhs: SkillLevel, rhs: SkillLevel) -> Bool {
-        let order: [SkillLevel] = [.beginner20, .beginner25, .intermediate30, .intermediate35, .advanced40, .advanced45, .pro50]
-        return (order.firstIndex(of: lhs) ?? 0) < (order.firstIndex(of: rhs) ?? 0)
-    }
-}

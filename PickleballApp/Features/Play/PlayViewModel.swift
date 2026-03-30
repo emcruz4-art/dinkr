@@ -14,6 +14,23 @@ final class PlayViewModel {
     var todayOnly: Bool = false
     var joinToast: String? = nil
 
+    /// Controls the game list sort mode. Defaults to skill match.
+    var sortMode: GameSortMode = .skillMatch
+
+    enum GameSortMode: String, CaseIterable {
+        case skillMatch = "Best Match"
+        case soonest    = "Starting Soon"
+        case spotsLeft  = "Spots Available"
+
+        var icon: String {
+            switch self {
+            case .skillMatch: return "person.crop.circle.badge.checkmark"
+            case .soonest:    return "clock.fill"
+            case .spotsLeft:  return "person.3.fill"
+            }
+        }
+    }
+
     enum PlaySegment: String, CaseIterable {
         case games = "Games"
         case live = "Live 🔴"
@@ -21,6 +38,51 @@ final class PlayViewModel {
         case players = "Players"
         case match = "Match ♟️"
         case leaderboard = "Rankings"
+    }
+
+    // MARK: - Skill match scoring
+
+    /// Returns a 0–1 score: 1.0 = perfect match (player is inside the range),
+    /// then degrades by distance (in skill steps) outside the range.
+    func matchScore(session: GameSession, playerSkill: SkillLevel) -> Double {
+        let lo = session.skillRange.lowerBound.sortIndex
+        let hi = session.skillRange.upperBound.sortIndex
+        let p  = playerSkill.sortIndex
+        if p >= lo && p <= hi { return 1.0 }
+        let distance = p < lo ? Double(lo - p) : Double(p - hi)
+        return max(0, 1.0 - distance * 0.25)
+    }
+
+    // MARK: - Filtered & sorted sessions (used by NearbyGamesView)
+
+    func sortedSessions(playerSkill: SkillLevel) -> [GameSession] {
+        var sessions = nearbySessions
+
+        // Format filter
+        if let fmt = selectedFormat {
+            sessions = sessions.filter { $0.format == fmt }
+        }
+
+        // Today-only filter
+        if todayOnly {
+            let cal = Calendar.current
+            sessions = sessions.filter { cal.isDateInToday($0.dateTime) }
+        }
+
+        // Sort
+        switch sortMode {
+        case .skillMatch:
+            sessions.sort {
+                matchScore(session: $0, playerSkill: playerSkill) >
+                matchScore(session: $1, playerSkill: playerSkill)
+            }
+        case .soonest:
+            sessions.sort { $0.dateTime < $1.dateTime }
+        case .spotsLeft:
+            sessions.sort { $0.spotsRemaining > $1.spotsRemaining }
+        }
+
+        return sessions
     }
 
     private let firestoreService = FirestoreService.shared
