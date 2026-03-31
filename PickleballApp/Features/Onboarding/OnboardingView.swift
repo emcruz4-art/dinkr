@@ -78,12 +78,7 @@ struct OnboardingView: View {
                     selectedStyles: selectedStyles
                 ) {
                     hasCompletedOnboarding = true
-                    Task {
-                        try? await authService.signIn(
-                            email: "demo@pickleballapp.com",
-                            password: "demo"
-                        )
-                    }
+                    withAnimation(.easeInOut(duration: 0.4)) { showAuthLanding = true }
                 }
                 .tag(4)
             }
