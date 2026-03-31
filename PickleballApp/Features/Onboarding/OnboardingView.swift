@@ -78,6 +78,9 @@ struct OnboardingView: View {
                     selectedStyles: selectedStyles
                 ) {
                     hasCompletedOnboarding = true
+                    // Persist prefs so AuthService can apply them after sign-in
+                    UserDefaults.standard.set(selectedSkill.rawValue, forKey: "pendingOnboardingSkill")
+                    UserDefaults.standard.set(Array(selectedStyles).map(\.rawValue), forKey: "pendingOnboardingStyles")
                     withAnimation(.easeInOut(duration: 0.4)) { showAuthLanding = true }
                 }
                 .tag(4)

@@ -18,7 +18,8 @@ enum GameViewMode: String, CaseIterable {
 
 struct NearbyGamesView: View {
     var viewModel: PlayViewModel
-    private let currentUser = User.mockCurrentUser
+    @Environment(AuthService.self) private var authService
+    private var currentUser: User { authService.currentUser ?? User.mockCurrentUser }
     @State private var showDiscover = false
     @State private var viewMode: GameViewMode = .list
 
@@ -188,7 +189,8 @@ struct NearbyGamesView: View {
 struct GameDetailView: View {
     let session: GameSession
     var viewModel: PlayViewModel
-    private let currentUserId = "user_001"
+    @Environment(AuthService.self) private var authService
+    private var currentUserId: String { authService.currentUser?.id ?? "user_001" }
 
     var isRsvped: Bool { session.rsvps.contains(currentUserId) }
 

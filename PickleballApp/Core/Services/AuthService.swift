@@ -265,6 +265,38 @@ final class AuthService {
             currentUser = fallback
             isAuthenticated = true
         }
+        // Apply any pending onboarding preferences saved before sign-in
+        await applyPendingOnboardingPrefs(uid: uid)
+        // Persist the FCM token now that we have a verified user ID
+        Task { await MessagingService.shared.saveTokenToFirestore(userId: uid) }
+    }
+
+    private func applyPendingOnboardingPrefs(uid: String) async {
+        let defaults = UserDefaults.standard
+        guard let skillRaw = defaults.string(forKey: "pendingOnboardingSkill"),
+              let skill = SkillLevel(rawValue: skillRaw) else { return }
+
+        let styleRaws = defaults.stringArray(forKey: "pendingOnboardingStyles") ?? []
+        let styles = styleRaws.compactMap { PlayStyle(rawValue: $0) }
+
+        var fields: [String: Any] = ["skillLevel": skill.rawValue]
+        if !styles.isEmpty {
+            fields["playStyles"] = styles.map(\.rawValue)
+            fields["playStyle"] = styles.first?.rawValue ?? ""
+        }
+        try? await FirestoreService.shared.updateDocument(
+            collection: FirestoreCollections.users,
+            documentId: uid,
+            data: fields
+        )
+
+        // Reflect changes in-memory
+        currentUser?.skillLevel = skill
+        if let first = styles.first { currentUser?.playStyle = first }
+
+        // Clear consumed prefs
+        defaults.removeObject(forKey: "pendingOnboardingSkill")
+        defaults.removeObject(forKey: "pendingOnboardingStyles")
     }
 
     private func createUserDocument(_ user: User) async throws {

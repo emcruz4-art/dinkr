@@ -1,4 +1,5 @@
 import Foundation
+import FirebaseAuth
 import FirebaseMessaging
 import FirebaseFirestore
 import UserNotifications
@@ -46,6 +47,10 @@ final class MessagingService: NSObject, ObservableObject, UNUserNotificationCent
         guard let token = fcmToken else { return }
         Task { @MainActor [weak self] in
             self?.fcmToken = token
+            // If a user is already authenticated, persist the refreshed token immediately
+            if let userId = Auth.auth().currentUser?.uid {
+                await self?.saveTokenToFirestore(userId: userId)
+            }
         }
     }
 
