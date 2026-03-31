@@ -114,6 +114,7 @@ struct PickleballAppMain: App {
 struct AppRootView: View {
     @Environment(AuthService.self) private var authService
     @Environment(StoreService.self) private var storeService
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
         ZStack {

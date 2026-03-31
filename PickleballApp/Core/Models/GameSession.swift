@@ -134,5 +134,14 @@ extension GameSession {
                     format: .openPlay, skillRange: .beginner25 ... .advanced45,
                     totalSpots: 16, rsvps: Array(repeating: "u", count: 9), waitlist: [],
                     isPublic: true, notes: "Outdoor sunset open play! All welcome. Food trucks nearby!", fee: 0.00),
+        GameSession(id: "gs9", hostId: "user_003", hostName: "Jordan Smith",
+                    courtId: "court_001", courtName: "Westside Pickleball Complex",
+                    dateTime: Date().addingTimeInterval(-1800),
+                    format: .doubles, skillRange: .intermediate35 ... .advanced40,
+                    totalSpots: 4, rsvps: ["user_001", "user_002", "user_003", "user_004"], waitlist: [],
+                    isPublic: true, notes: "Doubles match — in progress!",
+                    liveScore: LiveScoreSnapshot(scoreA: 9, scoreB: 7,
+                                                 teamAName: "Smash Bros", teamBName: "Dink Squad",
+                                                 isComplete: false, servingTeam: "A")),
     ]
 }

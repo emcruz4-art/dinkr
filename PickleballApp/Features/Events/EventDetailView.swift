@@ -4,6 +4,7 @@ import MapKit
 struct EventDetailView: View {
     let event: Event
     @State private var showBracketBuilder = false
+    @State private var showRegistration = false
 
     private var mockBracket: Bracket? {
         Bracket.mock.eventId == event.id ? Bracket.mock : nil
@@ -78,8 +79,13 @@ struct EventDetailView: View {
                     }
 
                     // CTA
-                    Button("Register / Learn More") {}
-                        .primaryButton()
+                    if event.entryFee != nil || event.type == .tournament {
+                        Button("Register Now") { showRegistration = true }
+                            .primaryButton()
+                    } else {
+                        Button("Learn More") {}
+                            .primaryButton()
+                    }
 
                     Divider()
 
@@ -94,6 +100,9 @@ struct EventDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showBracketBuilder) {
             BracketBuilderView()
+        }
+        .sheet(isPresented: $showRegistration) {
+            TournamentRegistrationView(event: event)
         }
     }
 

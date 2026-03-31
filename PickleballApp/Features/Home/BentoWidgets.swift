@@ -1251,6 +1251,306 @@ struct VideoThumbnailCard: View {
     }
 }
 
+// MARK: - TrendingGamesWidget
+
+struct TrendingGamesWidget: View {
+    let sessions: [GameSession]
+
+    private func formatColor(_ format: GameFormat) -> Color {
+        switch format {
+        case .singles:      return Color.dinkrCoral
+        case .doubles:      return Color.dinkrGreen
+        case .mixed:        return Color.dinkrSky
+        case .openPlay:     return Color.dinkrAmber
+        case .round_robin:  return Color.dinkrNavy
+        }
+    }
+
+    private func formatLabel(_ format: GameFormat) -> String {
+        switch format {
+        case .singles:      return "Singles"
+        case .doubles:      return "Doubles"
+        case .mixed:        return "Mixed"
+        case .openPlay:     return "Open Play"
+        case .round_robin:  return "Round Robin"
+        }
+    }
+
+    private func countdownLabel(_ date: Date) -> String {
+        let diff = date.timeIntervalSince(Date())
+        if diff <= 0 { return "Now" }
+        let hours = Int(diff / 3600)
+        let minutes = Int((diff.truncatingRemainder(dividingBy: 3600)) / 60)
+        if hours > 0 { return "In \(hours)h" }
+        return "In \(minutes)m"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header row
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "flame.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.dinkrCoral)
+                    Text("Filling Fast")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(Color.dinkrNavy)
+                }
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Games Near You")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.leading, 2)
+                Spacer()
+                Button {
+                    HapticManager.selection()
+                } label: {
+                    Text("View All →")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.dinkrGreen)
+                }
+            }
+
+            // Horizontal scroll of mini-cards
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(sessions.prefix(3)) { session in
+                        VStack(alignment: .leading, spacing: 6) {
+                            // Court name
+                            Text(session.courtName)
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(Color.dinkrNavy)
+                                .lineLimit(1)
+
+                            // Format pill
+                            Text(formatLabel(session.format))
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(formatColor(session.format))
+                                .clipShape(Capsule())
+
+                            Spacer(minLength: 0)
+
+                            // Spots remaining + countdown chip
+                            HStack(spacing: 4) {
+                                Text("\(session.spotsRemaining) left")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(session.spotsRemaining <= 2 ? Color.dinkrCoral : Color.dinkrGreen)
+                                Spacer(minLength: 0)
+                                Text(countdownLabel(session.dateTime))
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.dinkrNavy.opacity(0.75))
+                                    .clipShape(Capsule())
+                            }
+                        }
+                        .padding(10)
+                        .frame(width: 130, height: 90)
+                        .background(Color.cardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .shadow(color: .black.opacity(0.06), radius: 5, x: 0, y: 2)
+                    }
+                }
+                .padding(.horizontal, 2)
+            }
+        }
+        .padding(14)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 3)
+    }
+}
+
+// MARK: - LiveActivityWidget
+
+struct LiveActivityWidget: View {
+    let session: GameSession
+
+    @State private var pulsing = false
+
+    var body: some View {
+        ZStack {
+            // dinkrCoral gradient background
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.dinkrCoral, Color.dinkrCoral.opacity(0.75)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            // Subtle court line pattern at 4% opacity
+            Canvas { ctx, size in
+                let lineColor = Color.white.opacity(0.04)
+                // Kitchen line
+                ctx.stroke(Path { p in
+                    p.move(to: CGPoint(x: 0, y: size.height * 0.45))
+                    p.addLine(to: CGPoint(x: size.width, y: size.height * 0.45))
+                }, with: .color(lineColor), lineWidth: 2)
+                // Center line
+                ctx.stroke(Path { p in
+                    p.move(to: CGPoint(x: size.width / 2, y: size.height * 0.45))
+                    p.addLine(to: CGPoint(x: size.width / 2, y: size.height))
+                }, with: .color(lineColor), lineWidth: 2)
+                // Left sideline
+                ctx.stroke(Path { p in
+                    p.move(to: CGPoint(x: size.width * 0.08, y: 0))
+                    p.addLine(to: CGPoint(x: size.width * 0.08, y: size.height))
+                }, with: .color(lineColor), lineWidth: 1.5)
+                // Right sideline
+                ctx.stroke(Path { p in
+                    p.move(to: CGPoint(x: size.width * 0.92, y: 0))
+                    p.addLine(to: CGPoint(x: size.width * 0.92, y: size.height))
+                }, with: .color(lineColor), lineWidth: 1.5)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+
+            // Content
+            VStack(alignment: .leading, spacing: 10) {
+                // LIVE badge
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 8, height: 8)
+                        .scaleEffect(pulsing ? 1.3 : 1.0)
+                        .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulsing)
+                    Text("LIVE")
+                        .font(.caption.weight(.heavy))
+                        .foregroundStyle(.white)
+                        .kerning(1.5)
+                    Spacer()
+                    // Watch Live button
+                    Button {
+                        HapticManager.medium()
+                    } label: {
+                        Text("Watch Live")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.dinkrCoral)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.white)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                // Score display
+                if let score = session.liveScore {
+                    HStack(alignment: .center, spacing: 0) {
+                        Text(score.teamAName)
+                            .font(.callout.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .lineLimit(1)
+                        Spacer()
+                        Text("\(score.scoreA)")
+                            .font(.system(size: 36, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                        Text("  —  ")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.6))
+                        Text("\(score.scoreB)")
+                            .font(.system(size: 36, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Text(score.teamBName)
+                            .font(.callout.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .lineLimit(1)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+
+                // Court + format
+                HStack(spacing: 6) {
+                    Image(systemName: "sportscourt.fill")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.8))
+                    Text(session.courtName)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.85))
+                    Text("·")
+                        .foregroundStyle(.white.opacity(0.5))
+                    Text(session.format.rawValue.capitalized)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.75))
+                }
+            }
+            .padding(16)
+        }
+        .frame(maxWidth: .infinity)
+        .shadow(color: Color.dinkrCoral.opacity(0.35), radius: 12, x: 0, y: 5)
+        .onAppear { pulsing = true }
+    }
+}
+
+// MARK: - DailyTipWidget
+
+struct DailyTipWidget: View {
+    private static let tips: [String] = [
+        "Keep your paddle up at the kitchen line",
+        "Dink cross-court for safer angles",
+        "Communicate with your partner before every serve",
+        "Attack mid-court pop-ups with authority",
+        "Stay out of no-man's land",
+        "Use the erne sparingly but effectively",
+        "Reset to neutral when in trouble"
+    ]
+
+    private var todaysTip: String {
+        let dayIndex = Calendar.current.component(.weekday, from: Date()) - 1
+        return Self.tips[dayIndex % Self.tips.count]
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Header pill
+            HStack(spacing: 6) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.dinkrAmber)
+                Text("Daily Tip")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.dinkrNavy)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Color.dinkrAmber.opacity(0.12))
+            .clipShape(Capsule())
+
+            // Tip text
+            Text("\"\(todaysTip)\"")
+                .font(.subheadline.italic())
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // Pro Tip badge
+            HStack(spacing: 4) {
+                Text("💡")
+                    .font(.caption)
+                Text("Pro Tip")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.dinkrAmber)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.dinkrAmber.opacity(0.10))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 3)
+    }
+}
+
 // MARK: - ChallengesWidget
 
 struct ChallengesWidget: View {

@@ -1,8 +1,8 @@
 import SwiftUI
 
-// MARK: - BracketMatchCard
+// MARK: - BracketMatchCardView
 
-struct BracketMatchCard: View {
+struct BracketMatchCardView: View {
     let match: NewBracketMatch
 
     var body: some View {
@@ -104,7 +104,7 @@ struct BracketView: View {
                                         .frame(width: 160, alignment: .center)
 
                                     ForEach(roundMatches) { match in
-                                        BracketMatchCard(match: match)
+                                        BracketMatchCardView(match: match)
                                     }
                                 }
                                 .padding(.leading, idx == 0 ? 16 : 0)

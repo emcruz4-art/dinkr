@@ -8,7 +8,7 @@ struct ProfileView: View {
     @State private var selectedTab = 0
     @State private var showSettings = false
     @Namespace private var tabNamespace
-    let tabs = ["Overview", "History", "Achievements"]
+    let tabs = ["Overview", "History", "Stats", "Achievements"]
 
     var body: some View {
         NavigationStack {
@@ -33,6 +33,8 @@ struct ProfileView: View {
                         case 1:
                             GameHistoryView(userId: authService.currentUser?.id ?? User.mockCurrentUser.id)
                         case 2:
+                            StatsView(user: user)
+                        case 3:
                             AchievementsView(user: viewModel.user ?? User.mockCurrentUser, gameResults: viewModel.gameResults)
                         default:
                             EmptyView()

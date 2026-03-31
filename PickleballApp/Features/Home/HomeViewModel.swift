@@ -217,6 +217,8 @@ final class HomeViewModel {
 
     var featuredEvent: Event { Event.mockEvents[0] }
     var myGroups: [String] { ["S. Austin Crew", "4.0+ Pool", "Mueller Regulars"] }
+    var trendingGames: [GameSession] { Array(GameSession.mockSessions.prefix(3)) }
+    var liveSession: GameSession? { GameSession.mockSessions.first { $0.liveScore != nil } }
 
     var greetingText: String {
         let first = currentUserName?.components(separatedBy: " ").first ?? "there"

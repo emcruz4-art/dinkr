@@ -187,7 +187,7 @@ struct BracketBuilderView: View {
                                             .frame(width: 160, alignment: .center)
 
                                         ForEach(roundMatches) { match in
-                                            BracketMatchCard(match: match)
+                                            BracketMatchCardView(match: match)
                                         }
                                     }
                                     .padding(.leading, idx == 0 ? 16 : 0)

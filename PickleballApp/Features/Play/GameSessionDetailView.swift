@@ -12,6 +12,8 @@ struct GameSessionDetailView: View {
     @State private var showToast = false
     @State private var toastMessage = ""
     @State private var showLogResult = false
+    @State private var showLiveScoreEntry = false
+    @State private var liveScoreSnapshot: GameSession.LiveScoreSnapshot?
 
     private var currentUserId: String { authService.currentUser?.id ?? "user_001" }
     private var isRsvped: Bool { session.rsvps.contains(currentUserId) }
@@ -85,6 +87,17 @@ struct GameSessionDetailView: View {
         .animation(.easeInOut(duration: 0.3), value: showToast)
         .sheet(isPresented: $showLogResult) {
             LogGameResultView()
+        }
+        .fullScreenCover(isPresented: $showLiveScoreEntry) {
+            LiveScoreEntryView(session: session, liveScore: $liveScoreSnapshot)
+        }
+        .onChange(of: showLiveScoreEntry) { _, isPresented in
+            if !isPresented, let snapshot = liveScoreSnapshot {
+                viewModel.startLiveScore(session: session, snapshot: snapshot)
+            }
+        }
+        .onAppear {
+            liveScoreSnapshot = session.liveScore
         }
     }
 
@@ -373,11 +386,14 @@ struct GameSessionDetailView: View {
 
         // Host can always start score tracking
         if session.hostId == currentUserId {
-            NavigationLink(destination: LiveScoreView(gameSessionId: session.id)) {
+            Button {
+                liveScoreSnapshot = session.liveScore
+                showLiveScoreEntry = true
+            } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "sportscourt.fill")
                         .foregroundStyle(Color.dinkrGreen)
-                    Text(session.liveScore == nil ? "Start Score Tracking" : "Manage Live Score")
+                    Text(session.liveScore == nil ? "Start Live Score" : "Update Score")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color.dinkrGreen)
                     Spacer()

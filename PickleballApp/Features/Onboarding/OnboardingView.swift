@@ -1,31 +1,706 @@
 import SwiftUI
 import AuthenticationServices
 
-// MARK: - OnboardingView (Root)
+// MARK: - OnboardingView (First-Run 5-Screen Flow)
 
 struct OnboardingView: View {
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @Environment(AuthService.self) private var authService
-    @State private var showCarousel = !UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
+
+    @State private var currentPage = 0
+    @State private var selectedSkill: SkillLevel = .intermediate30
+    @State private var selectedStyles: Set<PlayStyle> = []
+    @State private var locationGranted = false
+    @State private var showAuthLanding = false
+
+    private let pageCount = 5
 
     var body: some View {
         ZStack {
-            if showCarousel {
-                OnboardingCarouselView {
-                    UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        showCarousel = false
-                    }
-                }
-                .transition(.opacity)
-            } else {
+            if showAuthLanding {
                 AuthLandingView()
                     .transition(.asymmetric(
                         insertion: .move(edge: .bottom).combined(with: .opacity),
                         removal: .opacity
                     ))
+            } else {
+                firstRunOnboarding
+                    .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.4), value: showCarousel)
+        .animation(.easeInOut(duration: 0.4), value: showAuthLanding)
+    }
+
+    // MARK: - First-Run Onboarding
+
+    private var firstRunOnboarding: some View {
+        ZStack(alignment: .bottom) {
+            TabView(selection: $currentPage) {
+                WelcomeScreen(
+                    onGetStarted: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) { currentPage = 1 }
+                    },
+                    onAlreadyHaveAccount: {
+                        withAnimation(.easeInOut(duration: 0.4)) { showAuthLanding = true }
+                    }
+                )
+                .tag(0)
+
+                SkillSetupScreen(selectedSkill: $selectedSkill) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) { currentPage = 2 }
+                }
+                .tag(1)
+
+                PlayStyleScreen(selectedStyles: $selectedStyles) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) { currentPage = 3 }
+                }
+                .tag(2)
+
+                FindCourtsScreen(locationGranted: $locationGranted) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) { currentPage = 4 }
+                }
+                .tag(3)
+
+                AllSetScreen(selectedSkill: selectedSkill) {
+                    hasCompletedOnboarding = true
+                    Task {
+                        try? await authService.signIn(
+                            email: "demo@pickleballapp.com",
+                            password: "demo"
+                        )
+                    }
+                }
+                .tag(4)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .ignoresSafeArea()
+
+            // Custom capsule page dots — only on pages 0-3
+            if currentPage < 4 {
+                OnboardingPageDots(pageCount: pageCount, currentPage: currentPage)
+                    .padding(.bottom, 16)
+            }
+        }
+        .ignoresSafeArea()
+    }
+}
+
+// MARK: - Custom Page Dots
+
+private struct OnboardingPageDots: View {
+    let pageCount: Int
+    let currentPage: Int
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(0..<pageCount, id: \.self) { index in
+                Capsule()
+                    .fill(index == currentPage ? Color.dinkrGreen : Color.white.opacity(0.35))
+                    .frame(
+                        width: index == currentPage ? 22 : 8,
+                        height: 8
+                    )
+                    .animation(.spring(response: 0.35, dampingFraction: 0.7), value: currentPage)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial, in: Capsule())
+    }
+}
+
+// MARK: - Screen 1: Welcome
+
+private struct WelcomeScreen: View {
+    let onGetStarted: () -> Void
+    let onAlreadyHaveAccount: () -> Void
+
+    @State private var paddleAngle: Double = 0
+    @State private var appeared = false
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color.dinkrNavy, Color.dinkrNavy.opacity(0.88)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                Spacer()
+
+                // Logo
+                DinkrLogoView(size: 88, showWordmark: true, tintColor: .white)
+                    .scaleEffect(appeared ? 1.0 : 0.6)
+                    .opacity(appeared ? 1.0 : 0.0)
+                    .animation(.spring(response: 0.55, dampingFraction: 0.65).delay(0.1), value: appeared)
+
+                // Tagline
+                Text("Your game. Your court. Your crew.")
+                    .font(.title3.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.72))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                    .padding(.top, 16)
+                    .opacity(appeared ? 1.0 : 0.0)
+                    .offset(y: appeared ? 0 : 10)
+                    .animation(.easeOut(duration: 0.5).delay(0.3), value: appeared)
+
+                Spacer()
+
+                // Animated paddle icon
+                Image(systemName: "figure.pickleball")
+                    .font(.system(size: 72))
+                    .foregroundStyle(Color.dinkrGreen)
+                    .rotationEffect(.degrees(paddleAngle))
+                    .shadow(color: Color.dinkrGreen.opacity(0.4), radius: 16, x: 0, y: 4)
+                    .opacity(appeared ? 1.0 : 0.0)
+                    .animation(.easeOut(duration: 0.5).delay(0.45), value: appeared)
+                    .onAppear {
+                        withAnimation(
+                            .easeInOut(duration: 1.6)
+                            .repeatForever(autoreverses: true)
+                        ) {
+                            paddleAngle = 15
+                        }
+                        withAnimation(
+                            .easeInOut(duration: 1.6)
+                            .repeatForever(autoreverses: true)
+                            .delay(1.6)
+                        ) {
+                            paddleAngle = -15
+                        }
+                    }
+
+                Spacer()
+                Spacer()
+
+                // Buttons
+                VStack(spacing: 14) {
+                    Button(action: onGetStarted) {
+                        Text("Get Started")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(Color.dinkrGreen)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .shadow(color: Color.dinkrGreen.opacity(0.4), radius: 12, x: 0, y: 4)
+                    }
+                    .buttonStyle(ScalePressButtonStyle())
+
+                    Button(action: onAlreadyHaveAccount) {
+                        Text("I already have an account")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.white.opacity(0.65))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 60)
+                .opacity(appeared ? 1.0 : 0.0)
+                .animation(.easeOut(duration: 0.5).delay(0.55), value: appeared)
+            }
+        }
+        .onAppear { appeared = true }
+    }
+}
+
+// MARK: - Screen 2: Skill Setup
+
+private struct SkillSetupScreen: View {
+    @Binding var selectedSkill: SkillLevel
+    let onNext: () -> Void
+
+    private let skillDescriptions: [SkillLevel: String] = [
+        .beginner20:      "Just learning",
+        .beginner25:      "Getting comfortable",
+        .intermediate30:  "Comfortable with basics",
+        .intermediate35:  "Solid & improving",
+        .advanced40:      "Strong all-around",
+        .advanced45:      "Competitive player",
+        .pro50:           "Pro / Tournament level"
+    ]
+
+    var body: some View {
+        ZStack {
+            Color.appBackground.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Header
+                VStack(spacing: 8) {
+                    Text("What's your skill level?")
+                        .font(.largeTitle.weight(.black))
+                        .foregroundStyle(Color.dinkrNavy)
+                        .multilineTextAlignment(.center)
+                    Text("We'll match you with games at your level")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.top, 56)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 10) {
+                        ForEach(SkillLevel.allCases, id: \.self) { level in
+                            SkillLevelCard(
+                                level: level,
+                                description: skillDescriptions[level] ?? "",
+                                isSelected: selectedSkill == level
+                            ) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) {
+                                    selectedSkill = level
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 100)
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            // Floating next button
+            VStack {
+                Spacer()
+                Button(action: onNext) {
+                    Text("Next →")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color.dinkrGreen)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: Color.dinkrGreen.opacity(0.35), radius: 10, x: 0, y: 4)
+                }
+                .buttonStyle(ScalePressButtonStyle())
+                .padding(.horizontal, 24)
+                .padding(.bottom, 48)
+            }
+        }
+    }
+}
+
+private struct SkillLevelCard: View {
+    let level: SkillLevel
+    let description: String
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    private var levelColor: Color {
+        switch level.color {
+        case "blue":   return Color.dinkrSky
+        case "orange": return Color.dinkrCoral
+        case "red":    return Color.red
+        default:       return Color.dinkrGreen
+        }
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 14) {
+                // Color swatch
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(levelColor)
+                    .frame(width: 6, height: 40)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(level.label)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(Color.primary)
+                    Text(description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.dinkrGreen)
+                        .font(.title3)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(isSelected ? Color.dinkrGreen.opacity(0.07) : Color.cardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(isSelected ? Color.dinkrGreen : Color.clear, lineWidth: 2)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Screen 3: Play Style
+
+private struct PlayStyleScreen: View {
+    @Binding var selectedStyles: Set<PlayStyle>
+    let onNext: () -> Void
+
+    private let styleDescriptions: [PlayStyle: String] = [
+        .competitive:  "Win-focused, rated play",
+        .recreational: "Fun & social games",
+        .drillFocused: "Practice & skill-building",
+        .dinkCulture:  "Chill kitchen rallies",
+        .allAround:    "A bit of everything"
+    ]
+
+    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
+
+    var body: some View {
+        ZStack {
+            Color.appBackground.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                VStack(spacing: 8) {
+                    Text("How do you like to play?")
+                        .font(.largeTitle.weight(.black))
+                        .foregroundStyle(Color.dinkrNavy)
+                        .multilineTextAlignment(.center)
+                    Text("Pick all that apply")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.top, 56)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 28)
+
+                ScrollView(showsIndicators: false) {
+                    LazyVGrid(columns: columns, spacing: 14) {
+                        ForEach(PlayStyle.allCases, id: \.self) { style in
+                            PlayStyleCard(
+                                style: style,
+                                description: styleDescriptions[style] ?? "",
+                                isSelected: selectedStyles.contains(style)
+                            ) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) {
+                                    if selectedStyles.contains(style) {
+                                        selectedStyles.remove(style)
+                                    } else {
+                                        selectedStyles.insert(style)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 100)
+                }
+            }
+
+            VStack {
+                Spacer()
+                Button(action: onNext) {
+                    Text("Next →")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color.dinkrGreen)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: Color.dinkrGreen.opacity(0.35), radius: 10, x: 0, y: 4)
+                }
+                .buttonStyle(ScalePressButtonStyle())
+                .padding(.horizontal, 24)
+                .padding(.bottom, 48)
+            }
+        }
+    }
+}
+
+private struct PlayStyleCard: View {
+    let style: PlayStyle
+    let description: String
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    private var styleColor: Color {
+        switch style.color {
+        case "dinkrCoral":  return Color.dinkrCoral
+        case "dinkrSky":    return Color.dinkrSky
+        case "dinkrAmber":  return Color.dinkrAmber
+        case "dinkrNavy":   return Color.dinkrNavy
+        default:            return Color.dinkrGreen
+        }
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 10) {
+                Image(systemName: style.icon)
+                    .font(.system(size: 28))
+                    .foregroundStyle(isSelected ? .white : styleColor)
+
+                Text(style.rawValue)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(isSelected ? .white : Color.primary)
+                    .multilineTextAlignment(.center)
+
+                Text(description)
+                    .font(.caption2)
+                    .foregroundStyle(isSelected ? .white.opacity(0.8) : Color.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 120)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isSelected ? styleColor : Color.cardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(isSelected ? styleColor : Color.clear, lineWidth: 2)
+                    )
+            )
+            .shadow(color: isSelected ? styleColor.opacity(0.3) : .clear, radius: 8, x: 0, y: 3)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Screen 4: Find Courts
+
+private let mockNearbyCourts: [(name: String, distance: String)] = [
+    ("Bartholomew District Park", "0.4 mi"),
+    ("Austin High School Courts", "1.1 mi"),
+    ("Disch-Falk Field Complex", "2.3 mi")
+]
+
+private struct FindCourtsScreen: View {
+    @Binding var locationGranted: Bool
+    let onNext: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.appBackground.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                VStack(spacing: 8) {
+                    Text("Courts near you")
+                        .font(.largeTitle.weight(.black))
+                        .foregroundStyle(Color.dinkrNavy)
+                        .multilineTextAlignment(.center)
+                    Text("Find pickup games at courts in your area")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top, 56)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 28)
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        // Location permission card
+                        VStack(spacing: 14) {
+                            Image(systemName: locationGranted ? "location.fill" : "location.circle")
+                                .font(.system(size: 44))
+                                .foregroundStyle(locationGranted ? Color.dinkrGreen : Color.dinkrSky)
+
+                            Text(locationGranted ? "Austin, TX" : "Enable location to see nearby courts")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(locationGranted ? Color.dinkrGreen : Color.primary)
+                                .multilineTextAlignment(.center)
+
+                            if !locationGranted {
+                                Button {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                        locationGranted = true
+                                    }
+                                } label: {
+                                    Label("Enable Location", systemImage: "location.fill")
+                                        .font(.headline.weight(.semibold))
+                                        .foregroundStyle(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 50)
+                                        .background(Color.dinkrGreen)
+                                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                                }
+                                .buttonStyle(ScalePressButtonStyle())
+                            }
+                        }
+                        .padding(20)
+                        .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 18))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18)
+                                .stroke(locationGranted ? Color.dinkrGreen.opacity(0.4) : Color.clear, lineWidth: 1.5)
+                        )
+
+                        // Mock nearby courts — shown when location granted
+                        if locationGranted {
+                            VStack(spacing: 10) {
+                                ForEach(mockNearbyCourts, id: \.name) { court in
+                                    NearbyCourtRow(name: court.name, distance: court.distance)
+                                }
+                            }
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 100)
+                }
+            }
+
+            VStack {
+                Spacer()
+                Button(action: onNext) {
+                    Text("Next →")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color.dinkrGreen)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: Color.dinkrGreen.opacity(0.35), radius: 10, x: 0, y: 4)
+                }
+                .buttonStyle(ScalePressButtonStyle())
+                .padding(.horizontal, 24)
+                .padding(.bottom, 48)
+            }
+        }
+    }
+}
+
+private struct NearbyCourtRow: View {
+    let name: String
+    let distance: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "mappin.circle.fill")
+                .font(.title3)
+                .foregroundStyle(Color.dinkrCoral)
+
+            Text(name)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Color.primary)
+
+            Spacer()
+
+            Text(distance)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.dinkrGreen)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color.dinkrGreen.opacity(0.12), in: Capsule())
+        }
+        .padding(14)
+        .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+// MARK: - Screen 5: All Set
+
+private struct AllSetScreen: View {
+    let selectedSkill: SkillLevel
+    let onComplete: () -> Void
+
+    @State private var burst = false
+
+    private let confettiColors: [Color] = [
+        Color.dinkrGreen, Color.dinkrCoral, Color.dinkrAmber, Color.dinkrSky, Color.dinkrNavy
+    ]
+
+    var body: some View {
+        ZStack {
+            Color.appBackground.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                Spacer()
+
+                // Confetti celebration
+                ZStack {
+                    ForEach(0..<5) { i in
+                        let angle = Double(i) / 5.0 * 360.0
+                        let radians = angle * .pi / 180
+                        let distance: CGFloat = burst ? 100 : 0
+
+                        Circle()
+                            .fill(confettiColors[i])
+                            .frame(width: burst ? 20 : 8, height: burst ? 20 : 8)
+                            .offset(
+                                x: cos(radians) * distance,
+                                y: sin(radians) * distance
+                            )
+                            .opacity(burst ? 1.0 : 0.0)
+                            .animation(
+                                .spring(response: 0.55, dampingFraction: 0.65)
+                                    .delay(Double(i) * 0.06),
+                                value: burst
+                            )
+                    }
+
+                    // Center trophy
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 64))
+                        .foregroundStyle(Color.dinkrAmber)
+                        .scaleEffect(burst ? 1.0 : 0.4)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.1), value: burst)
+                }
+                .frame(width: 240, height: 240)
+
+                // Headline
+                Text("Welcome to Dinkr!")
+                    .font(.largeTitle.weight(.black))
+                    .foregroundStyle(Color.dinkrNavy)
+                    .multilineTextAlignment(.center)
+                    .scaleEffect(burst ? 1.0 : 0.8)
+                    .opacity(burst ? 1.0 : 0.0)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.65).delay(0.2), value: burst)
+
+                Text("You're all set to find your first game.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                    .padding(.top, 8)
+                    .opacity(burst ? 1.0 : 0.0)
+                    .animation(.easeOut(duration: 0.4).delay(0.35), value: burst)
+
+                // Skill badge
+                HStack(spacing: 8) {
+                    Text("Your level:")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    SkillBadge(level: selectedSkill)
+                }
+                .padding(.top, 18)
+                .opacity(burst ? 1.0 : 0.0)
+                .animation(.easeOut(duration: 0.4).delay(0.45), value: burst)
+
+                Spacer()
+
+                // CTA button
+                Button(action: onComplete) {
+                    Text("Find Your First Game →")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color.dinkrGreen)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: Color.dinkrGreen.opacity(0.4), radius: 12, x: 0, y: 4)
+                }
+                .buttonStyle(ScalePressButtonStyle())
+                .padding(.horizontal, 24)
+                .padding(.bottom, 60)
+                .opacity(burst ? 1.0 : 0.0)
+                .animation(.easeOut(duration: 0.4).delay(0.55), value: burst)
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                burst = true
+            }
+        }
     }
 }
 

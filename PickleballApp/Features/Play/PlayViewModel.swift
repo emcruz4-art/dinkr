@@ -188,6 +188,14 @@ final class PlayViewModel {
         )
     }
 
+    // MARK: - Live Score
+
+    /// Creates or updates the liveScore snapshot on a session, persisting it locally.
+    func startLiveScore(session: GameSession, snapshot: GameSession.LiveScoreSnapshot?) {
+        guard let index = nearbySessions.firstIndex(where: { $0.id == session.id }) else { return }
+        nearbySessions[index].liveScore = snapshot
+    }
+
     // Legacy overload retained for call sites that don't yet pass currentUserId
     func rsvp(to session: GameSession) {
         guard let index = nearbySessions.firstIndex(where: { $0.id == session.id }) else { return }

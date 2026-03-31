@@ -10,6 +10,7 @@ struct CourtDetailView: View {
     @State private var showGoogleMapsAlert = false
     @State private var allReviews: [CourtReview] = []
     @State private var showWriteReview = false
+    @State private var showBooking = false
 
     init(venue: CourtVenue) {
         self.venue = venue
@@ -121,6 +122,35 @@ struct CourtDetailView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
+
+                // MARK: Book a Court Button
+                Button {
+                    showBooking = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "calendar.badge.plus")
+                            .font(.subheadline.weight(.semibold))
+                        Text("Book a Court")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.dinkrGreen, Color.dinkrGreen.opacity(0.8)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .shadow(color: Color.dinkrGreen.opacity(0.3), radius: 6, y: 3)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .sheet(isPresented: $showBooking) {
+                    CourtBookingView(courtName: venue.name)
+                }
 
                 Divider().padding(.vertical, 16).padding(.horizontal, 20)
 

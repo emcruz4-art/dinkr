@@ -36,9 +36,9 @@ extension LegacyBracketMatch {
     ]
 }
 
-// MARK: - BracketMatchCard
+// MARK: - LegacyBracketMatchCard
 
-private struct BracketMatchCard: View {
+private struct LegacyBracketMatchCard: View {
     let match: LegacyBracketMatch
 
     var body: some View {
@@ -134,7 +134,7 @@ private struct BracketColumn: View {
             Spacer().frame(height: topPadding)
 
             ForEach(Array(matches.enumerated()), id: \.element.id) { index, match in
-                BracketMatchCard(match: match)
+                LegacyBracketMatchCard(match: match)
                     .frame(width: 180)
                 if index < matches.count - 1 {
                     Spacer().frame(height: spacingBetweenCards)

@@ -38,6 +38,7 @@
 		294BC5FA14859219F3E92B71 /* ChatThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF720520686F6EA9B784A013 /* ChatThread.swift */; };
 		2CF21CC2EA490B51386E8A07 /* MessagingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9C8A12D948B4A48783F40B8 /* MessagingService.swift */; };
 		2D7AEE2915090A3BA0C50C37 /* MonthlyRecapCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39ADA67F617E7D8B47C9B61D /* MonthlyRecapCard.swift */; };
+		2DAD6D7EDA9027D02D86A6E4 /* LiveScoreEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B16129EC8B128FF431D08594 /* LiveScoreEntryView.swift */; };
 		2F6E36FD96015A73BABC7DDB /* GroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE89D1DA50D5CA4EDD4E8E5 /* GroupsView.swift */; };
 		30F860AADC05348F75B8D852 /* JoinToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DD6838382BD352F6FCA95A0 /* JoinToastView.swift */; };
 		31B04C8B3995B5CA53E16D6A /* DinkrWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B9922A27292ECD2160F74C /* DinkrWidgetBundle.swift */; };
@@ -71,10 +72,12 @@
 		4C6956DFA2E1CC1B0A0D3C0C /* NewChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03554E0E67D1494D8240BF77 /* NewChallengeView.swift */; };
 		4E016BBC3AF917E76E2D38BA /* OnboardingCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D18D5C397C9B0423BF68CAAB /* OnboardingCarouselView.swift */; };
 		4F5787D1E661E3EEC39A86C1 /* EmptyFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7AA524FBD3CD89FBEF47C42 /* EmptyFeedView.swift */; };
+		4FE21C42C6B5519FD10ACB79 /* MatchRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01744CF13546084732B3883 /* MatchRequestView.swift */; };
 		50541CFBD3785EA14538AC28 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 7BF986571708B11165E7FB27 /* FirebaseAuth */; };
 		526A15AD03CBABB05604019B /* PickleballAppMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C151EE9A43C31D46BF6531FC /* PickleballAppMain.swift */; };
 		54FB3C0D02FA065E32A71FBA /* PaddleCompareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38E80A41E970CA1D209A0A84 /* PaddleCompareView.swift */; };
 		55BDCE1102EDFA797DC3EE23 /* GroupMembersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 153A23C992764C010B0DDE86 /* GroupMembersView.swift */; };
+		5CA174A80038E680F2E7628C /* TournamentRegistrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76A390E0C65FB1E07AE2C0F5 /* TournamentRegistrationView.swift */; };
 		5D74F3644045B24F4EAC87DC /* MatchShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6018BD0E6921326CD2BC0B36 /* MatchShareCard.swift */; };
 		5DE4CCA42D55433C03283DFD /* Challenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91D01125CEF11A22D3D9D7B /* Challenge.swift */; };
 		5E7857B76C2953BCDCEE0774 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CED674E47C622C78A1A2B3C /* HomeViewModel.swift */; };
@@ -97,6 +100,7 @@
 		7583ABC33F917DF6285403D2 /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 630B1D0A76875C9E85B21E41 /* Enums.swift */; };
 		79207921234754861BA28815 /* CreateListingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0371E9A8A4CF0CCA2A5EBABC /* CreateListingView.swift */; };
 		818168CEB66C229F126D514C /* VideoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 902AF0D4858F2D986B17D4E3 /* VideoService.swift */; };
+		823CF17C49E6B7EF625F4ED1 /* DirectMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB0F796D071097440EDEA6E5 /* DirectMessageView.swift */; };
 		825B203E51789A6C76C87705 /* EventCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5AC59364837CE40592D83D8 /* EventCardView.swift */; };
 		86FEFDAB4AC24A32D4B35E05 /* AvailabilityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11066FA07B419DF676C50370 /* AvailabilityView.swift */; };
 		878C78A73F55F8851260F578 /* ListingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA66CB0AFF3DB8ECCBCFEB25 /* ListingDetailView.swift */; };
@@ -170,6 +174,7 @@
 		D971ABD97032F0386DF26A04 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B8F02B4B3435B0CD618417 /* LocationService.swift */; };
 		DB98E3EF9A387A0B2F92C68C /* TrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 829D926E263871EAFF15B673 /* TrainingView.swift */; };
 		DD74FC7C975E32B834659D72 /* Post.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9783B63A0702A98CBDA22AA4 /* Post.swift */; };
+		DD92E3E7A6C05106B5A3BCFE /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9384DE363692F1EDB9AF20E /* StatsView.swift */; };
 		DEE9933C310C501D84F18605 /* AttendanceConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 393253BDCD46BD8BF2B2D5A2 /* AttendanceConfirmationView.swift */; };
 		E1749B453561D7FD923900C9 /* CheckInStoriesBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FA5B2AFC0F807B46A47BC7 /* CheckInStoriesBar.swift */; };
 		E4F3AB9120DA6B1549357FAB /* ChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17AB9483E28004D3267D4A73 /* ChallengeView.swift */; };
@@ -177,6 +182,7 @@
 		E9D560B57C656D195D234E2C /* GroupsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A7D567B387CC9C7B4866CD /* GroupsViewModel.swift */; };
 		ED02ECA6EBA3E10D7C4D8080 /* EventsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E20754179F2B0D57F64F16 /* EventsViewModel.swift */; };
 		EE11BE70F1E7762CBF5D22DD /* StoreService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5324A8EA2AC005049DD1BDC4 /* StoreService.swift */; };
+		EF81A56EBF9FE8EF83BBD279 /* CourtBookingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1D2BEB7E2C13EE32A45B20D /* CourtBookingView.swift */; };
 		F26C5910569DFD5887B3AA38 /* DinkrIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D56B4467EC7272F685C113 /* DinkrIconView.swift */; };
 		F4A125F31697C8A81C0B39CD /* NearbyGamesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 977BA8B96EBA674C4FB53252 /* NearbyGamesView.swift */; };
 		F5D093E0DF703DD7D1954B63 /* VideoHighlightsFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9ACDEC31D1C55BC2778964C /* VideoHighlightsFeedView.swift */; };
@@ -303,6 +309,7 @@
 		6FC367B2CD6DCB39239D457B /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		6FFC6C56B0CCBE889AC05E95 /* CrashlyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashlyticsService.swift; sourceTree = "<group>"; };
 		74C4C0702B2865830BE46E07 /* View+Modifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Modifiers.swift"; sourceTree = "<group>"; };
+		76A390E0C65FB1E07AE2C0F5 /* TournamentRegistrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TournamentRegistrationView.swift; sourceTree = "<group>"; };
 		780F4217E618D0987909D6BC /* FollowService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowService.swift; sourceTree = "<group>"; };
 		794BC7360EE4D7096E2B7967 /* IconPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconPreviewView.swift; sourceTree = "<group>"; };
 		7BE689715AAF38523B5BAD05 /* CommentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentSheet.swift; sourceTree = "<group>"; };
@@ -341,11 +348,15 @@
 		A64AEAE9976F781179FAB163 /* LocationPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPermissionView.swift; sourceTree = "<group>"; };
 		A6C62562E05E14B53E83452A /* DinkrWidgetModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DinkrWidgetModel.swift; sourceTree = "<group>"; };
 		A82E3C8123B8F34ECCFC3F3F /* GameCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCardView.swift; sourceTree = "<group>"; };
+		A9384DE363692F1EDB9AF20E /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
 		AA22E0111F957DD046DEEAE4 /* SkillBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillBadge.swift; sourceTree = "<group>"; };
 		AA428296B50345158EAC4AED /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
 		ABA90AD9DAAD78AEA80E264C /* MarketCategoryGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketCategoryGrid.swift; sourceTree = "<group>"; };
 		AC8C2407D44919769A3D5F57 /* CompanyModeToggleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanyModeToggleView.swift; sourceTree = "<group>"; };
 		AE75EA0886CABC6E8BB1EF74 /* NoShowService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoShowService.swift; sourceTree = "<group>"; };
+		B01744CF13546084732B3883 /* MatchRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchRequestView.swift; sourceTree = "<group>"; };
+		B16129EC8B128FF431D08594 /* LiveScoreEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveScoreEntryView.swift; sourceTree = "<group>"; };
+		B1D2BEB7E2C13EE32A45B20D /* CourtBookingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourtBookingView.swift; sourceTree = "<group>"; };
 		B29303610DD44F94624E1937 /* BentoWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BentoWidgets.swift; sourceTree = "<group>"; };
 		B4AECC94A84F86D253A4CCF6 /* Club.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Club.swift; sourceTree = "<group>"; };
 		B5D496E453EBAC820D83F72A /* DirectMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectMessage.swift; sourceTree = "<group>"; };
@@ -381,6 +392,7 @@
 		D9839629B8B06243DBCAF5A7 /* GameResultService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameResultService.swift; sourceTree = "<group>"; };
 		D9C8A12D948B4A48783F40B8 /* MessagingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingService.swift; sourceTree = "<group>"; };
 		DA66CB0AFF3DB8ECCBCFEB25 /* ListingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingDetailView.swift; sourceTree = "<group>"; };
+		DB0F796D071097440EDEA6E5 /* DirectMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectMessageView.swift; sourceTree = "<group>"; };
 		DF720520686F6EA9B784A013 /* ChatThread.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatThread.swift; sourceTree = "<group>"; };
 		DFBFA4DACF556094366B4683 /* BracketBuilderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BracketBuilderView.swift; sourceTree = "<group>"; };
 		E00EEE91F276CB053E6FEC40 /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
@@ -508,6 +520,7 @@
 				393253BDCD46BD8BF2B2D5A2 /* AttendanceConfirmationView.swift */,
 				11066FA07B419DF676C50370 /* AvailabilityView.swift */,
 				17AB9483E28004D3267D4A73 /* ChallengeView.swift */,
+				B1D2BEB7E2C13EE32A45B20D /* CourtBookingView.swift */,
 				4C359BF26148460AA762A0B2 /* CourtDetailView.swift */,
 				ECF627FABE8342030B8F3CB4 /* CourtDiscoveryView.swift */,
 				4FD38AC9A0E4C233E9382C36 /* CourtReviewView.swift */,
@@ -517,9 +530,11 @@
 				8B847588649DFF54BA360FB8 /* GameSessionDetailView.swift */,
 				6D5B0EAA96D80290490A77F2 /* HostGameView.swift */,
 				2DD6838382BD352F6FCA95A0 /* JoinToastView.swift */,
+				B16129EC8B128FF431D08594 /* LiveScoreEntryView.swift */,
 				6DB1805BC861D7AA264B200A /* LiveScoreView.swift */,
 				E6BA53AB9CE9683E74DFC9AD /* LiveSessionDraftView.swift */,
 				0C1D36D36ED3DFEBDC7E744E /* LogGameResultView.swift */,
+				B01744CF13546084732B3883 /* MatchRequestView.swift */,
 				977BA8B96EBA674C4FB53252 /* NearbyGamesView.swift */,
 				38850A31C61C8A1C87A68A15 /* OrgLeaderboardView.swift */,
 				64B5BFC1C7CD816AB3B76EF2 /* PlayView.swift */,
@@ -662,6 +677,7 @@
 				04DE18028A90B3006E6DE757 /* Highlights */,
 				F348530D53E8D44D3B34D6D3 /* Home */,
 				4C9B2427153104229A0819C8 /* Market */,
+				BF963D923C88D24FA725DD25 /* Messages */,
 				159D467F3E28D9751B31EE01 /* Onboarding */,
 				29859DA4CBEC540FC0A971F4 /* Play */,
 				9CCB0CF28DD1E4362AF28CCF /* Profile */,
@@ -688,6 +704,7 @@
 				EA07BD1872BA6708CC215082 /* ReputationView.swift */,
 				F9DCBAF58496D895E77E3E77 /* SettingsView.swift */,
 				06F88DE91E742924D51628B1 /* SkillProgressView.swift */,
+				A9384DE363692F1EDB9AF20E /* StatsView.swift */,
 				08D83A605720D8F9B809704D /* StreakDashboard.swift */,
 			);
 			path = Profile;
@@ -699,6 +716,14 @@
 				5B25E71503EE48961DCD3D37 /* SearchView.swift */,
 			);
 			path = Search;
+			sourceTree = "<group>";
+		};
+		BF963D923C88D24FA725DD25 /* Messages */ = {
+			isa = PBXGroup;
+			children = (
+				DB0F796D071097440EDEA6E5 /* DirectMessageView.swift */,
+			);
+			path = Messages;
 			sourceTree = "<group>";
 		};
 		CD9DA75DE487176A61CAB457 /* Groups */ = {
@@ -728,6 +753,7 @@
 				F95BAF4DDF1EE47D7CB600A6 /* EventsView.swift */,
 				C4E20754179F2B0D57F64F16 /* EventsViewModel.swift */,
 				504D8BCAEE0B21E0B709C5C3 /* TournamentBracketView.swift */,
+				76A390E0C65FB1E07AE2C0F5 /* TournamentRegistrationView.swift */,
 				9ACDE8BC0F76FE64EF321EBE /* TournamentView.swift */,
 			);
 			path = Events;
@@ -972,6 +998,7 @@
 				9796D3CA69F034C3A7C092AD /* Comment.swift in Sources */,
 				A970B34D248FAF3F5B1838B5 /* CommentSheet.swift in Sources */,
 				B6577DDF17E60BF11B3271DD /* CompanyModeToggleView.swift in Sources */,
+				EF81A56EBF9FE8EF83BBD279 /* CourtBookingView.swift in Sources */,
 				65004708A87DAF946DF5525D /* CourtDetailView.swift in Sources */,
 				B4EFCFA2CA4D94CD9DFA49E1 /* CourtDiscoveryView.swift in Sources */,
 				361CD0F354CA1662269C1A23 /* CourtReview.swift in Sources */,
@@ -988,6 +1015,7 @@
 				1D4FDB18D945FB74070FC01E /* DinkrLogoView.swift in Sources */,
 				9AFF238D0F7209558157B780 /* DinkrNotification.swift in Sources */,
 				933DFD5F8A32F6A55946FF78 /* DirectMessage.swift in Sources */,
+				823CF17C49E6B7EF625F4ED1 /* DirectMessageView.swift in Sources */,
 				C1F87B2A723C4103F1B15669 /* EditProfileView.swift in Sources */,
 				4F5787D1E661E3EEC39A86C1 /* EmptyFeedView.swift in Sources */,
 				7583ABC33F917DF6285403D2 /* Enums.swift in Sources */,
@@ -1035,6 +1063,7 @@
 				30F860AADC05348F75B8D852 /* JoinToastView.swift in Sources */,
 				F8166CA6856F36CEC541103A /* ListingCardView.swift in Sources */,
 				878C78A73F55F8851260F578 /* ListingDetailView.swift in Sources */,
+				2DAD6D7EDA9027D02D86A6E4 /* LiveScoreEntryView.swift in Sources */,
 				21DA1DB80309BFE77714E2B1 /* LiveScoreView.swift in Sources */,
 				357D579073B5FF54481F9607 /* LiveSessionDraftView.swift in Sources */,
 				CDDEFC87733C6A4900C2DA27 /* LoadingSkeletonView.swift in Sources */,
@@ -1046,6 +1075,7 @@
 				13322626B6DD56159E224ECA /* MarketOffer.swift in Sources */,
 				A62E419C4DFAA5A232FAD068 /* MarketView.swift in Sources */,
 				090446B67E7BEED93972BB6E /* MarketViewModel.swift in Sources */,
+				4FE21C42C6B5519FD10ACB79 /* MatchRequestView.swift in Sources */,
 				5D74F3644045B24F4EAC87DC /* MatchShareCard.swift in Sources */,
 				D079EBD419B98870059DA05D /* MessagesView.swift in Sources */,
 				2CF21CC2EA490B51386E8A07 /* MessagingService.swift in Sources */,
@@ -1094,11 +1124,13 @@
 				1772A49E2440F555FDC7EC1F /* SkillBadge.swift in Sources */,
 				F92A051545126C4A10B79567 /* SkillProgressView.swift in Sources */,
 				21FE3D3493671A236323081C /* SkillSelectionView.swift in Sources */,
+				DD92E3E7A6C05106B5A3BCFE /* StatsView.swift in Sources */,
 				EE11BE70F1E7762CBF5D22DD /* StoreService.swift in Sources */,
 				41D108770DE3015681BC6E5F /* StreakDashboard.swift in Sources */,
 				9B788B59447D8C74421BDF71 /* TabRouter.swift in Sources */,
 				F7F5B5B77F29B5A379079A95 /* TaggedUsersRow.swift in Sources */,
 				2491B116B34217851AD2162C /* TournamentBracketView.swift in Sources */,
+				5CA174A80038E680F2E7628C /* TournamentRegistrationView.swift in Sources */,
 				35D27AD02C6F2B4BEE55865E /* TournamentView.swift in Sources */,
 				D098FFAEBCCAD1FE8D6CC714 /* TrainingPlan.swift in Sources */,
 				DB98E3EF9A387A0B2F92C68C /* TrainingView.swift in Sources */,

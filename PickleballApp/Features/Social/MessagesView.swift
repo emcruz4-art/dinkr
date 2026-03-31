@@ -1,16 +1,11 @@
 import SwiftUI
-import FirebaseFirestore
 
 // MARK: - MessagesView
 
 struct MessagesView: View {
-    @Environment(AuthService.self) private var authService
     @State private var searchText = ""
-    @State private var conversations: [DMConversation] = []
-    @State private var conversationListener: ListenerRegistration? = nil
+    @State private var conversations: [DMConversation] = DMConversation.mockConversations
     @State private var showNewMessage = false
-
-    private var currentUserId: String { authService.currentUser?.id ?? "" }
 
     var filteredConversations: [DMConversation] {
         if searchText.isEmpty { return conversations }
@@ -51,7 +46,14 @@ struct MessagesView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 14) {
                                 ForEach(onlinePlayers) { player in
-                                    NavigationLink(destination: DMChatView(conversation: player)) {
+                                    NavigationLink {
+                                        DirectMessageView(
+                                            conversationId: player.id,
+                                            otherUserName: player.otherUserName,
+                                            otherUserInitial: player.otherUserInitial,
+                                            isOnline: player.isOnline
+                                        )
+                                    } label: {
                                         OnlineAvatarPill(conversation: player)
                                     }
                                     .buttonStyle(.plain)
@@ -69,7 +71,14 @@ struct MessagesView: View {
                 // Conversation list
                 List {
                     ForEach(filteredConversations) { conversation in
-                        NavigationLink(destination: DMChatView(conversation: conversation)) {
+                        NavigationLink {
+                            DirectMessageView(
+                                conversationId: conversation.id,
+                                otherUserName: conversation.otherUserName,
+                                otherUserInitial: conversation.otherUserInitial,
+                                isOnline: conversation.isOnline
+                            )
+                        } label: {
                             ConversationRow(conversation: conversation)
                         }
                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
@@ -107,28 +116,18 @@ struct MessagesView: View {
                 }
             }
             .sheet(isPresented: $showNewMessage) {
-                NewMessageSheet { selected in
+                NewMessageComposerSheet { selected in
+                    // Add or navigate to conversation
+                    if !conversations.contains(where: { $0.id == selected.id }) {
+                        conversations.insert(selected, at: 0)
+                    }
                     showNewMessage = false
                 }
-                .environment(authService)
-            }
-            .task {
-                guard !currentUserId.isEmpty else { return }
-                conversationListener = DMService.shared.startConversationsListener(
-                    userId: currentUserId
-                ) { updated in
-                    self.conversations = updated
-                }
-            }
-            .onDisappear {
-                conversationListener?.remove()
-                conversationListener = nil
             }
         }
     }
 
     private func deleteConversation(_ conversation: DMConversation) {
-        // Remove locally — full subcollection deletion requires a Cloud Function
         withAnimation {
             conversations.removeAll { $0.id == conversation.id }
         }
@@ -181,7 +180,7 @@ private struct ConversationRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Avatar
+            // Avatar with optional online dot
             ZStack(alignment: .bottomTrailing) {
                 Circle()
                     .fill(Color.dinkrGreen.opacity(0.18))
@@ -213,13 +212,17 @@ private struct ConversationRow: View {
 
                     Text(relativeTime(from: conversation.lastMessageTime))
                         .font(.caption2)
-                        .foregroundStyle(conversation.unreadCount > 0 ? Color.dinkrGreen : Color.secondary)
+                        .foregroundStyle(
+                            conversation.unreadCount > 0 ? Color.dinkrGreen : Color.secondary
+                        )
                 }
 
                 HStack(alignment: .center) {
                     Text(conversation.lastMessage)
                         .font(.subheadline)
-                        .foregroundStyle(conversation.unreadCount > 0 ? Color.primary : Color.secondary)
+                        .foregroundStyle(
+                            conversation.unreadCount > 0 ? Color.primary : Color.secondary
+                        )
                         .lineLimit(1)
                         .fontWeight(conversation.unreadCount > 0 ? .medium : .regular)
 
@@ -252,456 +255,63 @@ private struct ConversationRow: View {
     }
 }
 
-// MARK: - DMChatView
+// MARK: - NewMessageComposerSheet
 
-struct DMChatView: View {
-    let conversation: DMConversation
-
-    @Environment(AuthService.self) private var authService
-    @State private var messages: [DMMessage] = []
-    @State private var inputText = ""
-    @State private var showEmojiPicker: String? = nil  // message id
-    @State private var scrollProxy: ScrollViewProxy? = nil
-    @State private var messageListener: ListenerRegistration? = nil
-
-    private let emojis = ["❤️", "🔥", "😂", "👏", "🎯", "🏓"]
-    private let quickReplies = ["Want to play?", "Great game!", "Count me in 🏓", "Can't make it"]
-
-    private var currentUserId: String { authService.currentUser?.id ?? "" }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Message scroll area
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 2) {
-                        ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
-                            SwiftUI.Group {
-                                // Centered timestamp every 4 messages
-                                if index % 4 == 0 {
-                                    Text(timestampLabel(message.timestamp))
-                                        .font(.caption2)
-                                        .foregroundStyle(Color.secondary)
-                                        .padding(.vertical, 6)
-                                        .frame(maxWidth: .infinity)
-                                }
-
-                                MessageBubbleView(
-                                    message: message,
-                                    isFromMe: message.senderId == "me",
-                                    initial: conversation.otherUserInitial,
-                                    onLongPress: {
-                                        withAnimation(.spring(response: 0.3)) {
-                                            showEmojiPicker = showEmojiPicker == message.id ? nil : message.id
-                                        }
-                                    }
-                                )
-                                .id(message.id)
-
-                                // Emoji picker overlay
-                                if showEmojiPicker == message.id {
-                                    EmojiPickerRow(emojis: emojis) { emoji in
-                                        applyReaction(emoji, to: message.id)
-                                    }
-                                    .transition(.scale.combined(with: .opacity))
-                                    .padding(.horizontal, message.senderId == "me" ? 0 : 60)
-                                    .frame(maxWidth: .infinity,
-                                           alignment: message.senderId == "me" ? .trailing : .leading)
-                                }
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                }
-                .onAppear {
-                    scrollProxy = proxy
-                    let convId = conversation.id
-                    let userId = currentUserId
-                    Task {
-                        messages = await DMService.shared.loadMessages(conversationId: convId)
-                        scrollToBottom(proxy: proxy, animated: false)
-                        await DMService.shared.markAsRead(conversationId: convId, userId: userId)
-                    }
-                    messageListener = DMService.shared.startMessagesListener(
-                        conversationId: convId
-                    ) { updated in
-                        self.messages = updated
-                    }
-                }
-                .onDisappear {
-                    messageListener?.remove()
-                    messageListener = nil
-                }
-                .onChange(of: messages.count) { _, _ in
-                    scrollToBottom(proxy: proxy, animated: true)
-                }
-                .onTapGesture {
-                    showEmojiPicker = nil
-                }
-            }
-
-            Divider()
-
-            // Quick reply chips
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(quickReplies, id: \.self) { reply in
-                        Button {
-                            sendMessage(reply)
-                        } label: {
-                            Text(reply)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundStyle(Color.dinkrGreen)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 7)
-                                .background(Color.dinkrGreen.opacity(0.12))
-                                .clipShape(Capsule())
-                        }
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-            }
-
-            // Input bar
-            HStack(spacing: 10) {
-                TextField("Message \(conversation.otherUserName)...", text: $inputText, axis: .vertical)
-                    .padding(10)
-                    .background(Color.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .lineLimit(1...4)
-
-                Button {
-                    guard !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-                    sendMessage(inputText)
-                } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.title)
-                        .foregroundStyle(
-                            inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                ? Color.secondary
-                                : Color.dinkrGreen
-                        )
-                }
-                .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
-        }
-        .navigationTitle(conversation.otherUserName)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                VStack(spacing: 0) {
-                    Text(conversation.otherUserName)
-                        .font(.headline)
-                    Text(conversation.isOnline ? "Online now" : "Last seen 2h ago")
-                        .font(.caption2)
-                        .foregroundStyle(conversation.isOnline ? Color.green : Color.secondary)
-                }
-            }
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                Button {
-                } label: {
-                    Image(systemName: "phone")
-                        .foregroundStyle(Color.dinkrGreen)
-                }
-                Button {
-                } label: {
-                    Image(systemName: "video.fill")
-                        .foregroundStyle(Color.dinkrGreen)
-                }
-                Button {
-                } label: {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(Color.dinkrGreen)
-                }
-            }
-        }
-    }
-
-    // MARK: Helpers
-
-    private func sendMessage(_ text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        inputText = ""
-        showEmojiPicker = nil
-        let userId = authService.currentUser?.id ?? "me"
-        let userName = authService.currentUser?.displayName ?? "Me"
-        let convId = conversation.id
-        Task {
-            try? await DMService.shared.sendMessage(
-                conversationId: convId,
-                senderId: userId,
-                senderName: userName,
-                content: trimmed
-            )
-        }
-        // The real-time listener will append the sent message automatically
-    }
-
-    private func applyReaction(_ emoji: String, to messageId: String) {
-        if let idx = messages.firstIndex(where: { $0.id == messageId }) {
-            messages[idx].reaction = messages[idx].reaction == emoji ? nil : emoji
-            let convId = conversation.id
-            let reaction = messages[idx].reaction
-            Task {
-                await DMService.shared.reactToMessage(
-                    conversationId: convId,
-                    messageId: messageId,
-                    reaction: reaction
-                )
-            }
-        }
-        withAnimation {
-            showEmojiPicker = nil
-        }
-    }
-
-    private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool) {
-        guard let last = messages.last else { return }
-        if animated {
-            withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
-        } else {
-            proxy.scrollTo(last.id, anchor: .bottom)
-        }
-    }
-
-    private func timestampLabel(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        let cal = Calendar.current
-        if cal.isDateInToday(date) {
-            formatter.timeStyle = .short
-            formatter.dateStyle = .none
-        } else if cal.isDateInYesterday(date) {
-            return "Yesterday"
-        } else {
-            formatter.dateStyle = .short
-            formatter.timeStyle = .short
-        }
-        return formatter.string(from: date)
-    }
-}
-
-// MARK: - MessageBubbleView
-
-private struct MessageBubbleView: View {
-    let message: DMMessage
-    let isFromMe: Bool
-    let initial: String
-    let onLongPress: () -> Void
-
-    var body: some View {
-        VStack(alignment: isFromMe ? .trailing : .leading, spacing: 2) {
-            HStack(alignment: .bottom, spacing: 8) {
-                if !isFromMe {
-                    // Avatar for other person
-                    Circle()
-                        .fill(Color.dinkrGreen.opacity(0.18))
-                        .frame(width: 30, height: 30)
-                        .overlay(
-                            Text(initial)
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(Color.dinkrGreen)
-                        )
-                }
-
-                Text(message.text)
-                    .font(.subheadline)
-                    .foregroundStyle(isFromMe ? Color.white : Color.primary)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(isFromMe ? Color.dinkrGreen : Color.cardBackground)
-                    .clipShape(BubbleShape(isFromMe: isFromMe))
-                    .frame(maxWidth: 280, alignment: isFromMe ? .trailing : .leading)
-                    .contentShape(Rectangle())
-                    .onLongPressGesture {
-                        onLongPress()
-                    }
-
-                if isFromMe {
-                    Spacer().frame(width: 0)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: isFromMe ? .trailing : .leading)
-
-            // Emoji reaction badge
-            if let reaction = message.reaction {
-                Text(reaction)
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.cardBackground)
-                    .clipShape(Capsule())
-                    .overlay(Capsule().stroke(Color.secondary.opacity(0.2), lineWidth: 1))
-                    .padding(.leading, isFromMe ? 0 : 38)
-            }
-        }
-        .padding(.vertical, 2)
-    }
-}
-
-// MARK: - BubbleShape
-
-private struct BubbleShape: Shape {
-    let isFromMe: Bool
-    private let radius: CGFloat = 18
-    private let tail: CGFloat = 6
-
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let r = min(radius, rect.height / 2)
-
-        if isFromMe {
-            // Rounded rect with small notch bottom-right
-            path.move(to: CGPoint(x: rect.minX + r, y: rect.minY))
-            path.addLine(to: CGPoint(x: rect.maxX - r, y: rect.minY))
-            path.addArc(center: CGPoint(x: rect.maxX - r, y: rect.minY + r),
-                        radius: r, startAngle: .degrees(-90), endAngle: .degrees(0), clockwise: false)
-            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - tail))
-            path.addQuadCurve(to: CGPoint(x: rect.maxX - tail, y: rect.maxY),
-                              control: CGPoint(x: rect.maxX, y: rect.maxY))
-            path.addLine(to: CGPoint(x: rect.minX + r, y: rect.maxY))
-            path.addArc(center: CGPoint(x: rect.minX + r, y: rect.maxY - r),
-                        radius: r, startAngle: .degrees(90), endAngle: .degrees(180), clockwise: false)
-            path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
-            path.addArc(center: CGPoint(x: rect.minX + r, y: rect.minY + r),
-                        radius: r, startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
-        } else {
-            // Rounded rect with small notch bottom-left
-            path.move(to: CGPoint(x: rect.minX + r, y: rect.minY))
-            path.addLine(to: CGPoint(x: rect.maxX - r, y: rect.minY))
-            path.addArc(center: CGPoint(x: rect.maxX - r, y: rect.minY + r),
-                        radius: r, startAngle: .degrees(-90), endAngle: .degrees(0), clockwise: false)
-            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - r))
-            path.addArc(center: CGPoint(x: rect.maxX - r, y: rect.maxY - r),
-                        radius: r, startAngle: .degrees(0), endAngle: .degrees(90), clockwise: false)
-            path.addLine(to: CGPoint(x: rect.minX + tail, y: rect.maxY))
-            path.addQuadCurve(to: CGPoint(x: rect.minX, y: rect.maxY - tail),
-                              control: CGPoint(x: rect.minX, y: rect.maxY))
-            path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
-            path.addArc(center: CGPoint(x: rect.minX + r, y: rect.minY + r),
-                        radius: r, startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
-        }
-        path.closeSubpath()
-        return path
-    }
-}
-
-// MARK: - EmojiPickerRow
-
-private struct EmojiPickerRow: View {
-    let emojis: [String]
-    let onSelect: (String) -> Void
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(emojis, id: \.self) { emoji in
-                Button {
-                    onSelect(emoji)
-                } label: {
-                    Text(emoji)
-                        .font(.title3)
-                        .frame(width: 36, height: 36)
-                        .background(Color.cardBackground)
-                        .clipShape(Circle())
-                        .shadow(color: Color.black.opacity(0.12), radius: 4, x: 0, y: 2)
-                }
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Color.cardBackground)
-        .clipShape(Capsule())
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-        .padding(.vertical, 4)
-    }
-}
-
-// MARK: - NewMessageSheet
-
-struct NewMessageSheet: View {
+struct NewMessageComposerSheet: View {
     let onSelect: (DMConversation) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(AuthService.self) private var authService
     @State private var searchText = ""
-    @State private var navigateToChat: DMConversation? = nil
+    @State private var navigateToConv: DMConversation? = nil
 
-    private var allPlayers: [User] { User.mockPlayers }
+    private var allPlayers: [(name: String, initial: String, id: String)] {
+        [
+            ("Alex Rivera", "A", "user_010"),
+            ("Casey Thompson", "C", "user_011"),
+            ("Taylor Kim", "T", "user_012"),
+            ("Morgan Davis", "M", "user_013"),
+            ("Drew Patel", "D", "user_014"),
+        ]
+    }
 
-    private var filteredPlayers: [User] {
+    private var filtered: [(name: String, initial: String, id: String)] {
         if searchText.isEmpty { return allPlayers }
-        return allPlayers.filter {
-            $0.displayName.localizedCaseInsensitiveContains(searchText)
-            || $0.username.localizedCaseInsensitiveContains(searchText)
-        }
+        return allPlayers.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(filteredPlayers) { player in
+                ForEach(filtered, id: \.id) { player in
                     Button {
-                        let currentUserId = authService.currentUser?.id ?? ""
-                        let currentUserName = authService.currentUser?.displayName ?? "Me"
-                        Task {
-                            let convId = await DMService.shared.startConversation(
-                                currentUserId: currentUserId,
-                                currentUserName: currentUserName,
-                                targetUserId: player.id,
-                                targetUserName: player.displayName
-                            )
-                            let conv = DMConversation(
-                                id: convId,
-                                otherUserId: player.id,
-                                otherUserName: player.displayName,
-                                otherUserInitial: String(player.displayName.prefix(1)),
-                                lastMessage: "",
-                                lastMessageTime: Date(),
-                                unreadCount: 0,
-                                isOnline: false
-                            )
-                            onSelect(conv)
-                            navigateToChat = conv
-                        }
+                        let conv = DMConversation(
+                            id: "conv_\(player.id)",
+                            otherUserId: player.id,
+                            otherUserName: player.name,
+                            otherUserInitial: player.initial,
+                            lastMessage: "",
+                            lastMessageTime: Date(),
+                            unreadCount: 0,
+                            isOnline: false
+                        )
+                        navigateToConv = conv
+                        onSelect(conv)
                     } label: {
                         HStack(spacing: 12) {
                             Circle()
                                 .fill(Color.dinkrGreen.opacity(0.18))
                                 .frame(width: 44, height: 44)
                                 .overlay(
-                                    Text(String(player.displayName.prefix(1)))
+                                    Text(player.initial)
                                         .font(.headline)
                                         .fontWeight(.semibold)
                                         .foregroundStyle(Color.dinkrGreen)
                                 )
 
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(player.displayName)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundStyle(Color.primary)
-
-                                HStack(spacing: 4) {
-                                    Text("@\(player.username)")
-                                        .font(.caption)
-                                        .foregroundStyle(Color.secondary)
-
-                                    Text("·")
-                                        .font(.caption)
-                                        .foregroundStyle(Color.secondary)
-
-                                    Text(player.skillLevel.label)
-                                        .font(.caption)
-                                        .fontWeight(.semibold)
-                                        .foregroundStyle(Color.dinkrGreen)
-                                }
-                            }
+                            Text(player.name)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(Color.primary)
 
                             Spacer()
 
@@ -724,8 +334,13 @@ struct NewMessageSheet: View {
                         .foregroundStyle(Color.dinkrGreen)
                 }
             }
-            .navigationDestination(item: $navigateToChat) { conv in
-                DMChatView(conversation: conv)
+            .navigationDestination(item: $navigateToConv) { conv in
+                DirectMessageView(
+                    conversationId: conv.id,
+                    otherUserName: conv.otherUserName,
+                    otherUserInitial: conv.otherUserInitial,
+                    isOnline: conv.isOnline
+                )
             }
         }
     }
@@ -735,17 +350,8 @@ struct NewMessageSheet: View {
 
 #Preview("Messages") {
     MessagesView()
-        .environment(AuthService())
 }
 
-#Preview("Chat") {
-    NavigationStack {
-        DMChatView(conversation: DMConversation.mockConversations[0])
-    }
-    .environment(AuthService())
-}
-
-#Preview("New Message") {
-    NewMessageSheet { _ in }
-        .environment(AuthService())
+#Preview("New Message Composer") {
+    NewMessageComposerSheet { _ in }
 }

@@ -4,6 +4,8 @@ struct FindPlayersView: View {
     let players: [User]
     let currentUserId: String
 
+    @State private var selectedPlayer: User? = nil
+
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
@@ -17,14 +19,21 @@ struct FindPlayersView: View {
                 } else {
                     ForEach(players) { player in
                         NavigationLink(destination: UserProfileView(user: player, currentUserId: currentUserId)) {
-                            PlayerCardView(player: player, currentUserId: currentUserId)
-                                .padding(.horizontal)
+                            PlayerCardView(
+                                player: player,
+                                currentUserId: currentUserId,
+                                onChallenge: currentUserId != player.id ? { selectedPlayer = player } : nil
+                            )
+                            .padding(.horizontal)
                         }
                         .buttonStyle(.plain)
                     }
                 }
             }
             .padding(.vertical, 8)
+        }
+        .sheet(item: $selectedPlayer) { player in
+            MatchRequestView(opponent: player)
         }
     }
 }
@@ -34,6 +43,7 @@ struct FindPlayersView: View {
 struct PlayerCardView: View {
     let player: User
     let currentUserId: String
+    var onChallenge: (() -> Void)? = nil
 
     @State private var isFriend = false
     @State private var checked = false
@@ -44,86 +54,110 @@ struct PlayerCardView: View {
 
     var body: some View {
         PickleballCard {
-            HStack(spacing: 14) {
-                ZStack(alignment: .bottomTrailing) {
-                    AvatarView(urlString: player.avatarURL, displayName: player.displayName, size: 52)
-                    if player.isPrivate {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(3)
-                            .background(Color.dinkrNavy)
-                            .clipShape(Circle())
-                            .offset(x: 4, y: 4)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Text(player.displayName)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color.primary)
-                        SkillBadge(level: player.skillLevel, compact: true)
-                    }
-
-                    if let style = player.playStyle {
-                        PlayStyleBadge(style: style)
-                    }
-
-                    // Department badge — visible when player has a department set (same org)
-                    if let dept = player.department {
-                        HStack(spacing: 4) {
-                            Image(systemName: "briefcase.fill")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(Color.dinkrSky)
-                            Text(dept)
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(Color.dinkrSky)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Color.dinkrSky.opacity(0.1))
-                        .clipShape(Capsule())
-                        .overlay(Capsule().strokeBorder(Color.dinkrSky.opacity(0.3), lineWidth: 0.5))
-                    }
-
-                    if showPrivateGate {
-                        // Private — only show city
-                        HStack(spacing: 4) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 14) {
+                    ZStack(alignment: .bottomTrailing) {
+                        AvatarView(urlString: player.avatarURL, displayName: player.displayName, size: 52)
+                        if player.isPrivate {
                             Image(systemName: "lock.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            Text("Private account · \(player.city)")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.white)
+                                .padding(3)
+                                .background(Color.dinkrNavy)
+                                .clipShape(Circle())
+                                .offset(x: 4, y: 4)
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Text(player.displayName)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Color.primary)
+                            SkillBadge(level: player.skillLevel, compact: true)
+                        }
+
+                        if let style = player.playStyle {
+                            PlayStyleBadge(style: style)
+                        }
+
+                        // Department badge — visible when player has a department set (same org)
+                        if let dept = player.department {
+                            HStack(spacing: 4) {
+                                Image(systemName: "briefcase.fill")
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundStyle(Color.dinkrSky)
+                                Text(dept)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundStyle(Color.dinkrSky)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color.dinkrSky.opacity(0.1))
+                            .clipShape(Capsule())
+                            .overlay(Capsule().strokeBorder(Color.dinkrSky.opacity(0.3), lineWidth: 0.5))
+                        }
+
+                        if showPrivateGate {
+                            // Private — only show city
+                            HStack(spacing: 4) {
+                                Image(systemName: "lock.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                Text("Private account · \(player.city)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else {
+                            Text(player.city)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                        }
-                    } else {
-                        Text(player.city)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        HStack(spacing: 12) {
-                            Label("\(player.gamesPlayed) games", systemImage: "figure.pickleball")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            Label(String(format: "%.0f%%", player.winRate * 100) + " wins", systemImage: "trophy")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                            HStack(spacing: 12) {
+                                Label("\(player.gamesPlayed) games", systemImage: "figure.pickleball")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                Label(String(format: "%.0f%%", player.winRate * 100) + " wins", systemImage: "trophy")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
+
+                    Spacer()
+
+                    if currentUserId != player.id {
+                        FollowButton(
+                            currentUserId: currentUserId,
+                            targetUserId: player.id,
+                            isPrivateAccount: player.isPrivate && !isFriend,
+                            size: .compact
+                        )
+                    }
                 }
+                .padding(14)
 
-                Spacer()
+                // Challenge button — only shown for other players
+                if let onChallenge {
+                    Divider()
+                        .padding(.horizontal, 14)
 
-                if currentUserId != player.id {
-                    FollowButton(
-                        currentUserId: currentUserId,
-                        targetUserId: player.id,
-                        isPrivateAccount: player.isPrivate && !isFriend,
-                        size: .compact
-                    )
+                    Button(action: {
+                        HapticManager.light()
+                        onChallenge()
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                            Text("Challenge")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        .foregroundStyle(Color.dinkrGreen)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-            .padding(14)
         }
         .task {
             guard !checked else { return }

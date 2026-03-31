@@ -60,6 +60,13 @@ struct HomeView: View {
                             )
                             .padding(.horizontal, 16)
 
+                            // Live game activity (only shown when a session is active)
+                            if let live = viewModel.liveSession {
+                                LiveActivityWidget(session: live)
+                                    .padding(.horizontal, 16)
+                                    .transition(.move(edge: .top).combined(with: .opacity))
+                            }
+
                             // Attendance confirmation banner (shown when a past session needs confirming)
                             ForEach(noShowService.pendingPrompts) { prompt in
                                 AttendanceBanner(prompt: prompt)
@@ -87,6 +94,10 @@ struct HomeView: View {
                                 }
                             )
                             .padding(.horizontal, 16)
+
+                            // Trending games filling fast
+                            TrendingGamesWidget(sessions: viewModel.trendingGames)
+                                .padding(.horizontal, 16)
 
                             // Active challenges snapshot
                             ChallengesWidget(activeCount: 3, winningCount: 2)
@@ -126,6 +137,10 @@ struct HomeView: View {
 
                             // Groups horizontal scroll
                             MyGroupsWidget(groups: viewModel.myGroups)
+                                .padding(.horizontal, 16)
+
+                            // Daily pickleball tip
+                            DailyTipWidget()
                                 .padding(.horizontal, 16)
 
                             // Explore
