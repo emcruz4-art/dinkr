@@ -34,11 +34,11 @@ struct OnboardingView: View {
     // MARK: - First-Run Onboarding
 
     private var firstRunOnboarding: some View {
-        ZStack(alignment: .bottom) {
+        ZStack(alignment: .top) {
             TabView(selection: $currentPage) {
                 WelcomeScreen(
                     onGetStarted: {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) { currentPage = 1 }
+                        withAnimation(.easeInOut(duration: 0.35)) { currentPage = 1 }
                     },
                     onAlreadyHaveAccount: {
                         withAnimation(.easeInOut(duration: 0.4)) { showAuthLanding = true }
@@ -46,22 +46,37 @@ struct OnboardingView: View {
                 )
                 .tag(0)
 
-                SkillSetupScreen(selectedSkill: $selectedSkill) {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) { currentPage = 2 }
-                }
+                SkillSetupScreen(
+                    selectedSkill: $selectedSkill,
+                    currentPage: $currentPage,
+                    onNext: {
+                        withAnimation(.easeInOut(duration: 0.35)) { currentPage = 2 }
+                    }
+                )
                 .tag(1)
 
-                PlayStyleScreen(selectedStyles: $selectedStyles) {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) { currentPage = 3 }
-                }
+                PlayStyleScreen(
+                    selectedStyles: $selectedStyles,
+                    currentPage: $currentPage,
+                    onNext: {
+                        withAnimation(.easeInOut(duration: 0.35)) { currentPage = 3 }
+                    }
+                )
                 .tag(2)
 
-                FindCourtsScreen(locationGranted: $locationGranted) {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) { currentPage = 4 }
-                }
+                FindCourtsScreen(
+                    locationGranted: $locationGranted,
+                    currentPage: $currentPage,
+                    onNext: {
+                        withAnimation(.easeInOut(duration: 0.35)) { currentPage = 4 }
+                    }
+                )
                 .tag(3)
 
-                AllSetScreen(selectedSkill: selectedSkill) {
+                AllSetScreen(
+                    selectedSkill: selectedSkill,
+                    selectedStyles: selectedStyles
+                ) {
                     hasCompletedOnboarding = true
                     Task {
                         try? await authService.signIn(
@@ -75,37 +90,73 @@ struct OnboardingView: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
             .ignoresSafeArea()
 
-            // Custom capsule page dots — only on pages 0-3
-            if currentPage < 4 {
-                OnboardingPageDots(pageCount: pageCount, currentPage: currentPage)
-                    .padding(.bottom, 16)
+            // Progress bar overlay — shown on pages 1-3
+            if currentPage > 0 && currentPage < 4 {
+                OnboardingProgressBar(pageCount: pageCount, currentPage: currentPage)
+                    .padding(.top, 60)
+                    .padding(.horizontal, 24)
+                    .transition(.opacity)
             }
         }
         .ignoresSafeArea()
+        .animation(.easeInOut(duration: 0.25), value: currentPage)
     }
 }
 
-// MARK: - Custom Page Dots
+// MARK: - Progress Bar
 
-private struct OnboardingPageDots: View {
+private struct OnboardingProgressBar: View {
     let pageCount: Int
     let currentPage: Int
 
+    // Pages 1-3 are the progress-tracked screens (0 = welcome, 4 = all set)
+    private var progress: CGFloat {
+        CGFloat(currentPage) / CGFloat(pageCount - 1)
+    }
+
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(0..<pageCount, id: \.self) { index in
-                Capsule()
-                    .fill(index == currentPage ? Color.dinkrGreen : Color.white.opacity(0.35))
-                    .frame(
-                        width: index == currentPage ? 22 : 8,
-                        height: 8
-                    )
-                    .animation(.spring(response: 0.35, dampingFraction: 0.7), value: currentPage)
+        VStack(spacing: 0) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.white.opacity(0.18))
+                        .frame(height: 4)
+                    Capsule()
+                        .fill(Color.dinkrGreen)
+                        .frame(width: geo.size.width * progress, height: 4)
+                        .animation(.spring(response: 0.45, dampingFraction: 0.78), value: progress)
+                }
             }
+            .frame(height: 4)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 10)
-        .background(.ultraThinMaterial, in: Capsule())
+        .background(Color.clear)
+    }
+}
+
+// MARK: - Shared nav helpers
+
+private func skipButton(currentPage: Binding<Int>, target: Int) -> some View {
+    Button("Skip") {
+        withAnimation(.easeInOut(duration: 0.35)) { currentPage.wrappedValue = target }
+    }
+    .font(.subheadline.weight(.medium))
+    .foregroundStyle(.secondary)
+    .padding(.horizontal, 20)
+    .padding(.vertical, 10)
+    .background(.ultraThinMaterial, in: Capsule())
+}
+
+private func backButton(currentPage: Binding<Int>) -> some View {
+    Button {
+        withAnimation(.easeInOut(duration: 0.35)) {
+            if currentPage.wrappedValue > 0 { currentPage.wrappedValue -= 1 }
+        }
+    } label: {
+        Image(systemName: "chevron.left")
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(.primary)
+            .padding(10)
+            .background(.ultraThinMaterial, in: Circle())
     }
 }
 
@@ -115,63 +166,82 @@ private struct WelcomeScreen: View {
     let onGetStarted: () -> Void
     let onAlreadyHaveAccount: () -> Void
 
-    @State private var paddleAngle: Double = 0
     @State private var appeared = false
+    @State private var glowPulse: CGFloat = 0.55
+    @State private var paddleFloat: CGFloat = 0
 
     var body: some View {
         ZStack {
+            // Background
             LinearGradient(
-                colors: [Color.dinkrNavy, Color.dinkrNavy.opacity(0.88)],
+                colors: [Color.dinkrNavy, Color(red: 0.06, green: 0.14, blue: 0.26)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
 
+            // Animated court lines
+            CourtLinePattern()
+
+            // Glow orb behind logo
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color.dinkrGreen.opacity(glowPulse), .clear],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 180
+                    )
+                )
+                .frame(width: 360, height: 360)
+                .offset(y: -60)
+                .animation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true), value: glowPulse)
+
+            // Secondary coral glow
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color.dinkrCoral.opacity(0.18), .clear],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 140
+                    )
+                )
+                .frame(width: 280, height: 280)
+                .offset(x: 80, y: 120)
+                .animation(.easeInOut(duration: 3.5).repeatForever(autoreverses: true).delay(1.2), value: glowPulse)
+
             VStack(spacing: 0) {
                 Spacer()
 
-                // Logo
-                DinkrLogoView(size: 88, showWordmark: true, tintColor: .white)
-                    .scaleEffect(appeared ? 1.0 : 0.6)
-                    .opacity(appeared ? 1.0 : 0.0)
-                    .animation(.spring(response: 0.55, dampingFraction: 0.65).delay(0.1), value: appeared)
+                // Wordmark + tagline block
+                VStack(spacing: 18) {
+                    DinkrLogoView(size: 96, showWordmark: true, tintColor: .white)
+                        .scaleEffect(appeared ? 1.0 : 0.55)
+                        .opacity(appeared ? 1.0 : 0.0)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.62).delay(0.1), value: appeared)
 
-                // Tagline
-                Text("Your game. Your court. Your crew.")
-                    .font(.title3.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.72))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-                    .padding(.top, 16)
-                    .opacity(appeared ? 1.0 : 0.0)
-                    .offset(y: appeared ? 0 : 10)
-                    .animation(.easeOut(duration: 0.5).delay(0.3), value: appeared)
+                    Text("Your game. Your court. Your crew.")
+                        .font(.title3.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.72))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                        .opacity(appeared ? 1.0 : 0.0)
+                        .offset(y: appeared ? 0 : 12)
+                        .animation(.easeOut(duration: 0.5).delay(0.35), value: appeared)
+                }
 
                 Spacer()
 
-                // Animated paddle icon
+                // Animated paddle illustration
                 Image(systemName: "figure.pickleball")
-                    .font(.system(size: 72))
+                    .font(.system(size: 80))
                     .foregroundStyle(Color.dinkrGreen)
-                    .rotationEffect(.degrees(paddleAngle))
-                    .shadow(color: Color.dinkrGreen.opacity(0.4), radius: 16, x: 0, y: 4)
+                    .shadow(color: Color.dinkrGreen.opacity(0.55), radius: 24, x: 0, y: 8)
+                    .offset(y: paddleFloat)
                     .opacity(appeared ? 1.0 : 0.0)
-                    .animation(.easeOut(duration: 0.5).delay(0.45), value: appeared)
-                    .onAppear {
-                        withAnimation(
-                            .easeInOut(duration: 1.6)
-                            .repeatForever(autoreverses: true)
-                        ) {
-                            paddleAngle = 15
-                        }
-                        withAnimation(
-                            .easeInOut(duration: 1.6)
-                            .repeatForever(autoreverses: true)
-                            .delay(1.6)
-                        ) {
-                            paddleAngle = -15
-                        }
-                    }
+                    .animation(.easeOut(duration: 0.5).delay(0.5), value: appeared)
+                    .animation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true), value: paddleFloat)
 
                 Spacer()
                 Spacer()
@@ -186,24 +256,32 @@ private struct WelcomeScreen: View {
                             .frame(height: 54)
                             .background(Color.dinkrGreen)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .shadow(color: Color.dinkrGreen.opacity(0.4), radius: 12, x: 0, y: 4)
+                            .shadow(color: Color.dinkrGreen.opacity(0.45), radius: 14, x: 0, y: 6)
                     }
                     .buttonStyle(ScalePressButtonStyle())
 
                     Button(action: onAlreadyHaveAccount) {
                         Text("I already have an account")
                             .font(.subheadline.weight(.medium))
-                            .foregroundStyle(.white.opacity(0.65))
+                            .foregroundStyle(.white.opacity(0.6))
                     }
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 32)
-                .padding(.bottom, 60)
+                .padding(.bottom, 64)
                 .opacity(appeared ? 1.0 : 0.0)
-                .animation(.easeOut(duration: 0.5).delay(0.55), value: appeared)
+                .animation(.easeOut(duration: 0.5).delay(0.6), value: appeared)
             }
         }
-        .onAppear { appeared = true }
+        .onAppear {
+            appeared = true
+            withAnimation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true).delay(0.6)) {
+                glowPulse = 0.28
+            }
+            withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true).delay(0.8)) {
+                paddleFloat = -14
+            }
+        }
     }
 }
 
@@ -211,16 +289,20 @@ private struct WelcomeScreen: View {
 
 private struct SkillSetupScreen: View {
     @Binding var selectedSkill: SkillLevel
+    @Binding var currentPage: Int
     let onNext: () -> Void
 
-    private let skillDescriptions: [SkillLevel: String] = [
-        .beginner20:      "Just learning",
-        .beginner25:      "Getting comfortable",
-        .intermediate30:  "Comfortable with basics",
-        .intermediate35:  "Solid & improving",
-        .advanced40:      "Strong all-around",
-        .advanced45:      "Competitive player",
-        .pro50:           "Pro / Tournament level"
+    @State private var showDuprTooltip = false
+    @State private var appeared = false
+
+    private let skillDescriptions: [SkillLevel: (desc: String, detail: String)] = [
+        .beginner20:     ("Just learning", "Still figuring out the rules and basic strokes"),
+        .beginner25:     ("Getting comfortable", "Can rally consistently and serve reliably"),
+        .intermediate30: ("Solid basics", "Understands strategy, working on consistency"),
+        .intermediate35: ("Improving rapidly", "Strong dinks, competitive in recreational play"),
+        .advanced40:     ("Strong all-around", "Competitive in rated play, consistent placement"),
+        .advanced45:     ("Tournament player", "Plays tournaments, advanced spin and reset game"),
+        .pro50:          ("Pro / Elite", "National-level play and beyond")
     ]
 
     var body: some View {
@@ -228,46 +310,84 @@ private struct SkillSetupScreen: View {
             Color.appBackground.ignoresSafeArea()
 
             VStack(spacing: 0) {
+                // Top nav bar
+                HStack {
+                    backButton(currentPage: $currentPage)
+                    Spacer()
+                    skipButton(currentPage: $currentPage, target: 2)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 56)
+                .padding(.bottom, 8)
+
                 // Header
-                VStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("What's your skill level?")
                         .font(.largeTitle.weight(.black))
                         .foregroundStyle(Color.dinkrNavy)
-                        .multilineTextAlignment(.center)
-                    Text("We'll match you with games at your level")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+
+                    HStack(spacing: 6) {
+                        Text("We'll match you with the right games")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+
+                        Button {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                                showDuprTooltip.toggle()
+                            }
+                        } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: "info.circle")
+                                Text("DUPR")
+                            }
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.dinkrSky)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if showDuprTooltip {
+                        DuprTooltipCard()
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                            .padding(.top, 4)
+                    }
                 }
-                .padding(.top, 56)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24)
-                .padding(.bottom, 24)
+                .padding(.bottom, 16)
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 10) {
-                        ForEach(SkillLevel.allCases, id: \.self) { level in
+                        ForEach(Array(SkillLevel.allCases.enumerated()), id: \.element) { index, level in
                             SkillLevelCard(
                                 level: level,
-                                description: skillDescriptions[level] ?? "",
+                                description: skillDescriptions[level]?.desc ?? "",
+                                detail: skillDescriptions[level]?.detail ?? "",
                                 isSelected: selectedSkill == level
                             ) {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) {
                                     selectedSkill = level
                                 }
                             }
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 20)
+                            .animation(
+                                .spring(response: 0.45, dampingFraction: 0.72)
+                                    .delay(Double(index) * 0.05),
+                                value: appeared
+                            )
                         }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 100)
+                    .padding(.bottom, 110)
                 }
-
-                Spacer(minLength: 0)
             }
 
             // Floating next button
             VStack {
                 Spacer()
                 Button(action: onNext) {
-                    Text("Next →")
+                    Text("Continue")
                         .font(.headline.weight(.bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -281,12 +401,40 @@ private struct SkillSetupScreen: View {
                 .padding(.bottom, 48)
             }
         }
+        .onAppear {
+            withAnimation { appeared = true }
+        }
+    }
+}
+
+private struct DuprTooltipCard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "chart.bar.fill")
+                    .foregroundStyle(Color.dinkrSky)
+                Text("What is DUPR?")
+                    .font(.footnote.weight(.bold))
+                    .foregroundStyle(Color.dinkrNavy)
+            }
+            Text("DUPR (Dynamic Universal Pickleball Rating) is a globally recognized rating system from 2.0 (beginner) to 8.0 (pro). Your score updates after every rated match.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .background(Color.dinkrSky.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.dinkrSky.opacity(0.3), lineWidth: 1)
+        )
     }
 }
 
 private struct SkillLevelCard: View {
     let level: SkillLevel
     let description: String
+    let detail: String
     let isSelected: Bool
     let onTap: () -> Void
 
@@ -299,21 +447,44 @@ private struct SkillLevelCard: View {
         }
     }
 
+    private var levelIcon: String {
+        switch level {
+        case .beginner20:     return "figure.walk"
+        case .beginner25:     return "figure.run"
+        case .intermediate30: return "figure.pickleball"
+        case .intermediate35: return "figure.pickleball"
+        case .advanced40:     return "flame"
+        case .advanced45:     return "flame.fill"
+        case .pro50:          return "trophy.fill"
+        }
+    }
+
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 14) {
-                // Color swatch
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(levelColor)
-                    .frame(width: 6, height: 40)
+                // Icon badge
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(isSelected ? levelColor : levelColor.opacity(0.12))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: levelIcon)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(isSelected ? .white : levelColor)
+                }
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(level.label)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(Color.primary)
-                    Text(description)
+                    HStack(spacing: 6) {
+                        Text(level.label)
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(Color.primary)
+                        Text(description)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(detail)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
 
                 Spacer()
@@ -322,10 +493,11 @@ private struct SkillLevelCard: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(Color.dinkrGreen)
                         .font(.title3)
+                        .transition(.scale.combined(with: .opacity))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 13)
             .background(
                 RoundedRectangle(cornerRadius: 14)
                     .fill(isSelected ? Color.dinkrGreen.opacity(0.07) : Color.cardBackground)
@@ -334,8 +506,10 @@ private struct SkillLevelCard: View {
                             .stroke(isSelected ? Color.dinkrGreen : Color.clear, lineWidth: 2)
                     )
             )
+            .shadow(color: isSelected ? Color.dinkrGreen.opacity(0.12) : .clear, radius: 6, x: 0, y: 3)
         }
         .buttonStyle(.plain)
+        .animation(.spring(response: 0.3, dampingFraction: 0.65), value: isSelected)
     }
 }
 
@@ -343,7 +517,10 @@ private struct SkillLevelCard: View {
 
 private struct PlayStyleScreen: View {
     @Binding var selectedStyles: Set<PlayStyle>
+    @Binding var currentPage: Int
     let onNext: () -> Void
+
+    @State private var appeared = false
 
     private let styleDescriptions: [PlayStyle: String] = [
         .competitive:  "Win-focused, rated play",
@@ -360,22 +537,32 @@ private struct PlayStyleScreen: View {
             Color.appBackground.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                VStack(spacing: 8) {
+                // Top nav
+                HStack {
+                    backButton(currentPage: $currentPage)
+                    Spacer()
+                    skipButton(currentPage: $currentPage, target: 3)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 56)
+                .padding(.bottom, 8)
+
+                // Header
+                VStack(alignment: .leading, spacing: 6) {
                     Text("How do you like to play?")
                         .font(.largeTitle.weight(.black))
                         .foregroundStyle(Color.dinkrNavy)
-                        .multilineTextAlignment(.center)
                     Text("Pick all that apply")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.top, 56)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24)
-                .padding(.bottom, 28)
+                .padding(.bottom, 20)
 
                 ScrollView(showsIndicators: false) {
                     LazyVGrid(columns: columns, spacing: 14) {
-                        ForEach(PlayStyle.allCases, id: \.self) { style in
+                        ForEach(Array(PlayStyle.allCases.enumerated()), id: \.element) { index, style in
                             PlayStyleCard(
                                 style: style,
                                 description: styleDescriptions[style] ?? "",
@@ -389,29 +576,45 @@ private struct PlayStyleScreen: View {
                                     }
                                 }
                             }
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 22)
+                            .animation(
+                                .spring(response: 0.45, dampingFraction: 0.72)
+                                    .delay(Double(index) * 0.06),
+                                value: appeared
+                            )
                         }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 100)
+                    .padding(.bottom, 110)
                 }
             }
 
             VStack {
                 Spacer()
                 Button(action: onNext) {
-                    Text("Next →")
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(Color.dinkrGreen)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .shadow(color: Color.dinkrGreen.opacity(0.35), radius: 10, x: 0, y: 4)
+                    HStack {
+                        Text(selectedStyles.isEmpty ? "Skip for now" : "Continue")
+                        if !selectedStyles.isEmpty {
+                            Image(systemName: "arrow.right")
+                        }
+                    }
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(selectedStyles.isEmpty ? Color.dinkrNavy.opacity(0.6) : Color.dinkrGreen)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: selectedStyles.isEmpty ? .clear : Color.dinkrGreen.opacity(0.35), radius: 10, x: 0, y: 4)
                 }
                 .buttonStyle(ScalePressButtonStyle())
+                .animation(.easeInOut(duration: 0.2), value: selectedStyles.isEmpty)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 48)
             }
+        }
+        .onAppear {
+            withAnimation { appeared = true }
         }
     }
 }
@@ -432,12 +635,30 @@ private struct PlayStyleCard: View {
         }
     }
 
+    // SF Symbol illustration composition per style
+    @ViewBuilder
+    private var illustration: some View {
+        ZStack {
+            Circle()
+                .fill(isSelected ? styleColor.opacity(0.25) : styleColor.opacity(0.1))
+                .frame(width: 56, height: 56)
+
+            Image(systemName: style.icon)
+                .font(.system(size: 26, weight: .semibold))
+                .foregroundStyle(isSelected ? styleColor : styleColor.opacity(0.8))
+
+            // Accent dot
+            Circle()
+                .fill(isSelected ? Color.white.opacity(0.9) : styleColor.opacity(0.4))
+                .frame(width: 8, height: 8)
+                .offset(x: 18, y: -18)
+        }
+    }
+
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 10) {
-                Image(systemName: style.icon)
-                    .font(.system(size: 28))
-                    .foregroundStyle(isSelected ? .white : styleColor)
+                illustration
 
                 Text(style.rawValue)
                     .font(.subheadline.weight(.semibold))
@@ -451,70 +672,95 @@ private struct PlayStyleCard: View {
                     .lineLimit(2)
             }
             .padding(16)
-            .frame(maxWidth: .infinity, minHeight: 120)
+            .frame(maxWidth: .infinity, minHeight: 140)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 18)
                     .fill(isSelected ? styleColor : Color.cardBackground)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: 18)
                             .stroke(isSelected ? styleColor : Color.clear, lineWidth: 2)
                     )
             )
-            .shadow(color: isSelected ? styleColor.opacity(0.3) : .clear, radius: 8, x: 0, y: 3)
+            .shadow(color: isSelected ? styleColor.opacity(0.32) : Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
         }
         .buttonStyle(.plain)
+        .animation(.spring(response: 0.3, dampingFraction: 0.65), value: isSelected)
     }
 }
 
-// MARK: - Screen 4: Find Courts
+// MARK: - Screen 4: Find Courts (mock map + stagger pins)
 
-private let mockNearbyCourts: [(name: String, distance: String)] = [
-    ("Bartholomew District Park", "0.4 mi"),
-    ("Austin High School Courts", "1.1 mi"),
-    ("Disch-Falk Field Complex", "2.3 mi")
+private let mockNearbyCourts: [(name: String, distance: String, courts: Int)] = [
+    ("Bartholomew District Park", "0.4 mi", 6),
+    ("Austin High School Courts", "1.1 mi", 4),
+    ("Disch-Falk Field Complex", "2.3 mi", 8)
 ]
 
 private struct FindCourtsScreen: View {
     @Binding var locationGranted: Bool
+    @Binding var currentPage: Int
     let onNext: () -> Void
+
+    @State private var pinsVisible: [Bool] = [false, false, false]
+    @State private var appeared = false
 
     var body: some View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                VStack(spacing: 8) {
+                // Top nav
+                HStack {
+                    backButton(currentPage: $currentPage)
+                    Spacer()
+                    skipButton(currentPage: $currentPage, target: 4)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 56)
+                .padding(.bottom, 8)
+
+                // Header
+                VStack(alignment: .leading, spacing: 6) {
                     Text("Courts near you")
                         .font(.largeTitle.weight(.black))
                         .foregroundStyle(Color.dinkrNavy)
-                        .multilineTextAlignment(.center)
                     Text("Find pickup games at courts in your area")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
                 }
-                .padding(.top, 56)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24)
-                .padding(.bottom, 28)
+                .padding(.bottom, 20)
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
+                        // Mock map card
+                        MockMapView(locationGranted: locationGranted, pinsVisible: pinsVisible)
+                            .frame(height: 190)
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                            .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 4)
+
                         // Location permission card
-                        VStack(spacing: 14) {
-                            Image(systemName: locationGranted ? "location.fill" : "location.circle")
-                                .font(.system(size: 44))
-                                .foregroundStyle(locationGranted ? Color.dinkrGreen : Color.dinkrSky)
+                        if !locationGranted {
+                            VStack(spacing: 14) {
+                                Image(systemName: "location.circle.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundStyle(Color.dinkrSky)
 
-                            Text(locationGranted ? "Austin, TX" : "Enable location to see nearby courts")
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(locationGranted ? Color.dinkrGreen : Color.primary)
-                                .multilineTextAlignment(.center)
+                                VStack(spacing: 4) {
+                                    Text("Enable location")
+                                        .font(.headline.weight(.semibold))
+                                    Text("See courts and games near you in real time")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.center)
+                                }
 
-                            if !locationGranted {
                                 Button {
                                     withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                                         locationGranted = true
                                     }
+                                    animatePins()
                                 } label: {
                                     Label("Enable Location", systemImage: "location.fill")
                                         .font(.headline.weight(.semibold))
@@ -526,33 +772,41 @@ private struct FindCourtsScreen: View {
                                 }
                                 .buttonStyle(ScalePressButtonStyle())
                             }
+                            .padding(20)
+                            .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 18))
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                         }
-                        .padding(20)
-                        .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 18))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 18)
-                                .stroke(locationGranted ? Color.dinkrGreen.opacity(0.4) : Color.clear, lineWidth: 1.5)
-                        )
 
-                        // Mock nearby courts — shown when location granted
+                        // Stagger-animated court rows
                         if locationGranted {
                             VStack(spacing: 10) {
-                                ForEach(mockNearbyCourts, id: \.name) { court in
-                                    NearbyCourtRow(name: court.name, distance: court.distance)
+                                ForEach(Array(mockNearbyCourts.enumerated()), id: \.element.name) { index, court in
+                                    NearbyCourtRow(
+                                        name: court.name,
+                                        distance: court.distance,
+                                        courtCount: court.courts
+                                    )
+                                    .opacity(pinsVisible.indices.contains(index) && pinsVisible[index] ? 1 : 0)
+                                    .offset(y: pinsVisible.indices.contains(index) && pinsVisible[index] ? 0 : 16)
+                                    .animation(
+                                        .spring(response: 0.45, dampingFraction: 0.72)
+                                            .delay(Double(index) * 0.14),
+                                        value: pinsVisible
+                                    )
                                 }
                             }
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                            .transition(.opacity)
                         }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 100)
+                    .padding(.bottom, 110)
                 }
             }
 
             VStack {
                 Spacer()
                 Button(action: onNext) {
-                    Text("Next →")
+                    Text("Continue")
                         .font(.headline.weight(.bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -566,44 +820,196 @@ private struct FindCourtsScreen: View {
                 .padding(.bottom, 48)
             }
         }
+        .onAppear {
+            appeared = true
+            if locationGranted { animatePins() }
+        }
+    }
+
+    private func animatePins() {
+        for i in 0..<pinsVisible.count {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.22 + 0.3) {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.68)) {
+                    pinsVisible[i] = true
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Mock Map View
+
+private struct MockMapView: View {
+    let locationGranted: Bool
+    let pinsVisible: [Bool]
+
+    private let pinPositions: [(CGFloat, CGFloat)] = [
+        (0.35, 0.42),
+        (0.58, 0.55),
+        (0.20, 0.68)
+    ]
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                // Map base (simulated tile grid)
+                Color(red: 0.90, green: 0.93, blue: 0.89)
+
+                // Road lines
+                Canvas { ctx, size in
+                    var hPath = Path()
+                    hPath.move(to: CGPoint(x: 0, y: size.height * 0.35))
+                    hPath.addLine(to: CGPoint(x: size.width, y: size.height * 0.35))
+                    hPath.move(to: CGPoint(x: 0, y: size.height * 0.65))
+                    hPath.addLine(to: CGPoint(x: size.width, y: size.height * 0.65))
+                    ctx.stroke(hPath, with: .color(.white), lineWidth: 5)
+
+                    var vPath = Path()
+                    vPath.move(to: CGPoint(x: size.width * 0.38, y: 0))
+                    vPath.addLine(to: CGPoint(x: size.width * 0.38, y: size.height))
+                    vPath.move(to: CGPoint(x: size.width * 0.70, y: 0))
+                    vPath.addLine(to: CGPoint(x: size.width * 0.70, y: size.height))
+                    ctx.stroke(vPath, with: .color(.white), lineWidth: 4)
+                }
+
+                // Green blocks (parks)
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.dinkrGreen.opacity(0.25))
+                    .frame(width: geo.size.width * 0.18, height: geo.size.height * 0.22)
+                    .position(x: geo.size.width * 0.18, y: geo.size.height * 0.28)
+
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.dinkrGreen.opacity(0.2))
+                    .frame(width: geo.size.width * 0.14, height: geo.size.height * 0.18)
+                    .position(x: geo.size.width * 0.75, y: geo.size.height * 0.72)
+
+                // Location dot (user) — center
+                if locationGranted {
+                    ZStack {
+                        Circle()
+                            .fill(Color.dinkrSky.opacity(0.22))
+                            .frame(width: 36, height: 36)
+                        Circle()
+                            .fill(Color.dinkrSky)
+                            .frame(width: 12, height: 12)
+                        Circle()
+                            .stroke(Color.white, lineWidth: 2)
+                            .frame(width: 12, height: 12)
+                    }
+                    .position(x: geo.size.width * 0.50, y: geo.size.height * 0.50)
+                }
+
+                // Court pins with stagger
+                ForEach(Array(pinPositions.enumerated()), id: \.offset) { index, pos in
+                    OnboardingCourtMapPin(label: "\(mockNearbyCourts[index].courts)")
+                        .position(
+                            x: geo.size.width * pos.0,
+                            y: geo.size.height * pos.1
+                        )
+                        .scaleEffect(pinsVisible.indices.contains(index) && pinsVisible[index] ? 1.0 : 0.01)
+                        .opacity(pinsVisible.indices.contains(index) && pinsVisible[index] ? 1 : 0)
+
+                }
+
+                // Blur overlay if not granted
+                if !locationGranted {
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                    VStack(spacing: 6) {
+                        Image(systemName: "mappin.slash")
+                            .font(.system(size: 28))
+                            .foregroundStyle(Color.dinkrNavy.opacity(0.5))
+                        Text("Enable location to see courts")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(Color.dinkrNavy.opacity(0.6))
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct OnboardingCourtMapPin: View {
+    let label: String
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                Circle()
+                    .fill(Color.dinkrCoral)
+                    .frame(width: 28, height: 28)
+                    .shadow(color: Color.dinkrCoral.opacity(0.5), radius: 4, x: 0, y: 2)
+                Image(systemName: "figure.pickleball")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+            Triangle()
+                .fill(Color.dinkrCoral)
+                .frame(width: 8, height: 5)
+        }
+    }
+}
+
+private struct OnboardingTriangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.closeSubpath()
+        return path
     }
 }
 
 private struct NearbyCourtRow: View {
     let name: String
     let distance: String
+    let courtCount: Int
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "mappin.circle.fill")
-                .font(.title3)
-                .foregroundStyle(Color.dinkrCoral)
+            ZStack {
+                Circle()
+                    .fill(Color.dinkrCoral.opacity(0.12))
+                    .frame(width: 38, height: 38)
+                Image(systemName: "mappin.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.dinkrCoral)
+            }
 
-            Text(name)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(Color.primary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.primary)
+                Text("\(courtCount) courts")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             Spacer()
 
             Text(distance)
-                .font(.caption.weight(.semibold))
+                .font(.caption.weight(.bold))
                 .foregroundStyle(Color.dinkrGreen)
                 .padding(.horizontal, 10)
-                .padding(.vertical, 4)
+                .padding(.vertical, 5)
                 .background(Color.dinkrGreen.opacity(0.12), in: Capsule())
         }
         .padding(14)
         .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 14))
+        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
     }
 }
 
-// MARK: - Screen 5: All Set
+// MARK: - Screen 5: All Set (confetti + profile preview)
 
 private struct AllSetScreen: View {
     let selectedSkill: SkillLevel
+    let selectedStyles: Set<PlayStyle>
     let onComplete: () -> Void
 
     @State private var burst = false
+    @State private var confettiPieces: [OnboardingConfettiPiece] = []
 
     private let confettiColors: [Color] = [
         Color.dinkrGreen, Color.dinkrCoral, Color.dinkrAmber, Color.dinkrSky, Color.dinkrNavy
@@ -613,94 +1019,258 @@ private struct AllSetScreen: View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
 
+            // Confetti particles
+            ForEach(confettiPieces) { piece in
+                OnboardingConfettiParticle(piece: piece)
+            }
+
             VStack(spacing: 0) {
                 Spacer()
 
-                // Confetti celebration
+                // Trophy + burst orb
                 ZStack {
-                    ForEach(0..<5) { i in
-                        let angle = Double(i) / 5.0 * 360.0
+                    // Glow orb
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [Color.dinkrAmber.opacity(burst ? 0.35 : 0), .clear],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 120
+                            )
+                        )
+                        .frame(width: 240, height: 240)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.1), value: burst)
+
+                    // Burst ring dots
+                    ForEach(0..<8) { i in
+                        let angle = Double(i) / 8.0 * 360.0
                         let radians = angle * .pi / 180
-                        let distance: CGFloat = burst ? 100 : 0
+                        let distance: CGFloat = burst ? 90 : 0
 
                         Circle()
-                            .fill(confettiColors[i])
-                            .frame(width: burst ? 20 : 8, height: burst ? 20 : 8)
+                            .fill(confettiColors[i % confettiColors.count])
+                            .frame(width: burst ? 10 : 4, height: burst ? 10 : 4)
                             .offset(
                                 x: cos(radians) * distance,
                                 y: sin(radians) * distance
                             )
                             .opacity(burst ? 1.0 : 0.0)
                             .animation(
-                                .spring(response: 0.55, dampingFraction: 0.65)
-                                    .delay(Double(i) * 0.06),
+                                .spring(response: 0.5, dampingFraction: 0.58)
+                                    .delay(Double(i) * 0.04),
                                 value: burst
                             )
                     }
 
-                    // Center trophy
+                    // Trophy
                     Image(systemName: "trophy.fill")
-                        .font(.system(size: 64))
-                        .foregroundStyle(Color.dinkrAmber)
-                        .scaleEffect(burst ? 1.0 : 0.4)
-                        .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.1), value: burst)
+                        .font(.system(size: 72))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color.dinkrAmber, Color.dinkrCoral],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .shadow(color: Color.dinkrAmber.opacity(0.5), radius: 20, x: 0, y: 8)
+                        .scaleEffect(burst ? 1.0 : 0.3)
+                        .animation(.spring(response: 0.55, dampingFraction: 0.6).delay(0.12), value: burst)
                 }
                 .frame(width: 240, height: 240)
 
                 // Headline
-                Text("Welcome to Dinkr!")
-                    .font(.largeTitle.weight(.black))
-                    .foregroundStyle(Color.dinkrNavy)
-                    .multilineTextAlignment(.center)
-                    .scaleEffect(burst ? 1.0 : 0.8)
-                    .opacity(burst ? 1.0 : 0.0)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.65).delay(0.2), value: burst)
+                VStack(spacing: 6) {
+                    Text("Welcome to Dinkr!")
+                        .font(.largeTitle.weight(.black))
+                        .foregroundStyle(Color.dinkrNavy)
+                        .multilineTextAlignment(.center)
+                        .scaleEffect(burst ? 1.0 : 0.8)
+                        .opacity(burst ? 1.0 : 0.0)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.65).delay(0.22), value: burst)
 
-                Text("You're all set to find your first game.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-                    .padding(.top, 8)
-                    .opacity(burst ? 1.0 : 0.0)
-                    .animation(.easeOut(duration: 0.4).delay(0.35), value: burst)
-
-                // Skill badge
-                HStack(spacing: 8) {
-                    Text("Your level:")
-                        .font(.subheadline)
+                    Text("You're all set to find your first game.")
+                        .font(.body)
                         .foregroundStyle(.secondary)
-                    SkillBadge(level: selectedSkill)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                        .opacity(burst ? 1.0 : 0.0)
+                        .animation(.easeOut(duration: 0.4).delay(0.35), value: burst)
                 }
-                .padding(.top, 18)
-                .opacity(burst ? 1.0 : 0.0)
-                .animation(.easeOut(duration: 0.4).delay(0.45), value: burst)
+
+                // Profile preview card
+                ProfilePreviewCard(skill: selectedSkill, styles: selectedStyles)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
+                    .opacity(burst ? 1.0 : 0.0)
+                    .offset(y: burst ? 0 : 20)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.45), value: burst)
 
                 Spacer()
 
-                // CTA button
+                // CTA
                 Button(action: onComplete) {
-                    Text("Find Your First Game →")
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(Color.dinkrGreen)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .shadow(color: Color.dinkrGreen.opacity(0.4), radius: 12, x: 0, y: 4)
+                    HStack(spacing: 8) {
+                        Text("Find Your First Game")
+                        Image(systemName: "arrow.right")
+                    }
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Color.dinkrGreen)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: Color.dinkrGreen.opacity(0.4), radius: 12, x: 0, y: 4)
                 }
                 .buttonStyle(ScalePressButtonStyle())
                 .padding(.horizontal, 24)
                 .padding(.bottom, 60)
                 .opacity(burst ? 1.0 : 0.0)
-                .animation(.easeOut(duration: 0.4).delay(0.55), value: burst)
+                .animation(.easeOut(duration: 0.4).delay(0.6), value: burst)
             }
         }
         .onAppear {
+            confettiPieces = (0..<40).map { _ in OnboardingConfettiPiece.random(colors: confettiColors) }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 burst = true
             }
         }
+    }
+}
+
+// MARK: - Profile Preview Card
+
+private struct ProfilePreviewCard: View {
+    let skill: SkillLevel
+    let styles: Set<PlayStyle>
+
+    var body: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 14) {
+                // Avatar placeholder
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.dinkrGreen, Color.dinkrSky],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 52, height: 52)
+                    Text("D")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Dinkr Player")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(Color.dinkrNavy)
+                    SkillBadge(level: skill, compact: true)
+                }
+
+                Spacer()
+
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.title2)
+                    .foregroundStyle(Color.dinkrGreen)
+            }
+
+            if !styles.isEmpty {
+                HStack {
+                    Text("Play styles:")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(styles), id: \.self) { style in
+                            HStack(spacing: 4) {
+                                Image(systemName: style.icon)
+                                    .font(.system(size: 11))
+                                Text(style.rawValue)
+                                    .font(.caption.weight(.semibold))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.dinkrGreen.opacity(0.12), in: Capsule())
+                            .foregroundStyle(Color.dinkrGreen)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(18)
+        .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.dinkrGreen.opacity(0.3), lineWidth: 1.5)
+        )
+        .shadow(color: Color.dinkrGreen.opacity(0.1), radius: 12, x: 0, y: 4)
+    }
+}
+
+// MARK: - Confetti System
+
+private struct OnboardingConfettiPiece: Identifiable {
+    let id = UUID()
+    let color: Color
+    let x: CGFloat
+    let rotation: Double
+    let size: CGFloat
+    let speed: Double
+    let delay: Double
+    let isCircle: Bool
+
+    static func random(colors: [Color]) -> OnboardingConfettiPiece {
+        OnboardingConfettiPiece(
+            color: colors.randomElement() ?? .dinkrGreen,
+            x: CGFloat.random(in: 0.05...0.95),
+            rotation: Double.random(in: 0...360),
+            size: CGFloat.random(in: 6...14),
+            speed: Double.random(in: 1.8...3.2),
+            delay: Double.random(in: 0...1.2),
+            isCircle: Bool.random()
+        )
+    }
+}
+
+private struct OnboardingConfettiParticle: View {
+    let piece: OnboardingConfettiPiece
+    @State private var animating = false
+
+    var body: some View {
+        GeometryReader { geo in
+            Group {
+                if piece.isCircle {
+                    Circle()
+                        .fill(piece.color.opacity(0.85))
+                        .frame(width: piece.size, height: piece.size)
+                } else {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(piece.color.opacity(0.85))
+                        .frame(width: piece.size, height: piece.size * 0.5)
+                        .rotationEffect(.degrees(piece.rotation))
+                }
+            }
+            .position(
+                x: geo.size.width * piece.x,
+                y: animating ? geo.size.height + 20 : -20
+            )
+            .opacity(animating ? 0 : 1)
+        }
+        .onAppear {
+            withAnimation(
+                .easeIn(duration: piece.speed)
+                .delay(piece.delay)
+            ) {
+                animating = true
+            }
+        }
+        .allowsHitTesting(false)
     }
 }
 
@@ -729,7 +1299,6 @@ private func fullCourtLinePath(size: CGSize, progress: Double) -> Path {
     let h = size.height
     let margin: CGFloat = 20
 
-    // Horizontal baselines
     let horizontals: [CGFloat] = [0.18, 0.38, 0.62, 0.82]
     for ratio in horizontals {
         let y = h * ratio
@@ -738,7 +1307,6 @@ private func fullCourtLinePath(size: CGSize, progress: Double) -> Path {
         path.addLine(to: CGPoint(x: endX, y: y))
     }
 
-    // Side lines
     let topY = h * 0.18
     let botY = h * 0.82
     let sideEndY = topY + (botY - topY) * progress
@@ -747,11 +1315,9 @@ private func fullCourtLinePath(size: CGSize, progress: Double) -> Path {
     path.move(to: CGPoint(x: w - margin, y: topY))
     path.addLine(to: CGPoint(x: w - margin, y: sideEndY))
 
-    // Center vertical line
     path.move(to: CGPoint(x: w / 2, y: topY))
     path.addLine(to: CGPoint(x: w / 2, y: sideEndY))
 
-    // NVZ / kitchen lines
     let nvzOffset = h * 0.12
     let centerY = h * 0.5
     let nvzEndX = margin + (w - margin * 2) * progress
@@ -771,18 +1337,15 @@ private struct PickleballIllustration: View {
 
     var body: some View {
         ZStack {
-            // Main ball body
             Circle()
                 .fill(Color.white.opacity(0.06))
                 .frame(width: 180, height: 180)
 
-            // Outer dashed border
             Circle()
                 .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
                 .foregroundStyle(Color.white.opacity(0.1))
                 .frame(width: 180, height: 180)
 
-            // Surface seam lines (pickleball has distinctive hole pattern suggested by lines)
             ForEach(0..<4) { i in
                 Ellipse()
                     .stroke(Color.white.opacity(0.07), lineWidth: 1.2)
@@ -790,7 +1353,6 @@ private struct PickleballIllustration: View {
                     .rotationEffect(.degrees(Double(i) * 45))
             }
 
-            // Inner circle
             Circle()
                 .stroke(Color.white.opacity(0.05), lineWidth: 1)
                 .frame(width: 90, height: 90)
@@ -822,13 +1384,10 @@ struct AuthLandingView: View {
 
     var body: some View {
         ZStack {
-            // Full-screen navy background
             Color.dinkrNavy.ignoresSafeArea()
 
-            // Animated court lines
             CourtLinePattern()
 
-            // Floating pickleball illustration (top-right, low opacity)
             VStack {
                 HStack {
                     Spacer()
@@ -839,11 +1398,9 @@ struct AuthLandingView: View {
             }
             .ignoresSafeArea()
 
-            // Main content
             VStack(spacing: 0) {
                 Spacer()
 
-                // Logo + tagline zone
                 VStack(spacing: 20) {
                     DinkrLogoView(size: 88, showWordmark: true, tintColor: .white)
                         .scaleEffect(logoAppeared ? 1.0 : 0.55)
@@ -865,7 +1422,6 @@ struct AuthLandingView: View {
                 Spacer()
                 Spacer()
 
-                // Auth sheet
                 bottomSheet
             }
         }
@@ -889,13 +1445,9 @@ struct AuthLandingView: View {
         }
     }
 
-    // MARK: Bottom Sheet
-
     private var bottomSheet: some View {
         VStack(spacing: 0) {
             VStack(spacing: 16) {
-
-                // Error banner
                 if let error = errorMessage {
                     HStack(spacing: 8) {
                         Image(systemName: "exclamationmark.circle.fill")
@@ -920,7 +1472,6 @@ struct AuthLandingView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
-                // Sign In with Apple
                 SignInWithAppleButton(.signIn) { request in
                     request.requestedScopes = [.fullName, .email]
                 } onCompletion: { _ in
@@ -939,7 +1490,6 @@ struct AuthLandingView: View {
                 .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
                 .overlay(loadingOverlay)
 
-                // Google Sign In
                 PremiumGoogleSignInButton {
                     Task {
                         do {
@@ -951,7 +1501,6 @@ struct AuthLandingView: View {
                 }
                 .overlay(loadingOverlay)
 
-                // Divider
                 HStack(spacing: 14) {
                     Rectangle()
                         .fill(Color.secondary.opacity(0.3))
@@ -965,7 +1514,6 @@ struct AuthLandingView: View {
                 }
                 .padding(.vertical, 2)
 
-                // Email sign in: ghost button
                 Button {
                     showEmailSignIn = true
                 } label: {
@@ -986,7 +1534,6 @@ struct AuthLandingView: View {
                 .disabled(authService.isLoading)
                 .buttonStyle(ScalePressButtonStyle())
 
-                // Create account
                 Button {
                     showEmailSignUp = true
                 } label: {
@@ -1052,7 +1599,6 @@ private struct PremiumGoogleSignInButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                // Google "G" multicolor gradient
                 Text("G")
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(
@@ -1110,7 +1656,6 @@ struct EmailSignInView: View {
             ZStack {
                 Color.dinkrNavy.ignoresSafeArea()
 
-                // Subtle court lines
                 Canvas { ctx, size in
                     let path = fullCourtLinePath(size: size, progress: 1.0)
                     ctx.stroke(path, with: .color(.white.opacity(0.03)), lineWidth: 1.2)
@@ -1120,7 +1665,6 @@ struct EmailSignInView: View {
                 ScrollView {
                     VStack(spacing: 28) {
 
-                        // Header
                         VStack(spacing: 10) {
                             DinkrLogoView(size: 52, showWordmark: true, tintColor: Color.dinkrGreen)
                             Text("Welcome back")
@@ -1132,7 +1676,6 @@ struct EmailSignInView: View {
                         }
                         .padding(.top, 12)
 
-                        // Error banner
                         if let error = authService.error {
                             HStack(spacing: 8) {
                                 Image(systemName: "exclamationmark.triangle.fill")
@@ -1148,7 +1691,6 @@ struct EmailSignInView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
 
-                        // Fields
                         VStack(spacing: 16) {
                             DarkAuthTextField(
                                 label: "Email",
@@ -1176,7 +1718,6 @@ struct EmailSignInView: View {
                             .onSubmit { signIn() }
                         }
 
-                        // Forgot password
                         HStack {
                             Spacer()
                             Button("Forgot Password?") {
@@ -1187,7 +1728,6 @@ struct EmailSignInView: View {
                             .foregroundStyle(Color.dinkrSky)
                         }
 
-                        // Sign In button
                         GradientSubmitButton(
                             title: "Sign In",
                             isLoading: authService.isLoading,
@@ -1332,7 +1872,6 @@ struct EmailSignUpView: View {
                 ScrollView {
                     VStack(spacing: 24) {
 
-                        // Header
                         VStack(spacing: 10) {
                             DinkrLogoView(size: 52, showWordmark: true, tintColor: Color.dinkrGreen)
                             Text("Create your account")
@@ -1344,7 +1883,6 @@ struct EmailSignUpView: View {
                         }
                         .padding(.top, 12)
 
-                        // Error
                         if let error = authService.error {
                             HStack(spacing: 8) {
                                 Image(systemName: "exclamationmark.triangle.fill")
@@ -1360,7 +1898,6 @@ struct EmailSignUpView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
 
-                        // Fields
                         VStack(spacing: 16) {
                             DarkAuthTextField(
                                 label: "Display Name",
@@ -1390,7 +1927,6 @@ struct EmailSignUpView: View {
                             .submitLabel(.next)
                             .onSubmit { focusedField = .password }
 
-                            // Password + strength indicator
                             VStack(alignment: .leading, spacing: 8) {
                                 DarkAuthSecureField(
                                     label: "Password",
@@ -1437,7 +1973,6 @@ struct EmailSignUpView: View {
                             }
                             .animation(.easeOut(duration: 0.2), value: password.isEmpty)
 
-                            // Confirm password
                             VStack(alignment: .leading, spacing: 5) {
                                 DarkAuthSecureField(
                                     label: "Confirm Password",
@@ -1461,7 +1996,6 @@ struct EmailSignUpView: View {
                             .animation(.easeOut(duration: 0.2), value: confirmPassword)
                         }
 
-                        // Terms toggle
                         Button {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                 agreedToTerms.toggle()
@@ -1503,7 +2037,6 @@ struct EmailSignUpView: View {
                         }
                         .buttonStyle(.plain)
 
-                        // Create Account button
                         GradientSubmitButton(
                             title: "Create Account",
                             isLoading: authService.isLoading,

@@ -11,11 +11,11 @@ struct CreateGroupView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Group Name") {
+                Section("DinkrGroup Name") {
                     TextField("e.g. South Austin Dinkers", text: $name)
                 }
                 Section("Type") {
-                    Picker("Group Type", selection: $selectedType) {
+                    Picker("DinkrGroup Type", selection: $selectedType) {
                         ForEach(GroupType.allCases, id: \.self) { type in
                             Text(type.rawValue).tag(type)
                         }
@@ -25,14 +25,14 @@ struct CreateGroupView: View {
                     TextEditor(text: $description).frame(minHeight: 80)
                 }
                 Section("Privacy") {
-                    Toggle("Private Group", isOn: $isPrivate)
+                    Toggle("Private DinkrGroup", isOn: $isPrivate)
                     if isPrivate {
                         Text("Only invited members can see and join this group.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
-            .navigationTitle("Create Group")
+            .navigationTitle("Create DinkrGroup")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

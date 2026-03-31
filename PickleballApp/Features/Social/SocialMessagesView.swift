@@ -1,8 +1,8 @@
 import SwiftUI
 
-// MARK: - MessagesView
+// MARK: - SocialMessagesView
 
-struct MessagesView: View {
+struct SocialMessagesView: View {
     @State private var searchText = ""
     @State private var conversations: [DMConversation] = DMConversation.mockConversations
     @State private var showNewMessage = false
@@ -79,7 +79,7 @@ struct MessagesView: View {
                                 isOnline: conversation.isOnline
                             )
                         } label: {
-                            ConversationRow(conversation: conversation)
+                            SocialConversationRow(conversation: conversation)
                         }
                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -175,7 +175,7 @@ private struct OnlineAvatarPill: View {
 
 // MARK: - ConversationRow
 
-private struct ConversationRow: View {
+private struct SocialConversationRow: View {
     let conversation: DMConversation
 
     var body: some View {
@@ -349,7 +349,7 @@ struct NewMessageComposerSheet: View {
 // MARK: - Preview
 
 #Preview("Messages") {
-    MessagesView()
+    SocialMessagesView()
 }
 
 #Preview("New Message Composer") {

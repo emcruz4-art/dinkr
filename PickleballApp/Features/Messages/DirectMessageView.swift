@@ -5,6 +5,7 @@ import SwiftUI
 enum DMBubbleType {
     case text
     case gameInvite(courtName: String, date: Date, format: String)
+    case locationShare(venueName: String, address: String)
 }
 
 struct DirectMessage: Identifiable {
@@ -94,6 +95,17 @@ private extension DirectMessage {
                 reaction: "🔥"
             ),
             DirectMessage(
+                id: "\(conversationId)_loc",
+                senderId: otherUserId,
+                text: "Location",
+                timestamp: ago(20),
+                isRead: true,
+                bubbleType: .locationShare(
+                    venueName: "Westside Pickleball Complex",
+                    address: "4201 W Parmer Ln, Austin TX"
+                )
+            ),
+            DirectMessage(
                 id: "\(conversationId)_7",
                 senderId: "me",
                 text: "Challenge accepted. Should we grab coffee after?",
@@ -123,11 +135,20 @@ struct DirectMessageView: View {
     @State private var inputText: String = ""
     @State private var showEmojiPicker: String? = nil
     @State private var inviteStates: [String: InviteResponse] = [:]
+    @State private var isTyping: Bool = false
+    @State private var showAttachmentMenu: Bool = false
+    @State private var showGameInviteSheet: Bool = false
+    @State private var typingSimTimer: Timer? = nil
 
     private let quickReplies = ["Want to play?", "Great game!", "Count me in 🏓", "Can't make it"]
-    private let emojis = ["❤️", "🔥", "😂", "👏", "🎯", "🏓"]
+    private let emojis = ["❤️", "😂", "🏓", "🔥", "👍", "😤"]
 
     enum InviteResponse { case accepted, declined }
+
+    // The last message sent by me — used for read receipt
+    private var lastSentMessage: DirectMessage? {
+        messages.last(where: { $0.senderId == "me" })
+    }
 
     var body: some View {
         ZStack {
@@ -147,8 +168,35 @@ struct DirectMessageView: View {
                 for: conversationId,
                 otherUserId: conversationId
             )
+            // Simulate other user typing after a short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation { isTyping = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+                    withAnimation { isTyping = false }
+                }
+            }
         }
         .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 0) }
+        .sheet(isPresented: $showGameInviteSheet) {
+            GameInviteComposeSheet { courtName, date, format in
+                let invite = DirectMessage(
+                    id: UUID().uuidString,
+                    senderId: "me",
+                    text: "Game Invite",
+                    timestamp: Date(),
+                    isRead: false,
+                    bubbleType: .gameInvite(courtName: courtName, date: date, format: format)
+                )
+                withAnimation { messages.append(invite) }
+            }
+        }
+        .confirmationDialog("Add Attachment", isPresented: $showAttachmentMenu, titleVisibility: .visible) {
+            Button("Photo") { }
+            Button("Game Invite") { showGameInviteSheet = true }
+            Button("Share Location") { sendLocationMessage() }
+            Button("GIF") { }
+            Button("Cancel", role: .cancel) { }
+        }
     }
 
     // MARK: - Message Scroll
@@ -169,6 +217,7 @@ struct DirectMessageView: View {
                             isFromMe: message.senderId == "me",
                             initial: otherUserInitial,
                             inviteState: inviteStates[message.id],
+                            isLastSent: message.id == lastSentMessage?.id,
                             onLongPress: {
                                 withAnimation(.spring(response: 0.3)) {
                                     showEmojiPicker = showEmojiPicker == message.id ? nil : message.id
@@ -179,7 +228,8 @@ struct DirectMessageView: View {
                             },
                             onDeclineInvite: {
                                 withAnimation { inviteStates[message.id] = .declined }
-                            }
+                            },
+                            onAvatarTap: { }   // Profile navigation placeholder
                         )
                         .id(message.id)
 
@@ -195,6 +245,15 @@ struct DirectMessageView: View {
                             )
                         }
                     }
+
+                    // Typing indicator
+                    if isTyping {
+                        TypingIndicator(initial: otherUserInitial)
+                            .id("typing")
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                            .padding(.leading, 12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
@@ -204,6 +263,11 @@ struct DirectMessageView: View {
             }
             .onChange(of: messages.count) { _, _ in
                 scrollToBottom(proxy: proxy, animated: true)
+            }
+            .onChange(of: isTyping) { _, typing in
+                if typing {
+                    withAnimation { proxy.scrollTo("typing", anchor: .bottom) }
+                }
             }
             .onTapGesture {
                 withAnimation { showEmojiPicker = nil }
@@ -240,11 +304,36 @@ struct DirectMessageView: View {
 
     private var inputBar: some View {
         HStack(spacing: 10) {
+            // Attachment (+) button
+            Button {
+                showAttachmentMenu = true
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(Color.dinkrGreen.opacity(0.12))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: "plus")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Color.dinkrGreen)
+                }
+            }
+
             TextField("Message \(otherUserName)...", text: $inputText, axis: .vertical)
-                .padding(10)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
                 .background(Color.cardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 .lineLimit(1...5)
+                .onChange(of: inputText) { _, newVal in
+                    // Simulate typing indicator feedback
+                    isTyping = !newVal.isEmpty
+                    typingSimTimer?.invalidate()
+                    if !newVal.isEmpty {
+                        typingSimTimer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: false) { _ in
+                            DispatchQueue.main.async { isTyping = false }
+                        }
+                    }
+                }
 
             Button {
                 let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -270,19 +359,24 @@ struct DirectMessageView: View {
     @ToolbarContentBuilder
     private var navToolbar: some ToolbarContent {
         ToolbarItem(placement: .principal) {
-            VStack(spacing: 1) {
-                HStack(spacing: 6) {
-                    Text(otherUserName)
-                        .font(.headline)
-                    if isOnline {
-                        Circle()
-                            .fill(Color.green)
-                            .frame(width: 8, height: 8)
+            Button {
+                // Navigate to profile — placeholder
+            } label: {
+                VStack(spacing: 1) {
+                    HStack(spacing: 6) {
+                        Text(otherUserName)
+                            .font(.headline)
+                            .foregroundStyle(Color.primary)
+                        if isOnline {
+                            Circle()
+                                .fill(Color.dinkrGreen)
+                                .frame(width: 8, height: 8)
+                        }
                     }
+                    Text(isOnline ? "Online now" : "Last seen recently")
+                        .font(.caption2)
+                        .foregroundStyle(isOnline ? Color.dinkrGreen : Color.secondary)
                 }
-                Text(isOnline ? "Online now" : "Last seen recently")
-                    .font(.caption2)
-                    .foregroundStyle(isOnline ? Color.green : Color.secondary)
             }
         }
         ToolbarItemGroup(placement: .topBarTrailing) {
@@ -319,6 +413,7 @@ struct DirectMessageView: View {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         inputText = ""
+        isTyping = false
         showEmojiPicker = nil
         let msg = DirectMessage(
             id: UUID().uuidString,
@@ -326,6 +421,28 @@ struct DirectMessageView: View {
             text: trimmed,
             timestamp: Date(),
             isRead: false
+        )
+        withAnimation { messages.append(msg) }
+
+        // Simulate read receipt after short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            if let idx = messages.firstIndex(where: { $0.id == msg.id }) {
+                messages[idx].isRead = true
+            }
+        }
+    }
+
+    private func sendLocationMessage() {
+        let msg = DirectMessage(
+            id: UUID().uuidString,
+            senderId: "me",
+            text: "Location",
+            timestamp: Date(),
+            isRead: false,
+            bubbleType: .locationShare(
+                venueName: "Westside Pickleball Complex",
+                address: "4201 W Parmer Ln, Austin TX"
+            )
         )
         withAnimation { messages.append(msg) }
     }
@@ -338,30 +455,81 @@ struct DirectMessageView: View {
     }
 }
 
+// MARK: - TypingIndicator
+
+private struct TypingIndicator: View {
+    let initial: String
+    @State private var animPhase: Int = 0
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            Circle()
+                .fill(Color.dinkrGreen.opacity(0.18))
+                .frame(width: 30, height: 30)
+                .overlay(
+                    Text(initial)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.dinkrGreen)
+                )
+
+            HStack(spacing: 5) {
+                ForEach(0..<3, id: \.self) { i in
+                    Circle()
+                        .fill(Color.secondary.opacity(0.6))
+                        .frame(width: 7, height: 7)
+                        .scaleEffect(animPhase == i ? 1.4 : 1.0)
+                        .offset(y: animPhase == i ? -3 : 0)
+                        .animation(
+                            .easeInOut(duration: 0.4).repeatForever().delay(Double(i) * 0.15),
+                            value: animPhase
+                        )
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(Color.cardBackground)
+            .clipShape(DMBubbleShape(isFromMe: false))
+        }
+        .padding(.vertical, 4)
+        .onAppear {
+            withAnimation { animPhase = 2 }
+            // Cycle the phase to keep all dots bouncing
+            Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { t in
+                withAnimation { animPhase = (animPhase + 1) % 3 }
+            }
+        }
+    }
+}
+
 // MARK: - DMBubbleRow
 
-private struct DMBubbleRow: View {
+struct DMBubbleRow: View {
     let message: DirectMessage
     let isFromMe: Bool
     let initial: String
     let inviteState: DirectMessageView.InviteResponse?
+    let isLastSent: Bool
     let onLongPress: () -> Void
     let onAcceptInvite: () -> Void
     let onDeclineInvite: () -> Void
+    let onAvatarTap: () -> Void
 
     var body: some View {
         VStack(alignment: isFromMe ? .trailing : .leading, spacing: 2) {
             HStack(alignment: .bottom, spacing: 8) {
                 if !isFromMe {
-                    Circle()
-                        .fill(Color.dinkrGreen.opacity(0.18))
-                        .frame(width: 30, height: 30)
-                        .overlay(
-                            Text(initial)
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(Color.dinkrGreen)
-                        )
+                    Button(action: onAvatarTap) {
+                        Circle()
+                            .fill(Color.dinkrGreen.opacity(0.18))
+                            .frame(width: 30, height: 30)
+                            .overlay(
+                                Text(initial)
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(Color.dinkrGreen)
+                            )
+                    }
                 }
 
                 bubbleContent
@@ -381,19 +549,28 @@ private struct DMBubbleRow: View {
                     .clipShape(Capsule())
                     .overlay(Capsule().stroke(Color.secondary.opacity(0.2), lineWidth: 1))
                     .padding(.leading, isFromMe ? 0 : 38)
+                    .padding(.trailing, isFromMe ? 4 : 0)
             }
 
-            // Read receipt for sent messages
-            if isFromMe {
+            // Read receipt for last sent message
+            if isFromMe && isLastSent {
                 HStack(spacing: 2) {
-                    Image(systemName: message.isRead ? "checkmark" : "checkmark")
-                        .font(.system(size: 9, weight: .bold))
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 9, weight: .bold))
-                        .offset(x: -5)
+                    if message.isRead {
+                        Text("Read \(message.timestamp.timeString)")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.dinkrSky)
+                    } else {
+                        HStack(spacing: -4) {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 9, weight: .bold))
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .foregroundStyle(Color.secondary)
+                    }
                 }
-                .foregroundStyle(message.isRead ? Color.dinkrSky : Color.secondary)
-                .padding(.trailing, 2)
+                .padding(.trailing, 4)
+                .transition(.opacity)
             }
         }
         .padding(.vertical, 2)
@@ -421,6 +598,9 @@ private struct DMBubbleRow: View {
                 onAccept: onAcceptInvite,
                 onDecline: onDeclineInvite
             )
+
+        case let .locationShare(venueName, address):
+            LocationShareCard(venueName: venueName, address: address, isFromMe: isFromMe)
         }
     }
 }
@@ -486,7 +666,6 @@ private struct GameInviteCard: View {
                 }
 
                 if let state = state {
-                    // Already responded
                     HStack(spacing: 6) {
                         Image(systemName: state == .accepted ? "checkmark.circle.fill" : "xmark.circle.fill")
                             .foregroundStyle(state == .accepted ? Color.dinkrGreen : Color.dinkrCoral)
@@ -496,7 +675,6 @@ private struct GameInviteCard: View {
                     }
                     .padding(.top, 2)
                 } else if !isFromMe {
-                    // Show accept/decline for received invites only
                     HStack(spacing: 8) {
                         Button(action: onDecline) {
                             Text("Decline")
@@ -519,7 +697,6 @@ private struct GameInviteCard: View {
                     }
                     .padding(.top, 4)
                 } else {
-                    // Invite sent by me — show waiting state
                     HStack(spacing: 6) {
                         Image(systemName: "clock")
                             .font(.caption2)
@@ -540,6 +717,115 @@ private struct GameInviteCard: View {
                 .stroke(Color.dinkrGreen.opacity(0.25), lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 2)
+        .frame(maxWidth: 260)
+    }
+}
+
+// MARK: - LocationShareCard
+
+private struct LocationShareCard: View {
+    let venueName: String
+    let address: String
+    let isFromMe: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Map placeholder
+            ZStack {
+                RoundedRectangle(cornerRadius: 0)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.dinkrSky.opacity(0.3), Color.dinkrNavy.opacity(0.15)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(height: 80)
+                VStack(spacing: 4) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(Color.dinkrCoral)
+                    Text("Map")
+                        .font(.caption2)
+                        .foregroundStyle(Color.secondary)
+                }
+            }
+
+            // Info
+            VStack(alignment: .leading, spacing: 3) {
+                Text(venueName)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.primary)
+                Text(address)
+                    .font(.caption)
+                    .foregroundStyle(Color.secondary)
+
+                Button { } label: {
+                    Text("Open in Maps")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.dinkrSky)
+                }
+                .padding(.top, 2)
+            }
+            .padding(10)
+        }
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.dinkrSky.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 2)
+        .frame(maxWidth: 240)
+    }
+}
+
+// MARK: - GameInviteComposeSheet
+
+private struct GameInviteComposeSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let onSend: (String, Date, String) -> Void
+
+    @State private var courtName: String = "Zilker Park Courts"
+    @State private var selectedDate: Date = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+    @State private var format: String = "Doubles • 4.0+"
+
+    private let formats = ["Doubles • 4.0+", "Singles • Open", "Mixed Doubles • 3.5+", "Casual • All levels"]
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Court") {
+                    TextField("Court name", text: $courtName)
+                }
+                Section("Date & Time") {
+                    DatePicker("When", selection: $selectedDate, in: Date()...)
+                }
+                Section("Format") {
+                    Picker("Format", selection: $format) {
+                        ForEach(formats, id: \.self) { Text($0).tag($0) }
+                    }
+                    .pickerStyle(.inline)
+                }
+            }
+            .navigationTitle("Send Game Invite")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Send") {
+                        onSend(courtName, selectedDate, format)
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.dinkrGreen)
+                    .disabled(courtName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 }
 
@@ -573,40 +859,57 @@ private struct TimestampDivider: View {
 
 // MARK: - DMBubbleShape
 
-private struct DMBubbleShape: Shape {
+struct DMBubbleShape: Shape {
     let isFromMe: Bool
     private let radius: CGFloat = 18
-    private let tail: CGFloat = 6
+    private let tail: CGFloat = 7
 
     func path(in rect: CGRect) -> Path {
         var path = Path()
         let r = min(radius, rect.height / 2)
 
         if isFromMe {
+            // Top-left round
             path.move(to: CGPoint(x: rect.minX + r, y: rect.minY))
+            // Top-right round
             path.addLine(to: CGPoint(x: rect.maxX - r, y: rect.minY))
             path.addArc(center: CGPoint(x: rect.maxX - r, y: rect.minY + r),
                         radius: r, startAngle: .degrees(-90), endAngle: .degrees(0), clockwise: false)
-            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - tail))
-            path.addQuadCurve(to: CGPoint(x: rect.maxX - tail, y: rect.maxY),
-                              control: CGPoint(x: rect.maxX, y: rect.maxY))
+            // Right side down to tail
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - tail - 2))
+            // Tail curve (pointy, concave for natural look)
+            path.addCurve(
+                to: CGPoint(x: rect.maxX - tail, y: rect.maxY),
+                control1: CGPoint(x: rect.maxX, y: rect.maxY - 1),
+                control2: CGPoint(x: rect.maxX - tail + 2, y: rect.maxY)
+            )
+            // Bottom-left round
             path.addLine(to: CGPoint(x: rect.minX + r, y: rect.maxY))
             path.addArc(center: CGPoint(x: rect.minX + r, y: rect.maxY - r),
                         radius: r, startAngle: .degrees(90), endAngle: .degrees(180), clockwise: false)
+            // Left side up
             path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
             path.addArc(center: CGPoint(x: rect.minX + r, y: rect.minY + r),
                         radius: r, startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
         } else {
-            path.move(to: CGPoint(x: rect.minX + r, y: rect.minY))
+            // Leading (left) tail
+            path.move(to: CGPoint(x: rect.minX + tail, y: rect.minY))
+            // Top-right round
             path.addLine(to: CGPoint(x: rect.maxX - r, y: rect.minY))
             path.addArc(center: CGPoint(x: rect.maxX - r, y: rect.minY + r),
                         radius: r, startAngle: .degrees(-90), endAngle: .degrees(0), clockwise: false)
+            // Bottom-right round
             path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - r))
             path.addArc(center: CGPoint(x: rect.maxX - r, y: rect.maxY - r),
                         radius: r, startAngle: .degrees(0), endAngle: .degrees(90), clockwise: false)
+            // Bottom-left: tail
             path.addLine(to: CGPoint(x: rect.minX + tail, y: rect.maxY))
-            path.addQuadCurve(to: CGPoint(x: rect.minX, y: rect.maxY - tail),
-                              control: CGPoint(x: rect.minX, y: rect.maxY))
+            path.addCurve(
+                to: CGPoint(x: rect.minX, y: rect.maxY - tail - 2),
+                control1: CGPoint(x: rect.minX + tail - 2, y: rect.maxY),
+                control2: CGPoint(x: rect.minX, y: rect.maxY - 1)
+            )
+            // Left side up to top-left arc
             path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
             path.addArc(center: CGPoint(x: rect.minX + r, y: rect.minY + r),
                         radius: r, startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
@@ -628,7 +931,7 @@ private struct DMEmojiPickerRow: View {
                 Button { onSelect(emoji) } label: {
                     Text(emoji)
                         .font(.title3)
-                        .frame(width: 36, height: 36)
+                        .frame(width: 38, height: 38)
                         .background(Color.cardBackground)
                         .clipShape(Circle())
                         .shadow(color: Color.black.opacity(0.12), radius: 4, x: 0, y: 2)

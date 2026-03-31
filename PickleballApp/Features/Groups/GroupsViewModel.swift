@@ -3,8 +3,8 @@ import Observation
 
 @Observable
 final class GroupsViewModel {
-    var myGroups: [Group] = []
-    var discoverGroups: [Group] = []
+    var myGroups: [DinkrGroup] = []
+    var discoverGroups: [DinkrGroup] = []
     var isLoading = false
     var showCreateGroup = false
 
@@ -14,7 +14,7 @@ final class GroupsViewModel {
         isLoading = true
         defer { isLoading = false }
         do {
-            let allGroups: [Group] = try await firestoreService.queryCollectionOrdered(
+            let allGroups: [DinkrGroup] = try await firestoreService.queryCollectionOrdered(
                 collection: FirestoreCollections.groups,
                 orderBy: "name"
             )
@@ -27,7 +27,7 @@ final class GroupsViewModel {
         } catch {
             print("[GroupsViewModel] load error: \(error)")
             #if DEBUG
-            let all = Group.mockGroups
+            let all = DinkrGroup.mockGroups
             myGroups = currentUserId != nil ? Array(all.prefix(2)) : []
             discoverGroups = all
             #endif

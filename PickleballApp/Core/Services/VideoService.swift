@@ -21,7 +21,7 @@ final class VideoService {
         return videos.isEmpty ? VideoPost.mockVideos.filter { $0.isFeatured } : videos
     }
 
-    func loadVideos(category: VideoCategory) async -> [VideoPost] {
+    func loadVideos(category: VideoPostCategory) async -> [VideoPost] {
         var query = db.collection("videoHighlights")
             .order(by: "createdAt", descending: true)
             .limit(to: 20) as Query

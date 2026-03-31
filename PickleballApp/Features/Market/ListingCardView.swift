@@ -2,6 +2,9 @@ import SwiftUI
 
 struct ListingCardView: View {
     let listing: MarketListing
+    var showSoldBanner: Bool = false
+    var isNewThisWeek: Bool = false
+
     @State private var isSaved = false
     @State private var isPressed = false
 
@@ -59,6 +62,16 @@ struct ListingCardView: View {
                 topLeadingRadius: 18, bottomLeadingRadius: 0,
                 bottomTrailingRadius: 0, topTrailingRadius: 18
             ))
+            // ── SOLD diagonal banner ──────────────────────────────────
+            .overlay {
+                if showSoldBanner {
+                    SoldDiagonalBanner()
+                        .clipShape(UnevenRoundedRectangle(
+                            topLeadingRadius: 18, bottomLeadingRadius: 0,
+                            bottomTrailingRadius: 0, topTrailingRadius: 18
+                        ))
+                }
+            }
             .overlay(alignment: .topLeading) {
                 // Condition badge — top left
                 Text(listing.condition.rawValue)
@@ -108,15 +121,31 @@ struct ListingCardView: View {
                 Text(listing.brand)
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(.secondary)
-                Text(listing.model)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                    .foregroundStyle(.primary)
 
-                // Price — big and bold in dinkrGreen
+                HStack(spacing: 5) {
+                    Text(listing.model)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .foregroundStyle(.primary)
+
+                    // "New This Week" green chip
+                    if isNewThisWeek {
+                        Text("New")
+                            .font(.system(size: 8, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.dinkrGreen)
+                            .clipShape(Capsule())
+                    }
+                }
+
+                // Price — big and bold
+                // Strike-through style when sold, normal green otherwise
                 Text("$\(Int(listing.price))")
                     .font(.title3.weight(.heavy))
-                    .foregroundStyle(Color.dinkrGreen)
+                    .foregroundStyle(listing.status == .sold ? Color.dinkrCoral : Color.dinkrGreen)
+                    .strikethrough(listing.status == .sold, color: Color.dinkrCoral)
 
                 Divider()
                     .padding(.vertical, 2)
@@ -183,5 +212,30 @@ struct ListingCardView: View {
         case .fair:      return Color.dinkrCoral
         case .forParts:  return .secondary
         }
+    }
+}
+
+// MARK: - Sold Diagonal Banner
+
+private struct SoldDiagonalBanner: View {
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                // Dark scrim over the image
+                Color.black.opacity(0.38)
+
+                // Diagonal ribbon
+                Text("SOLD")
+                    .font(.system(size: 18, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .tracking(3)
+                    .padding(.horizontal, 40)
+                    .padding(.vertical, 6)
+                    .background(Color.dinkrCoral)
+                    .rotationEffect(.degrees(-35))
+                    .offset(y: 10)
+            }
+        }
+        .allowsHitTesting(false)
     }
 }

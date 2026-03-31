@@ -33,11 +33,27 @@ final class PlayViewModel {
 
     enum PlaySegment: String, CaseIterable {
         case games = "Games"
+        case myGames = "My Games"
         case live = "Live 🔴"
         case courts = "Courts"
         case players = "Players"
         case match = "Match ♟️"
         case leaderboard = "Rankings"
+        case practice = "Practice"
+    }
+
+    // MARK: - My Sessions
+
+    /// Sessions where the current user has RSVPd or is the host.
+    var mySessions: [GameSession] {
+        nearbySessions.filter {
+            $0.rsvps.contains("user_001") || $0.hostId == "user_001"
+        }
+    }
+
+    /// Sessions where the current user is the host.
+    var myHostedSessions: [GameSession] {
+        nearbySessions.filter { $0.hostId == "user_001" }
     }
 
     // MARK: - Skill match scoring

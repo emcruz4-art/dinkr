@@ -11,6 +11,7 @@ struct BracketMatchCardView: View {
                 name: match.participantAName ?? "TBD",
                 score: match.scoreA,
                 isWinner: match.isComplete && match.winnerId == match.participantAId,
+                isLoser: match.isComplete && match.winnerId != match.participantAId && match.participantAId != nil,
                 isTBD: match.participantAId == nil
             )
             Divider()
@@ -18,6 +19,7 @@ struct BracketMatchCardView: View {
                 name: match.participantBName ?? "TBD",
                 score: match.scoreB,
                 isWinner: match.isComplete && match.winnerId == match.participantBId,
+                isLoser: match.isComplete && match.winnerId != match.participantBId && match.participantBId != nil,
                 isTBD: match.participantBId == nil
             )
         }
@@ -26,9 +28,12 @@ struct BracketMatchCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(alignment: .topTrailing) {
             if match.isComplete {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.dinkrGreen)
+                Text("FINAL")
+                    .font(.system(size: 8, weight: .black))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(Color.dinkrGreen, in: Capsule())
                     .padding(4)
             }
         }
@@ -36,16 +41,24 @@ struct BracketMatchCardView: View {
     }
 
     @ViewBuilder
-    private func playerRow(name: String, score: String, isWinner: Bool, isTBD: Bool) -> some View {
+    private func playerRow(name: String, score: String, isWinner: Bool, isLoser: Bool, isTBD: Bool) -> some View {
         HStack(spacing: 6) {
-            // Winner accent strip
+            // Winner / loser accent strip
             Rectangle()
-                .fill(isWinner ? Color.dinkrGreen : Color.clear)
+                .fill(
+                    isWinner ? Color.dinkrGreen :
+                    isLoser  ? Color.dinkrCoral.opacity(0.6) :
+                               Color.clear
+                )
                 .frame(width: 3)
 
             Text(isTBD ? "TBD" : name)
                 .font(.system(size: 12, weight: isWinner ? .bold : .regular))
-                .foregroundStyle(isTBD ? Color.secondary : (isWinner ? Color.primary : Color.primary))
+                .foregroundStyle(
+                    isTBD   ? Color.secondary :
+                    isLoser ? Color.secondary :
+                              Color.primary
+                )
                 .lineLimit(1)
                 .truncationMode(.tail)
 
@@ -59,6 +72,11 @@ struct BracketMatchCardView: View {
         }
         .padding(.trailing, 8)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            isWinner ? Color.dinkrGreen.opacity(0.07) :
+            isLoser  ? Color.dinkrCoral.opacity(0.06) :
+                       Color.clear
+        )
     }
 }
 
@@ -67,10 +85,19 @@ struct BracketMatchCardView: View {
 struct BracketView: View {
     let bracket: Bracket
 
+    private var allMatchesComplete: Bool {
+        !bracket.matches.isEmpty && bracket.matches.allSatisfy { $0.isComplete }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+
+                    // Tournament Complete Banner
+                    if allMatchesComplete {
+                        tournamentCompleteBanner
+                    }
 
                     // Champion Banner
                     if let champ = bracket.champion {
@@ -142,6 +169,38 @@ struct BracketView: View {
             .navigationTitle("\(bracket.eventName) Bracket")
             .navigationBarTitleDisplayMode(.inline)
         }
+    }
+
+    // MARK: - Tournament Complete Banner
+
+    @ViewBuilder
+    private var tournamentCompleteBanner: some View {
+        HStack(spacing: 12) {
+            Text("Tournament Complete! 🏆")
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(Color.dinkrNavy)
+
+            Spacer()
+
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 20))
+                .foregroundStyle(Color.dinkrGreen)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .background(
+            LinearGradient(
+                colors: [Color.dinkrGreen.opacity(0.18), Color.dinkrGreen.opacity(0.06)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(Color.dinkrGreen.opacity(0.35), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding(.horizontal)
     }
 
     // MARK: - Champion Banner

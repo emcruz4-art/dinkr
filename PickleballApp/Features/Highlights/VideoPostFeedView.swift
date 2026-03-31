@@ -3,9 +3,9 @@ import AVKit
 
 // MARK: - Main Feed
 
-struct VideoHighlightsFeedView: View {
-    var initialCategory: VideoCategory = .all
-    @State private var selectedCategory: VideoCategory = .all
+struct VideoPostFeedView: View {
+    var initialCategory: VideoPostCategory = .all
+    @State private var selectedCategory: VideoPostCategory = .all
     @State private var videos: [VideoPost] = VideoPost.mockVideos
     @State private var activeVideoId: String? = nil
     @State private var isLoading = false
@@ -59,7 +59,7 @@ struct VideoHighlightsFeedView: View {
 
                     // Category filter pills
                     HStack(spacing: 2) {
-                        ForEach(VideoCategory.allCases) { cat in
+                        ForEach(VideoPostCategory.allCases) { cat in
                             Button {
                                 withAnimation(.spring(response: 0.3)) {
                                     selectedCategory = cat
@@ -272,7 +272,7 @@ final class PlayerUIView: UIView {
 // MARK: - Gradient thumbnail placeholder
 
 private struct VideoThumbnailPlaceholder: View {
-    let category: VideoCategory
+    let category: VideoPostCategory
     let title: String
 
     private var gradientColors: [Color] {
@@ -439,5 +439,5 @@ private struct VideoInfoOverlay: View {
 // MARK: - Preview
 
 #Preview {
-    VideoHighlightsFeedView()
+    VideoPostFeedView()
 }

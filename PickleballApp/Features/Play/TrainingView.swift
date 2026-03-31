@@ -10,29 +10,29 @@ final class TrainingViewModel {
     var selectedCategory: DrillCategory?
 
     init() {
-        todaysDrills = Array(Drill.mockDrills.shuffled().prefix(3))
+        todaysDrills = Array(Drill.allDrills.shuffled().prefix(3))
     }
 
     var filteredDrills: [Drill] {
-        guard let category = selectedCategory else { return Drill.mockDrills }
-        return Drill.mockDrills.filter { $0.category == category }
+        guard let category = selectedCategory else { return Drill.allDrills }
+        return Drill.allDrills.filter { $0.category == category }
     }
 
     var todaysTotalMinutes: Int {
-        todaysDrills.reduce(0) { $0 + $1.durationMinutes }
+        todaysDrills.reduce(0) { $0 + $1.duration }
     }
 
     var todaysCompletionFraction: Double {
         guard !todaysDrills.isEmpty else { return 0 }
-        let done = todaysDrills.filter { completedDrillIds.contains($0.id) }.count
+        let done = todaysDrills.filter { completedDrillIds.contains($0.id.uuidString) }.count
         return Double(done) / Double(todaysDrills.count)
     }
 
     func toggleComplete(drill: Drill) {
-        if completedDrillIds.contains(drill.id) {
-            completedDrillIds.remove(drill.id)
+        if completedDrillIds.contains(drill.id.uuidString) {
+            completedDrillIds.remove(drill.id.uuidString)
         } else {
-            completedDrillIds.insert(drill.id)
+            completedDrillIds.insert(drill.id.uuidString)
         }
     }
 
@@ -123,7 +123,7 @@ struct TrainingView: View {
                 spacing: 12
             ) {
                 ForEach(viewModel.filteredDrills) { drill in
-                    DrillCard(drill: drill, isCompleted: viewModel.completedDrillIds.contains(drill.id))
+                    TrainingDrillCard(drill: drill, isCompleted: viewModel.completedDrillIds.contains(drill.id.uuidString))
                         .onTapGesture { selectedDrill = drill }
                 }
             }
@@ -134,7 +134,7 @@ struct TrainingView: View {
     private var categoryFilterRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                CategoryChip(
+                TrainingCategoryChip(
                     label: "All",
                     color: Color.dinkrGreen,
                     isSelected: viewModel.selectedCategory == nil
@@ -143,7 +143,7 @@ struct TrainingView: View {
                 }
 
                 ForEach(DrillCategory.allCases, id: \.self) { cat in
-                    CategoryChip(
+                    TrainingCategoryChip(
                         label: cat.rawValue,
                         color: cat.color,
                         isSelected: viewModel.selectedCategory == cat
@@ -216,7 +216,7 @@ struct TodaysSessionCard: View {
                                 Circle()
                                     .fill(drill.category.color)
                                     .frame(width: 6, height: 6)
-                                Text(drill.focusArea)
+                                Text(drill.category.rawValue)
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundStyle(.white)
                                     .lineLimit(1)
@@ -401,7 +401,7 @@ struct TrainingPlanCard: View {
 
 // MARK: - DrillCard
 
-struct DrillCard: View {
+private struct TrainingDrillCard: View {
     let drill: Drill
     let isCompleted: Bool
 
@@ -418,7 +418,7 @@ struct DrillCard: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     // Difficulty badge
-                    Text(drill.difficulty)
+                    Text(drill.difficulty.rawValue)
                         .font(.system(size: 9, weight: .heavy))
                         .foregroundStyle(difficultyColor)
                         .padding(.horizontal, 7)
@@ -436,12 +436,12 @@ struct DrillCard: View {
                         Image(systemName: "clock")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                        Text("\(drill.durationMinutes) min")
+                        Text("\(drill.duration) min")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
 
-                    Text(drill.focusArea)
+                    Text(drill.category.rawValue)
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(drill.category.color)
                         .lineLimit(1)
@@ -470,18 +470,13 @@ struct DrillCard: View {
     }
 
     private var difficultyColor: Color {
-        switch drill.difficulty {
-        case "Beginner":     return Color.dinkrGreen
-        case "Intermediate": return Color.dinkrAmber
-        case "Advanced":     return Color.dinkrCoral
-        default:             return Color.dinkrSky
-        }
+        drill.difficulty.color
     }
 }
 
 // MARK: - CategoryChip
 
-private struct CategoryChip: View {
+private struct TrainingCategoryChip: View {
     let label: String
     let color: Color
     let isSelected: Bool
@@ -511,7 +506,7 @@ struct DrillDetailSheet: View {
 
     @State private var showCheckmark = false
 
-    private var isCompleted: Bool { viewModel.completedDrillIds.contains(drill.id) }
+    private var isCompleted: Bool { viewModel.completedDrillIds.contains(drill.id.uuidString) }
 
     var body: some View {
         NavigationStack {
@@ -549,7 +544,7 @@ struct DrillDetailSheet: View {
                                     .clipShape(Capsule())
 
                                 // Difficulty badge
-                                Text(drill.difficulty)
+                                Text(drill.difficulty.rawValue)
                                     .font(.caption.weight(.bold))
                                     .foregroundStyle(drill.category.color)
                                     .padding(.horizontal, 9)
@@ -561,7 +556,7 @@ struct DrillDetailSheet: View {
                                 HStack(spacing: 4) {
                                     Image(systemName: "clock.fill")
                                         .font(.caption2)
-                                    Text("\(drill.durationMinutes) min")
+                                    Text("\(drill.duration) min")
                                         .font(.caption.weight(.semibold))
                                 }
                                 .foregroundStyle(.white.opacity(0.85))
@@ -591,7 +586,7 @@ struct DrillDetailSheet: View {
                             Image(systemName: "repeat.circle.fill")
                                 .font(.title2)
                                 .foregroundStyle(drill.category.color)
-                            Text(drill.repsOrSets)
+                            Text("3 sets × 10")
                                 .font(.headline.weight(.heavy))
                                 .foregroundStyle(.primary)
                                 .multilineTextAlignment(.center)
@@ -614,7 +609,7 @@ struct DrillDetailSheet: View {
                             .foregroundStyle(drill.category.color)
                         Text("Focus: ")
                             .font(.subheadline.weight(.semibold))
-                        Text(drill.focusArea)
+                        Text(drill.category.rawValue)
                             .font(.subheadline)
                             .foregroundStyle(drill.category.color)
                     }
@@ -652,7 +647,7 @@ struct DrillDetailSheet: View {
                         Button {
                             withAnimation(.spring(duration: 0.4)) {
                                 viewModel.toggleComplete(drill: drill)
-                                showCheckmark = !viewModel.completedDrillIds.contains(drill.id) == false
+                                showCheckmark = !viewModel.completedDrillIds.contains(drill.id.uuidString) == false
                             }
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         } label: {
@@ -751,7 +746,7 @@ struct DrillWalkthroughSheet: View {
                                     .foregroundStyle(.secondary)
                                     .tracking(0.5)
                                 Spacer()
-                                Text("\(currentDrill.durationMinutes) min")
+                                Text("\(currentDrill.duration) min")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(Color.dinkrGreen)
                             }
@@ -785,7 +780,7 @@ struct DrillWalkthroughSheet: View {
                                     Text(currentDrill.name)
                                         .font(.title2.weight(.heavy))
                                         .foregroundStyle(.white)
-                                    Text(currentDrill.focusArea)
+                                    Text(currentDrill.category.rawValue)
                                         .font(.caption.weight(.semibold))
                                         .foregroundStyle(.white.opacity(0.8))
                                 }
@@ -809,7 +804,7 @@ struct DrillWalkthroughSheet: View {
                             HStack {
                                 Spacer()
                                 VStack(spacing: 4) {
-                                    Text(currentDrill.repsOrSets)
+                                    Text("3 sets × 10")
                                         .font(.headline.weight(.heavy))
                                     Text("REPS / SETS")
                                         .font(.system(size: 9, weight: .heavy))
@@ -876,7 +871,7 @@ struct DrillWalkthroughSheet: View {
                                     withAnimation {
                                         showBurst = true
                                         for drill in drills {
-                                            viewModel.completedDrillIds.insert(drill.id)
+                                            viewModel.completedDrillIds.insert(drill.id.uuidString)
                                         }
                                     }
                                     UINotificationFeedbackGenerator().notificationOccurred(.success)
@@ -896,7 +891,7 @@ struct DrillWalkthroughSheet: View {
                             } else {
                                 Button {
                                     withAnimation(.spring(duration: 0.35)) {
-                                        viewModel.completedDrillIds.insert(currentDrill.id)
+                                        viewModel.completedDrillIds.insert(currentDrill.id.uuidString)
                                         currentIndex += 1
                                     }
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()

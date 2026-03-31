@@ -12,8 +12,23 @@ struct HomeView: View {
     @State private var showHostGame = false
     @State private var showFindGame = false
     @State private var showStoriesSheet = false
+    @State private var storiesStartIndex: Int = 0
+    @State private var showStoryCreator = false
     @State private var showLogResult = false
+    @State private var showLiveScoreFeed = false
+    @State private var showLiveFeed = false
+    @State private var showProfile = false
+    @State private var showWeeklyDigest = false
+    @State private var showSearch = false
     @State private var noShowService = NoShowService.shared
+
+    // MARK: Rating prompt
+    @AppStorage("gamesPlayedCount") private var gamesPlayedCount: Int = 0
+    @AppStorage("hasRated") private var hasRated: Bool = false
+    @State private var showRatingPrompt = false
+
+    // MARK: Onboarding tips
+    @AppStorage("hasSeenTips") private var hasSeenTips: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -33,14 +48,32 @@ struct HomeView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         // Header
-                        DinkrHeaderView(city: "Austin", onMessagesTap: { showMessages = true })
+                        DinkrHeaderView(
+                            city: "Austin",
+                            unreadNotificationCount: viewModel.unreadNotificationCount,
+                            liveGameCount: viewModel.liveGameCount,
+                            onMessagesTap: { showMessages = true },
+                            onBellTap: { showNotifications = true },
+                            onLiveChipTap: { showLiveFeed = true },
+                            onAvatarTap: { showProfile = true },
+                            onSearchTap: { showSearch = true }
+                        )
                             .padding(.horizontal, 16)
                             .padding(.top, 8)
 
                         // Check-in stories bar
-                        CheckInStoriesBar(checkIns: CheckInStoriesBar.mockCheckIns)
-                            .padding(.top, 6)
-                            .onTapGesture { showStoriesSheet = true }
+                        CheckInStoriesBar(
+                            checkIns: CheckInStoriesBar.mockCheckIns,
+                            onAddCheckIn: {
+                                HapticManager.medium()
+                                showStoryCreator = true
+                            }
+                        )
+                        .padding(.top, 6)
+                        .onTapGesture {
+                            storiesStartIndex = 0
+                            showStoriesSheet = true
+                        }
 
                         // For You / Following toggle
                         Picker("Feed", selection: $feedMode) {
@@ -56,7 +89,8 @@ struct HomeView: View {
                             // Hero banner
                             WelcomeHeroWidget(
                                 greeting: viewModel.greetingText,
-                                gameCount: viewModel.upcomingGameCount
+                                gameCount: viewModel.upcomingGameCount,
+                                weather: viewModel.weatherSummary
                             )
                             .padding(.horizontal, 16)
 
@@ -91,6 +125,10 @@ struct HomeView: View {
                                 onLogResult: {
                                     HapticManager.medium()
                                     showLogResult = true
+                                },
+                                onLiveFeed: {
+                                    HapticManager.selection()
+                                    showLiveScoreFeed = true
                                 }
                             )
                             .padding(.horizontal, 16)
@@ -100,8 +138,28 @@ struct HomeView: View {
                                 .padding(.horizontal, 16)
 
                             // Active challenges snapshot
-                            ChallengesWidget(activeCount: 3, winningCount: 2)
-                                .padding(.horizontal, 16)
+                            ChallengesWidget(
+                                activeCount: 3,
+                                winningCount: 2,
+                                pendingCount: 1,
+                                pairs: [
+                                    ChallengePairPreview(
+                                        id: "cp1",
+                                        challengerName: "Alex Rivera",
+                                        challengedName: "Jordan Smith",
+                                        isPending: false,
+                                        isUserWinning: true
+                                    ),
+                                    ChallengePairPreview(
+                                        id: "cp2",
+                                        challengerName: "Jamie Lee",
+                                        challengedName: "Alex Rivera",
+                                        isPending: true,
+                                        isUserWinning: false
+                                    )
+                                ]
+                            )
+                            .padding(.horizontal, 16)
 
                             // Featured event + Nearby games
                             HStack(alignment: .top, spacing: 12) {
@@ -136,8 +194,15 @@ struct HomeView: View {
                             .padding(.horizontal, 16)
 
                             // Groups horizontal scroll
-                            MyGroupsWidget(groups: viewModel.myGroups)
-                                .padding(.horizontal, 16)
+                            MyGroupsWidget(groupInfos: [
+                                GroupInfo(id: "g1", name: viewModel.myGroups.indices.contains(0) ? viewModel.myGroups[0] : "Austin Picklers",
+                                          unreadCount: 3, isRecentlyActive: true, nextGameLabel: "Next game: Sun 9AM"),
+                                GroupInfo(id: "g2", name: viewModel.myGroups.indices.contains(1) ? viewModel.myGroups[1] : "Westside Crew",
+                                          unreadCount: 0, isRecentlyActive: false, nextGameLabel: "Next game: Tue 7PM"),
+                                GroupInfo(id: "g3", name: viewModel.myGroups.indices.contains(2) ? viewModel.myGroups[2] : "Mueller Regulars",
+                                          unreadCount: 7, isRecentlyActive: true, nextGameLabel: nil),
+                            ])
+                            .padding(.horizontal, 16)
 
                             // Daily pickleball tip
                             DailyTipWidget()
@@ -147,16 +212,26 @@ struct HomeView: View {
                             ExploreSection()
                                 .padding(.horizontal, 16)
 
-                            // Women's corner + Court vibes
+                            // Explore Dinkr shortcuts (compact 2×2)
+                            ExploreDinkrWidget()
+                                .padding(.horizontal, 16)
+
+                            // Women's corner + Court vibes + Streak
                             HStack(alignment: .top, spacing: 12) {
                                 WomensCornerWidget()
-                                CourtVibesWidget(weather: viewModel.weather)
+                                VStack(spacing: 12) {
+                                    StreakFireWidget(streak: viewModel.currentStreak)
+                                    CourtVibesWidget(weather: viewModel.weather)
+                                }
                             }
                             .padding(.horizontal, 16)
 
                             // Weekend Forecast (full width)
-                            WeekendForecastWidget(days: viewModel.weekendForecast)
-                                .padding(.horizontal, 16)
+                            WeekendForecastWidget(
+                                days: viewModel.weekendForecast,
+                                weekendDays: viewModel.weekendDays
+                            )
+                            .padding(.horizontal, 16)
 
                             // Video Highlights
                             VideoHighlightsWidget(
@@ -172,6 +247,58 @@ struct HomeView: View {
                             )
                             .padding(.horizontal, 16)
 
+                            // Week at a Glance
+                            WeekAtAGlanceWidget()
+                                .padding(.horizontal, 16)
+
+                            // This Week digest banner
+                            Button {
+                                HapticManager.medium()
+                                showWeeklyDigest = true
+                            } label: {
+                                HStack(spacing: 14) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(
+                                                LinearGradient(
+                                                    colors: [Color.dinkrNavy, Color.dinkrNavy.opacity(0.75)],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
+                                            )
+                                            .frame(width: 48, height: 48)
+                                        Image(systemName: "calendar.badge.checkmark")
+                                            .font(.system(size: 22))
+                                            .foregroundStyle(Color.dinkrGreen)
+                                    }
+
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text("Your Week in Pickleball")
+                                            .font(.subheadline.weight(.bold))
+                                            .foregroundStyle(Color.primary)
+                                        Text("3 games · 67% win rate · See your highlights →")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                }
+                                .padding(14)
+                                .background(Color.cardBackground)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.dinkrNavy.opacity(0.18), lineWidth: 1)
+                                )
+                                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 16)
+
                             // Feed preview
                             FeedPreviewWidget(
                                 posts: Array(viewModel.posts.prefix(3)),
@@ -185,7 +312,21 @@ struct HomeView: View {
                 }
                 .refreshable { await viewModel.loadFeed() }
                 .navigationBarHidden(true)
+
+                // Onboarding tips overlay — shown once for new users
+                if !hasSeenTips {
+                    QuickTipsView(spotlightFrames: [])
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.3), value: hasSeenTips)
+                        .zIndex(10)
+                }
             }
+        }
+        .sheet(isPresented: $showRatingPrompt) {
+            AppRatingPromptView()
+        }
+        .sheet(isPresented: $showSearch) {
+            SearchView()
         }
         .sheet(isPresented: $viewModel.showCreatePost) {
             CreatePostView()
@@ -206,6 +347,29 @@ struct HomeView: View {
         .sheet(isPresented: $showLogResult) {
             LogGameResultView()
         }
+        .sheet(isPresented: $showLiveScoreFeed) {
+            NavigationStack {
+                LiveScoreFeedView()
+            }
+        }
+        .sheet(isPresented: $showLiveFeed) {
+            NavigationStack {
+                LiveScoreFeedView()
+            }
+        }
+        .sheet(isPresented: $showProfile) {
+            ProfileView()
+                .environment(authService)
+        }
+        .fullScreenCover(isPresented: $showWeeklyDigest) {
+            WeeklyDigestView()
+        }
+        .fullScreenCover(isPresented: $showStoriesSheet) {
+            CheckInDetailView(stories: CheckInStory.mock, startIndex: storiesStartIndex)
+        }
+        .fullScreenCover(isPresented: $showStoryCreator) {
+            StoryCreatorView()
+        }
         .fullScreenCover(isPresented: $showHighlightsFeed) {
             VideoHighlightsFeedView(initialCategory: highlightsFeedCategory)
         }
@@ -217,6 +381,13 @@ struct HomeView: View {
             await viewModel.loadVideoHighlights()
             let userId = authService.currentUser?.id ?? User.mockCurrentUser.id
             await noShowService.loadPendingPrompts(for: userId)
+
+            // Show rating prompt after 5+ games if user hasn't rated yet
+            if AppRatingPromptView.shouldPrompt(gamesPlayed: gamesPlayedCount, hasRated: hasRated) {
+                // Brief delay so the feed settles before the sheet appears
+                try? await Task.sleep(for: .seconds(1.5))
+                showRatingPrompt = true
+            }
         }
     }
 }

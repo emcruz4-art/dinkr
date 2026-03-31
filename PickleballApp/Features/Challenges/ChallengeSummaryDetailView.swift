@@ -1,8 +1,8 @@
 import SwiftUI
 
-// MARK: - ChallengeDetailView
+// MARK: - ChallengeSummaryDetailView
 
-struct ChallengeDetailView: View {
+struct ChallengeSummaryDetailView: View {
     let challenge: Challenge
     @Environment(\.dismiss) private var dismiss
     @State private var showLogProgress = false
@@ -547,7 +547,7 @@ private struct LogProgressSheet: View {
 
 #Preview {
     NavigationStack {
-        ChallengeDetailView(challenge: Challenge.mockChallenges[0])
+        ChallengeSummaryDetailView(challenge: Challenge.mockChallenges[0])
     }
     .environment(AuthService())
 }

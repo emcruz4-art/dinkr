@@ -325,7 +325,7 @@ private struct GroupChallengesEmptyState: View {
     var body: some View {
         EmptyStateView(
             icon: "person.3.fill",
-            title: "No Group Challenges",
+            title: "No DinkrGroup Challenges",
             message: "Challenge another group to compete on aggregate metrics!"
         )
         .padding(.top, 60)

@@ -44,6 +44,16 @@ enum PostType: String, Codable, CaseIterable {
 
 enum GameFormat: String, Codable, CaseIterable {
     case singles, doubles, mixed, openPlay, round_robin = "Round Robin"
+
+    var displayLabel: String {
+        switch self {
+        case .singles:     return "Singles"
+        case .doubles:     return "Doubles"
+        case .mixed:       return "Mixed"
+        case .openPlay:    return "Open Play"
+        case .round_robin: return "Round Robin"
+        }
+    }
 }
 
 enum EventType: String, Codable, CaseIterable {
@@ -74,7 +84,7 @@ enum GroupType: String, Codable, CaseIterable {
     case publicClub = "Public Club"
     case privateClub = "Private Club"
     case womenOnly = "Women Only"
-    case ageGroup = "Age Group"
+    case ageGroup = "Age DinkrGroup"
     case recreational = "Recreational"
     case competitive = "Competitive"
     case neighborhood = "Neighborhood"
@@ -112,6 +122,58 @@ enum PlayStyle: String, Codable, CaseIterable {
 
 enum CourtSurface: String, Codable, CaseIterable {
     case hardcourt, concrete, asphalt, indoor, clay
+}
+
+enum DominantHand: String, Codable, CaseIterable {
+    case right = "Right"
+    case left  = "Left"
+
+    var icon: String {
+        switch self {
+        case .right: return "hand.raised.fill"
+        case .left:  return "hand.raised.fill"
+        }
+    }
+}
+
+enum Weekday: String, Codable, CaseIterable, Identifiable {
+    case monday    = "Mon"
+    case tuesday   = "Tue"
+    case wednesday = "Wed"
+    case thursday  = "Thu"
+    case friday    = "Fri"
+    case saturday  = "Sat"
+    case sunday    = "Sun"
+
+    var id: String { rawValue }
+
+    var short: String {
+        switch self {
+        case .monday:    return "M"
+        case .tuesday:   return "T"
+        case .wednesday: return "W"
+        case .thursday:  return "Th"
+        case .friday:    return "F"
+        case .saturday:  return "Sa"
+        case .sunday:    return "Su"
+        }
+    }
+}
+
+enum TimeOfDay: String, Codable, CaseIterable, Identifiable {
+    case morning   = "Morning"
+    case afternoon = "Afternoon"
+    case evening   = "Evening"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .morning:   return "sunrise.fill"
+        case .afternoon: return "sun.max.fill"
+        case .evening:   return "moon.stars.fill"
+        }
+    }
 }
 
 enum MessageType: String, Codable {

@@ -20,10 +20,10 @@ struct SkillBadge: View {
 
     private var badgeColor: Color {
         switch level {
-        case .beginner20, .beginner25: return .green
-        case .intermediate30, .intermediate35: return .courtBlue
-        case .advanced40, .advanced45: return .courtOrange
-        case .pro50: return .red
+        case .beginner20, .beginner25:          return Color.dinkrGreen
+        case .intermediate30, .intermediate35:  return Color.dinkrSky
+        case .advanced40, .advanced45:          return Color.dinkrCoral
+        case .pro50:                            return Color.dinkrNavy
         }
     }
 }

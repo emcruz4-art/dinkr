@@ -1,82 +1,10 @@
 import SwiftUI
 
-// MARK: - ViewModel
-
-@Observable
-final class SearchViewModel {
-    var query: String = ""
-    var recentSearches: [String] = ["Ben Johns", "Austin Open", "Selkirk paddle", "4.0 doubles"]
-    var isLoading: Bool = false
-
-    var isSearching: Bool { !query.isEmpty }
-
-    var playerResults: [User] {
-        guard !query.isEmpty else { return [] }
-        let q = query.lowercased()
-        return SearchService.shared.cachedUsers.filter {
-            $0.displayName.lowercased().contains(q) ||
-            $0.username.lowercased().contains(q)
-        }
-    }
-
-    var eventResults: [Event] {
-        guard !query.isEmpty else { return [] }
-        let q = query.lowercased()
-        return SearchService.shared.cachedEvents.filter {
-            $0.title.lowercased().contains(q) ||
-            $0.location.lowercased().contains(q)
-        }
-    }
-
-    var courtResults: [CourtVenue] {
-        guard !query.isEmpty else { return [] }
-        let q = query.lowercased()
-        return SearchService.shared.cachedCourts.filter {
-            $0.name.lowercased().contains(q) ||
-            $0.address.lowercased().contains(q)
-        }
-    }
-
-    var listingResults: [MarketListing] {
-        guard !query.isEmpty else { return [] }
-        let q = query.lowercased()
-        return SearchService.shared.cachedListings.filter {
-            $0.brand.lowercased().contains(q) ||
-            $0.model.lowercased().contains(q)
-        }
-    }
-
-    func removeRecentSearch(_ term: String) {
-        recentSearches.removeAll { $0 == term }
-    }
-
-    func selectRecentSearch(_ term: String) {
-        query = term
-    }
-
-    func loadAll() async {
-        guard !SearchService.shared.isLoaded else { return }
-        isLoading = true
-        await SearchService.shared.loadAll()
-        isLoading = false
-    }
-}
-
-// MARK: - SearchFilterTab
-
-enum SearchFilterTab: String, CaseIterable {
-    case all = "All"
-    case players = "Players"
-    case events = "Events"
-    case courts = "Courts"
-    case market = "Market"
-}
-
 // MARK: - SearchView
 
 struct SearchView: View {
     @State private var viewModel = SearchViewModel()
-    @State private var selectedTab: SearchFilterTab = .all
+    @State private var playViewModel = PlayViewModel()
     @FocusState private var searchFocused: Bool
 
     var body: some View {
@@ -86,6 +14,9 @@ struct SearchView: View {
                 SearchBarView(
                     query: $viewModel.query,
                     isFocused: $searchFocused,
+                    onSubmit: {
+                        viewModel.addRecentSearch(viewModel.query)
+                    },
                     onCancel: {
                         viewModel.query = ""
                         searchFocused = false
@@ -95,18 +26,25 @@ struct SearchView: View {
                 .padding(.vertical, 12)
                 .background(Color.appBackground)
 
-                if viewModel.isSearching {
-                    // Active search state
-                    activeSearchContent
-                } else {
-                    // Default discovery state
-                    discoveryContent
+                ZStack {
+                    if viewModel.query.isEmpty {
+                        discoveryContent
+                            .transition(.opacity)
+                    } else {
+                        activeSearchContent
+                            .transition(.opacity)
+                    }
                 }
+                .animation(.easeInOut(duration: 0.18), value: viewModel.query.isEmpty)
             }
             .background(Color.appBackground)
             .navigationTitle("Search")
             .navigationBarTitleDisplayMode(.large)
-            .task { await viewModel.loadAll() }
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    searchFocused = true
+                }
+            }
         }
     }
 
@@ -115,35 +53,34 @@ struct SearchView: View {
     private var discoveryContent: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 24) {
-                if viewModel.isLoading || !SearchService.shared.isLoaded {
-                    VStack(spacing: 16) {
-                        ProgressView()
-                            .tint(Color.dinkrGreen)
-                        Text("Loading…")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 60)
-                    .redacted(reason: .placeholder)
-                } else {
-                    recentSearchesSection
-                    trendingSection
-                    exploreCategoriesSection
-                }
+                recentSearchesSection
+                trendingSection
+                exploreCategoriesSection
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 32)
+            .padding(.bottom, 40)
         }
     }
+
+    // MARK: - Recent Searches
 
     @ViewBuilder
     private var recentSearchesSection: some View {
         if !viewModel.recentSearches.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Recent Searches")
-                    .font(.headline)
-                    .foregroundStyle(Color.dinkrNavy)
+                HStack {
+                    Text("Recent Searches")
+                        .font(.headline)
+                        .foregroundStyle(Color.dinkrNavy)
+
+                    Spacer()
+
+                    Button("Clear all") {
+                        viewModel.clearAllRecentSearches()
+                    }
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.dinkrGreen)
+                }
 
                 VStack(spacing: 0) {
                     ForEach(viewModel.recentSearches, id: \.self) { term in
@@ -155,7 +92,6 @@ struct SearchView: View {
                                 viewModel.removeRecentSearch(term)
                             }
                         }
-
                         if term != viewModel.recentSearches.last {
                             Divider().padding(.leading, 44)
                         }
@@ -167,63 +103,87 @@ struct SearchView: View {
         }
     }
 
+    // MARK: - Trending Section
+
     private var trendingSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Trending Now")
-                .font(.headline)
-                .foregroundStyle(Color.dinkrNavy)
+        let trendingTerms = ["3.5 doubles", "open play", "Austin courts", "weekend tournament"]
+        let trendingPlayers = ["Ben Johns", "Anna Leigh Waters", "Tyson McGuffin"]
+        let trendingCourts = ["Mueller Tennis Center", "Roy G. Guerrero Park"]
+        let trendingEvents = ["Austin Open 2026", "Spring Singles Slam"]
 
-            let trendingTerms = [
-                "Ben Johns",
-                "Selkirk Power Air",
-                "Austin Open 2025",
-                "ATP shot tutorial",
-                "4.0 doubles partner"
-            ]
+        return VStack(alignment: .leading, spacing: 16) {
+            // Trending list rows
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Trending Searches")
+                    .font(.headline)
+                    .foregroundStyle(Color.dinkrNavy)
 
-            VStack(spacing: 0) {
-                ForEach(Array(trendingTerms.enumerated()), id: \.offset) { index, term in
-                    TrendingRow(rank: index + 1, term: term, isHot: index < 3) {
-                        viewModel.query = term
-                        searchFocused = true
-                    }
-
-                    if index < trendingTerms.count - 1 {
-                        Divider().padding(.leading, 52)
+                VStack(spacing: 0) {
+                    ForEach(Array(trendingTerms.enumerated()), id: \.offset) { index, term in
+                        TrendingRow(rank: index + 1, term: term, isHot: index < 2) {
+                            viewModel.query = term
+                            viewModel.addRecentSearch(term)
+                            searchFocused = false
+                        }
+                        if index < trendingTerms.count - 1 {
+                            Divider().padding(.leading, 52)
+                        }
                     }
                 }
+                .background(Color.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .background(Color.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            // Trending chips: Players
+            TrendingChipsRow(label: "Players", icon: "person.fill", color: Color.dinkrGreen, chips: trendingPlayers) { chip in
+                viewModel.query = chip
+                viewModel.addRecentSearch(chip)
+                searchFocused = false
+            }
+
+            // Trending chips: Courts
+            TrendingChipsRow(label: "Courts", icon: "sportscourt.fill", color: Color.dinkrSky, chips: trendingCourts) { chip in
+                viewModel.query = chip
+                viewModel.addRecentSearch(chip)
+                searchFocused = false
+            }
+
+            // Trending chips: Events
+            TrendingChipsRow(label: "Events", icon: "trophy.fill", color: Color.dinkrCoral, chips: trendingEvents) { chip in
+                viewModel.query = chip
+                viewModel.addRecentSearch(chip)
+                searchFocused = false
+            }
         }
     }
 
+    // MARK: - Explore Categories
+
     private var exploreCategoriesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Explore Categories")
+        let categories: [(label: String, icon: String, gradientStart: Color, gradientEnd: Color)] = [
+            ("Players",   "person.2.fill",             Color.dinkrGreen, Color.dinkrSky),
+            ("Games",     "sportscourt.fill",           Color.dinkrCoral, Color.dinkrAmber),
+            ("Courts",    "mappin.circle.fill",         Color.dinkrNavy,  Color.dinkrSky),
+            ("Events",    "trophy.fill",                Color.dinkrAmber, Color.dinkrCoral),
+            ("Groups",    "person.3.fill",              Color.dinkrGreen, Color.dinkrNavy),
+            ("Market",    "tag.fill",                   Color.dinkrSky,   Color.dinkrGreen),
+        ]
+        let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Explore")
                 .font(.headline)
                 .foregroundStyle(Color.dinkrNavy)
 
-            let categories: [(label: String, icon: String, gradientStart: Color, gradientEnd: Color)] = [
-                ("Players",    "person.2.fill",       Color.dinkrGreen,  Color.dinkrSky),
-                ("Events",     "trophy.fill",         Color.dinkrCoral,  Color.dinkrAmber),
-                ("Courts",     "sportscourt.fill",    Color.dinkrNavy,   Color.dinkrSky),
-                ("Market",     "bag.fill",            Color.dinkrAmber,  Color.dinkrCoral),
-                ("Groups",     "person.3.fill",       Color.dinkrGreen,  Color.dinkrNavy),
-                ("Tips & Drills", "target",           Color.dinkrSky,    Color.dinkrGreen)
-            ]
-
-            let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
-
             LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(categories, id: \.label) { category in
+                ForEach(categories, id: \.label) { cat in
                     CategoryCard(
-                        label: category.label,
-                        icon: category.icon,
-                        gradientStart: category.gradientStart,
-                        gradientEnd: category.gradientEnd,
+                        label: cat.label,
+                        icon: cat.icon,
+                        gradientStart: cat.gradientStart,
+                        gradientEnd: cat.gradientEnd,
                         onTap: {
-                            viewModel.query = category.label
+                            viewModel.query = cat.label
                             searchFocused = false
                         }
                     )
@@ -236,17 +196,17 @@ struct SearchView: View {
 
     private var activeSearchContent: some View {
         VStack(spacing: 0) {
-            // Segmented filter
+            // Scope filter chips
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(SearchFilterTab.allCases, id: \.self) { tab in
-                        SearchFilterChip(
-                            label: tab.rawValue,
-                            isSelected: selectedTab == tab,
-                            count: badgeCount(for: tab)
+                    ForEach(SearchScope.allCases, id: \.self) { scope in
+                        SearchScopeChip(
+                            label: scope.rawValue,
+                            isSelected: viewModel.scope == scope,
+                            count: viewModel.badgeCount(for: scope)
                         ) {
                             withAnimation(.easeInOut(duration: 0.2)) {
-                                selectedTab = tab
+                                viewModel.scope = scope
                             }
                         }
                     }
@@ -260,31 +220,25 @@ struct SearchView: View {
 
             ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 0) {
-                    switch selectedTab {
+                    switch viewModel.scope {
                     case .all:
                         allResultsContent
                     case .players:
                         fullPlayerResults
-                    case .events:
-                        fullEventResults
+                    case .games:
+                        fullGameResults
                     case .courts:
                         fullCourtResults
+                    case .events:
+                        fullEventResults
+                    case .groups:
+                        fullGroupResults
                     case .market:
                         fullMarketResults
                     }
                 }
-                .padding(.bottom, 32)
+                .padding(.bottom, 40)
             }
-        }
-    }
-
-    private func badgeCount(for tab: SearchFilterTab) -> Int? {
-        switch tab {
-        case .all: return nil
-        case .players: return viewModel.playerResults.isEmpty ? nil : viewModel.playerResults.count
-        case .events: return viewModel.eventResults.isEmpty ? nil : viewModel.eventResults.count
-        case .courts: return viewModel.courtResults.isEmpty ? nil : viewModel.courtResults.count
-        case .market: return viewModel.listingResults.isEmpty ? nil : viewModel.listingResults.count
         }
     }
 
@@ -292,23 +246,18 @@ struct SearchView: View {
 
     @ViewBuilder
     private var allResultsContent: some View {
-        let hasAny = !viewModel.playerResults.isEmpty ||
-                     !viewModel.eventResults.isEmpty ||
-                     !viewModel.courtResults.isEmpty ||
-                     !viewModel.listingResults.isEmpty
-
-        if !hasAny {
+        if !viewModel.hasAnyResults {
             emptyStateView
         } else {
             SwiftUI.Group {
-                if !viewModel.playerResults.isEmpty {
+                // Players
+                if !viewModel.filteredPlayers.isEmpty {
                     SearchSectionHeader(
                         title: "Players",
-                        count: viewModel.playerResults.count,
-                        showMore: viewModel.playerResults.count > 3
-                    ) { selectedTab = .players }
-
-                    ForEach(viewModel.playerResults.prefix(3)) { player in
+                        count: viewModel.filteredPlayers.count,
+                        showMore: viewModel.filteredPlayers.count > 3
+                    ) { viewModel.scope = .players }
+                    ForEach(viewModel.filteredPlayers.prefix(3)) { player in
                         NavigationLink {
                             UserProfileView(user: player, currentUserId: User.mockCurrentUser.id)
                         } label: {
@@ -319,14 +268,50 @@ struct SearchView: View {
                     }
                 }
 
-                if !viewModel.eventResults.isEmpty {
+                // Games
+                if !viewModel.filteredSessions.isEmpty {
+                    SearchSectionHeader(
+                        title: "Games",
+                        count: viewModel.filteredSessions.count,
+                        showMore: viewModel.filteredSessions.count > 3
+                    ) { viewModel.scope = .games }
+                    ForEach(viewModel.filteredSessions.prefix(3)) { session in
+                        NavigationLink {
+                            GameSessionDetailView(session: session, viewModel: playViewModel)
+                        } label: {
+                            GameSearchRow(session: session)
+                        }
+                        .buttonStyle(.plain)
+                        Divider().padding(.leading, 68)
+                    }
+                }
+
+                // Courts
+                if !viewModel.filteredCourts.isEmpty {
+                    SearchSectionHeader(
+                        title: "Courts",
+                        count: viewModel.filteredCourts.count,
+                        showMore: viewModel.filteredCourts.count > 3
+                    ) { viewModel.scope = .courts }
+                    ForEach(viewModel.filteredCourts.prefix(3)) { venue in
+                        NavigationLink {
+                            CourtDetailView(venue: venue)
+                        } label: {
+                            CourtSearchRow(venue: venue)
+                        }
+                        .buttonStyle(.plain)
+                        Divider().padding(.leading, 68)
+                    }
+                }
+
+                // Events
+                if !viewModel.filteredEvents.isEmpty {
                     SearchSectionHeader(
                         title: "Events",
-                        count: viewModel.eventResults.count,
-                        showMore: viewModel.eventResults.count > 3
-                    ) { selectedTab = .events }
-
-                    ForEach(viewModel.eventResults.prefix(3)) { event in
+                        count: viewModel.filteredEvents.count,
+                        showMore: viewModel.filteredEvents.count > 3
+                    ) { viewModel.scope = .events }
+                    ForEach(viewModel.filteredEvents.prefix(3)) { event in
                         NavigationLink {
                             EventDetailView(event: event)
                         } label: {
@@ -337,36 +322,36 @@ struct SearchView: View {
                     }
                 }
 
-                if !viewModel.courtResults.isEmpty {
+                // Groups
+                if !viewModel.filteredGroups.isEmpty {
                     SearchSectionHeader(
-                        title: "Courts",
-                        count: viewModel.courtResults.count,
-                        showMore: viewModel.courtResults.count > 3
-                    ) { selectedTab = .courts }
-
-                    ForEach(viewModel.courtResults.prefix(3)) { court in
+                        title: "Groups",
+                        count: viewModel.filteredGroups.count,
+                        showMore: viewModel.filteredGroups.count > 3
+                    ) { viewModel.scope = .groups }
+                    ForEach(viewModel.filteredGroups.prefix(3)) { group in
                         NavigationLink {
-                            CourtDetailView(venue: court)
+                            GroupDetailView(group: group)
                         } label: {
-                            CourtSearchRow(venue: court)
+                            GroupSearchRow(group: group)
                         }
                         .buttonStyle(.plain)
                         Divider().padding(.leading, 68)
                     }
                 }
 
-                if !viewModel.listingResults.isEmpty {
+                // Market
+                if !viewModel.filteredListings.isEmpty {
                     SearchSectionHeader(
                         title: "Market",
-                        count: viewModel.listingResults.count,
-                        showMore: viewModel.listingResults.count > 3
-                    ) { selectedTab = .market }
-
-                    ForEach(viewModel.listingResults.prefix(3)) { listing in
+                        count: viewModel.filteredListings.count,
+                        showMore: viewModel.filteredListings.count > 3
+                    ) { viewModel.scope = .market }
+                    ForEach(viewModel.filteredListings.prefix(3)) { listing in
                         NavigationLink {
                             ListingDetailView(listing: listing)
                         } label: {
-                            ListingSearchRow(listing: listing)
+                            MarketSearchRow(listing: listing)
                         }
                         .buttonStyle(.plain)
                         Divider().padding(.leading, 68)
@@ -380,10 +365,10 @@ struct SearchView: View {
 
     @ViewBuilder
     private var fullPlayerResults: some View {
-        if viewModel.playerResults.isEmpty {
+        if viewModel.filteredPlayers.isEmpty {
             emptyStateView
         } else {
-            ForEach(viewModel.playerResults) { player in
+            ForEach(viewModel.filteredPlayers) { player in
                 NavigationLink {
                     UserProfileView(user: player, currentUserId: User.mockCurrentUser.id)
                 } label: {
@@ -396,15 +381,15 @@ struct SearchView: View {
     }
 
     @ViewBuilder
-    private var fullEventResults: some View {
-        if viewModel.eventResults.isEmpty {
+    private var fullGameResults: some View {
+        if viewModel.filteredSessions.isEmpty {
             emptyStateView
         } else {
-            ForEach(viewModel.eventResults) { event in
+            ForEach(viewModel.filteredSessions) { session in
                 NavigationLink {
-                    EventDetailView(event: event)
+                    GameSessionDetailView(session: session, viewModel: playViewModel)
                 } label: {
-                    EventSearchRow(event: event)
+                    GameSearchRow(session: session)
                 }
                 .buttonStyle(.plain)
                 Divider().padding(.leading, 68)
@@ -414,10 +399,10 @@ struct SearchView: View {
 
     @ViewBuilder
     private var fullCourtResults: some View {
-        if viewModel.courtResults.isEmpty {
+        if viewModel.filteredCourts.isEmpty {
             emptyStateView
         } else {
-            ForEach(viewModel.courtResults) { venue in
+            ForEach(viewModel.filteredCourts) { venue in
                 NavigationLink {
                     CourtDetailView(venue: venue)
                 } label: {
@@ -430,15 +415,49 @@ struct SearchView: View {
     }
 
     @ViewBuilder
-    private var fullMarketResults: some View {
-        if viewModel.listingResults.isEmpty {
+    private var fullEventResults: some View {
+        if viewModel.filteredEvents.isEmpty {
             emptyStateView
         } else {
-            ForEach(viewModel.listingResults) { listing in
+            ForEach(viewModel.filteredEvents) { event in
+                NavigationLink {
+                    EventDetailView(event: event)
+                } label: {
+                    EventSearchRow(event: event)
+                }
+                .buttonStyle(.plain)
+                Divider().padding(.leading, 68)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var fullGroupResults: some View {
+        if viewModel.filteredGroups.isEmpty {
+            emptyStateView
+        } else {
+            ForEach(viewModel.filteredGroups) { group in
+                NavigationLink {
+                    GroupDetailView(group: group)
+                } label: {
+                    GroupSearchRow(group: group)
+                }
+                .buttonStyle(.plain)
+                Divider().padding(.leading, 68)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var fullMarketResults: some View {
+        if viewModel.filteredListings.isEmpty {
+            emptyStateView
+        } else {
+            ForEach(viewModel.filteredListings) { listing in
                 NavigationLink {
                     ListingDetailView(listing: listing)
                 } label: {
-                    ListingSearchRow(listing: listing)
+                    MarketSearchRow(listing: listing)
                 }
                 .buttonStyle(.plain)
                 Divider().padding(.leading, 68)
@@ -450,15 +469,15 @@ struct SearchView: View {
 
     private var emptyStateView: some View {
         VStack(spacing: 16) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 44, weight: .thin))
-                .foregroundStyle(Color.dinkrNavy.opacity(0.3))
+            Image(systemName: "magnifyingglass.circle")
+                .font(.system(size: 52, weight: .thin))
+                .foregroundStyle(Color.dinkrNavy.opacity(0.25))
 
             Text("No results for \"\(viewModel.query)\"")
                 .font(.headline)
                 .foregroundStyle(Color.dinkrNavy.opacity(0.6))
 
-            Text("Try searching for players, events, courts, or gear")
+            Text("Try a different search or browse a category below")
                 .font(.subheadline)
                 .foregroundStyle(Color.secondary)
                 .multilineTextAlignment(.center)
@@ -474,6 +493,7 @@ struct SearchView: View {
 struct SearchBarView: View {
     @Binding var query: String
     @FocusState.Binding var isFocused: Bool
+    var onSubmit: (() -> Void)? = nil
     let onCancel: () -> Void
 
     var body: some View {
@@ -483,12 +503,13 @@ struct SearchBarView: View {
                     .foregroundStyle(Color.secondary)
                     .font(.system(size: 16, weight: .medium))
 
-                TextField("Search players, events, courts…", text: $query)
+                TextField("Search players, games, courts…", text: $query)
                     .font(.body)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .focused($isFocused)
                     .submitLabel(.search)
+                    .onSubmit { onSubmit?() }
 
                 if !query.isEmpty {
                     Button {
@@ -508,15 +529,76 @@ struct SearchBarView: View {
             .animation(.easeInOut(duration: 0.15), value: query.isEmpty)
 
             if isFocused || !query.isEmpty {
-                Button("Cancel") {
-                    onCancel()
-                }
-                .font(.body)
-                .foregroundStyle(Color.dinkrGreen)
-                .transition(.move(edge: .trailing).combined(with: .opacity))
+                Button("Cancel") { onCancel() }
+                    .font(.body)
+                    .foregroundStyle(Color.dinkrGreen)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
         .animation(.easeInOut(duration: 0.2), value: isFocused)
+    }
+}
+
+// MARK: - SearchScopeChip
+
+private struct SearchScopeChip: View {
+    let label: String
+    let isSelected: Bool
+    let count: Int?
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Text(label)
+                    .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
+                if let count, count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 11, weight: .bold))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(isSelected ? Color.white.opacity(0.3) : Color.dinkrGreen.opacity(0.15))
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(isSelected ? Color.dinkrGreen : Color.cardBackground)
+            .foregroundStyle(isSelected ? Color.white : Color.primary)
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - SearchSectionHeader
+
+struct SearchSectionHeader: View {
+    let title: String
+    let count: Int
+    let showMore: Bool
+    let onShowMore: () -> Void
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.dinkrNavy)
+            Text("\(count)")
+                .font(.caption)
+                .foregroundStyle(Color.secondary)
+            Spacer()
+            if showMore {
+                Button(action: onShowMore) {
+                    Text("See all")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.dinkrGreen)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 20)
+        .padding(.bottom, 4)
     }
 }
 
@@ -575,14 +657,59 @@ struct TrendingRow: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 if isHot {
-                    Text("🔥")
-                        .font(.system(size: 15))
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.dinkrCoral)
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - TrendingChipsRow
+
+struct TrendingChipsRow: View {
+    let label: String
+    let icon: String
+    let color: Color
+    let chips: [String]
+    let onTap: (String) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(color)
+                Text(label)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.dinkrNavy)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(chips, id: \.self) { chip in
+                        Button {
+                            onTap(chip)
+                            HapticManager.selection()
+                        } label: {
+                            Text(chip)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(color)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 7)
+                                .background(color.opacity(0.10))
+                                .clipShape(Capsule())
+                                .overlay(Capsule().stroke(color.opacity(0.25), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -606,12 +733,10 @@ struct CategoryCard: View {
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-
                 VStack(spacing: 8) {
                     Image(systemName: icon)
                         .font(.system(size: 26, weight: .semibold))
                         .foregroundStyle(.white)
-
                     Text(label)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.white)
@@ -628,73 +753,6 @@ struct CategoryCard: View {
     }
 }
 
-// MARK: - FilterChip
-
-private struct SearchFilterChip: View {
-    let label: String
-    let isSelected: Bool
-    let count: Int?
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 4) {
-                Text(label)
-                    .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
-
-                if let count = count, count > 0 {
-                    Text("\(count)")
-                        .font(.system(size: 11, weight: .bold))
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(isSelected ? Color.white.opacity(0.3) : Color.dinkrGreen.opacity(0.15))
-                        .clipShape(Capsule())
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(isSelected ? Color.dinkrGreen : Color.cardBackground)
-            .foregroundStyle(isSelected ? Color.white : Color.primary)
-            .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-// MARK: - SearchSectionHeader
-
-struct SearchSectionHeader: View {
-    let title: String
-    let count: Int
-    let showMore: Bool
-    let onShowMore: () -> Void
-
-    var body: some View {
-        HStack {
-            Text(title)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color.dinkrNavy)
-
-            Text("\(count)")
-                .font(.caption)
-                .foregroundStyle(Color.secondary)
-
-            Spacer()
-
-            if showMore {
-                Button(action: onShowMore) {
-                    Text("See all")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color.dinkrGreen)
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 20)
-        .padding(.bottom, 4)
-    }
-}
-
 // MARK: - PlayerSearchRow
 
 struct PlayerSearchRow: View {
@@ -703,34 +761,16 @@ struct PlayerSearchRow: View {
 
     private var skillColor: Color {
         switch user.skillLevel {
-        case .beginner20, .beginner25:
-            return Color.dinkrGreen
-        case .intermediate30, .intermediate35:
-            return Color.dinkrSky
-        case .advanced40, .advanced45:
-            return Color.dinkrAmber
-        case .pro50:
-            return Color.dinkrCoral
+        case .beginner20, .beginner25:          return Color.dinkrGreen
+        case .intermediate30, .intermediate35:  return Color.dinkrSky
+        case .advanced40, .advanced45:          return Color.dinkrAmber
+        case .pro50:                            return Color.dinkrCoral
         }
     }
 
     var body: some View {
         HStack(spacing: 12) {
-            // Avatar
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [Color.dinkrGreen.opacity(0.7), Color.dinkrSky.opacity(0.7)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 48, height: 48)
-                .overlay {
-                    Text(String(user.displayName.prefix(1)).uppercased())
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(.white)
-                }
+            AvatarView(urlString: user.avatarURL, displayName: user.displayName, size: 48)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
@@ -746,7 +786,6 @@ struct PlayerSearchRow: View {
                         .background(skillColor.opacity(0.12))
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
-
                 Text("@\(user.username) · \(user.city)")
                     .font(.subheadline)
                     .foregroundStyle(Color.secondary)
@@ -754,25 +793,29 @@ struct PlayerSearchRow: View {
 
             Spacer()
 
+            // Follow button
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     isFollowing.toggle()
                 }
+                HapticManager.selection()
             } label: {
                 Text(isFollowing ? "Following" : "Follow")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(isFollowing ? Color.dinkrGreen : Color.dinkrGreen)
-                    .padding(.horizontal, 14)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(isFollowing ? Color.secondary : Color.white)
+                    .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.dinkrGreen, lineWidth: 1.5)
-                            .background(
-                                isFollowing
-                                    ? Color.dinkrGreen.opacity(0.1)
-                                    : Color.clear
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        isFollowing
+                            ? Color.cardBackground
+                            : Color.dinkrGreen
+                    )
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(
+                            isFollowing ? Color.secondary.opacity(0.4) : Color.clear,
+                            lineWidth: 1
+                        )
                     )
             }
             .buttonStyle(.plain)
@@ -782,62 +825,112 @@ struct PlayerSearchRow: View {
     }
 }
 
-// MARK: - EventSearchRow
+// MARK: - GameSearchRow
 
-struct EventSearchRow: View {
-    let event: Event
+struct GameSearchRow: View {
+    let session: GameSession
 
-    private static let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d, yyyy"
-        return f
-    }()
+    private var countdownText: String {
+        let interval = session.dateTime.timeIntervalSinceNow
+        if interval <= 0 { return "Live" }
+        let hours = Int(interval / 3600)
+        let minutes = Int((interval.truncatingRemainder(dividingBy: 3600)) / 60)
+        if hours >= 24 {
+            let days = hours / 24
+            return "in \(days)d"
+        }
+        if hours > 0 { return "in \(hours)h \(minutes)m" }
+        return "in \(minutes)m"
+    }
+
+    private var countdownColor: Color {
+        let interval = session.dateTime.timeIntervalSinceNow
+        if interval <= 0 { return Color.dinkrCoral }
+        if interval < 3600 { return Color.dinkrAmber }
+        return Color.dinkrGreen
+    }
+
+    private var formatColor: Color {
+        switch session.format {
+        case .singles:      return Color.dinkrCoral
+        case .doubles:      return Color.dinkrGreen
+        case .mixed:        return Color.dinkrSky
+        case .openPlay:     return Color.dinkrAmber
+        case .round_robin:  return Color.dinkrNavy
+        }
+    }
 
     var body: some View {
         HStack(spacing: 12) {
-            // Icon circle
             Circle()
-                .fill(Color.dinkrCoral.opacity(0.15))
+                .fill(Color.dinkrGreen.opacity(0.12))
                 .frame(width: 48, height: 48)
                 .overlay {
-                    Image(systemName: "trophy.fill")
+                    Image(systemName: "sportscourt.fill")
                         .font(.system(size: 20))
-                        .foregroundStyle(Color.dinkrCoral)
+                        .foregroundStyle(Color.dinkrGreen)
                 }
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(event.title)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.primary)
-                    .lineLimit(1)
-
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    Image(systemName: "calendar")
-                        .font(.caption2)
-                        .foregroundStyle(Color.secondary)
-                    Text(Self.dateFormatter.string(from: event.dateTime))
-                        .font(.subheadline)
-                        .foregroundStyle(Color.secondary)
+                    Text(session.courtName)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.primary)
+                        .lineLimit(1)
+
+                    Text(session.format.rawValue.capitalized)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(formatColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(formatColor.opacity(0.12))
+                        .clipShape(Capsule())
                 }
 
-                Text(event.location)
-                    .font(.caption)
-                    .foregroundStyle(Color.secondary)
-                    .lineLimit(1)
+                HStack(spacing: 8) {
+                    HStack(spacing: 3) {
+                        Image(systemName: session.dateTime.timeIntervalSinceNow <= 0
+                              ? "dot.radiowaves.left.and.right" : "clock")
+                            .font(.system(size: 11))
+                            .foregroundStyle(countdownColor)
+                        Text(countdownText)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(countdownColor)
+                    }
+
+                    Text("·")
+                        .foregroundStyle(Color.secondary)
+                        .font(.caption)
+
+                    HStack(spacing: 3) {
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(session.isFull ? Color.dinkrCoral : Color.secondary)
+                        Text(session.isFull
+                             ? "Full"
+                             : "\(session.spotsRemaining) spot\(session.spotsRemaining == 1 ? "" : "s")")
+                            .font(.system(size: 12))
+                            .foregroundStyle(session.isFull ? Color.dinkrCoral : Color.secondary)
+                    }
+                }
             }
 
             Spacer()
 
-            if let fee = event.entryFee {
-                Text(fee == 0 ? "Free" : "$\(Int(fee))")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(fee == 0 ? Color.dinkrGreen : Color.dinkrAmber)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        (fee == 0 ? Color.dinkrGreen : Color.dinkrAmber).opacity(0.12)
-                    )
-                    .clipShape(Capsule())
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("\(session.skillRange.lowerBound.label)–\(session.skillRange.upperBound.label)")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.dinkrNavy)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Color.dinkrNavy.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+
+                if let fee = session.fee, fee > 0 {
+                    Text("$\(Int(fee))")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.dinkrAmber)
+                }
             }
         }
         .padding(.horizontal, 16)
@@ -852,7 +945,6 @@ struct CourtSearchRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Icon circle
             Circle()
                 .fill(Color.dinkrSky.opacity(0.15))
                 .frame(width: 48, height: 48)
@@ -891,6 +983,14 @@ struct CourtSearchRow: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
+                Text(venue.surface.rawValue.capitalized)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.dinkrSky)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Color.dinkrSky.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+
                 if venue.isIndoor {
                     Text("Indoor")
                         .font(.system(size: 11, weight: .medium))
@@ -908,15 +1008,82 @@ struct CourtSearchRow: View {
                         .background(Color.dinkrGreen.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 5))
                 }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+}
 
-                if venue.hasLighting {
-                    HStack(spacing: 3) {
-                        Image(systemName: "lightbulb.fill")
-                            .font(.system(size: 10))
-                        Text("Lights")
-                            .font(.system(size: 10))
-                    }
-                    .foregroundStyle(Color.dinkrAmber)
+// MARK: - EventSearchRow
+
+struct EventSearchRow: View {
+    let event: Event
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d, yyyy"
+        return f
+    }()
+
+    private var typeColor: Color {
+        switch event.type {
+        case .tournament:  return Color.dinkrCoral
+        case .clinic:      return Color.dinkrSky
+        case .openPlay:    return Color.dinkrGreen
+        case .social:      return Color.dinkrAmber
+        case .womenOnly:   return Color.dinkrNavy
+        case .fundraiser:  return Color.dinkrAmber
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(Color.dinkrCoral.opacity(0.12))
+                .frame(width: 48, height: 48)
+                .overlay {
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color.dinkrCoral)
+                }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(event.title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
+                    .lineLimit(1)
+
+                HStack(spacing: 6) {
+                    Image(systemName: "calendar")
+                        .font(.caption2)
+                        .foregroundStyle(Color.secondary)
+                    Text(Self.dateFormatter.string(from: event.dateTime))
+                        .font(.subheadline)
+                        .foregroundStyle(Color.secondary)
+                }
+
+                Text(event.location)
+                    .font(.caption)
+                    .foregroundStyle(Color.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(event.type.rawValue.capitalized)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(typeColor)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(typeColor.opacity(0.12))
+                    .clipShape(Capsule())
+
+                if let fee = event.entryFee {
+                    Text(fee == 0 ? "Free" : "$\(Int(fee))")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(fee == 0 ? Color.dinkrGreen : Color.dinkrAmber)
                 }
             }
         }
@@ -925,23 +1092,102 @@ struct CourtSearchRow: View {
     }
 }
 
-// MARK: - ListingSearchRow
+// MARK: - GroupSearchRow
 
-struct ListingSearchRow: View {
-    let listing: MarketListing
+struct GroupSearchRow: View {
+    let group: DinkrGroup
+    @State private var joinRequested: Bool = false
 
-    private var categoryIcon: String {
-        switch listing.category {
-        case .paddles:    return "sportscourt.fill"
-        case .balls:      return "circle.fill"
-        case .bags:       return "bag.fill"
-        case .apparel:    return "tshirt.fill"
-        case .shoes:      return "shoe.fill"
-        case .accessories: return "tag.fill"
-        case .courts:     return "mappin.circle.fill"
-        case .other:      return "square.grid.2x2.fill"
+    private var typeColor: Color {
+        switch group.type {
+        case .competitive, .internalLeague: return Color.dinkrCoral
+        case .recreational, .neighborhood:  return Color.dinkrGreen
+        case .womenOnly:                    return Color.dinkrNavy
+        case .publicClub, .privateClub:     return Color.dinkrSky
+        case .ageGroup:                     return Color.dinkrAmber
+        case .corporate:                    return Color.dinkrNavy
         }
     }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(Color.dinkrGreen.opacity(0.12))
+                .frame(width: 48, height: 48)
+                .overlay {
+                    Image(systemName: group.isPrivate ? "lock.fill" : "person.3.fill")
+                        .font(.system(size: group.isPrivate ? 18 : 16))
+                        .foregroundStyle(Color.dinkrGreen)
+                }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(group.name)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
+                    .lineLimit(1)
+
+                HStack(spacing: 6) {
+                    Text(group.type.rawValue)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(typeColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(typeColor.opacity(0.12))
+                        .clipShape(Capsule())
+
+                    HStack(spacing: 3) {
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.secondary)
+                        Text("\(group.memberCount) members")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.secondary)
+                    }
+                }
+            }
+
+            Spacer()
+
+            // Join / Request button
+            if !group.isPrivate || !joinRequested {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        joinRequested.toggle()
+                    }
+                    HapticManager.selection()
+                } label: {
+                    Text(joinRequested
+                         ? (group.isPrivate ? "Requested" : "Joined")
+                         : (group.isPrivate ? "Request" : "Join"))
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(joinRequested ? Color.secondary : Color.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(joinRequested ? Color.cardBackground : Color.dinkrGreen)
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule().stroke(
+                                joinRequested ? Color.secondary.opacity(0.4) : Color.clear,
+                                lineWidth: 1
+                            )
+                        )
+                }
+                .buttonStyle(.plain)
+            } else {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.dinkrGreen)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+}
+
+// MARK: - MarketSearchRow
+
+struct MarketSearchRow: View {
+    let listing: MarketListing
 
     private var conditionColor: Color {
         switch listing.condition {
@@ -953,17 +1199,43 @@ struct ListingSearchRow: View {
         }
     }
 
+    private var categoryIcon: String {
+        switch listing.category {
+        case .paddles:     return "tennis.racket"
+        case .balls:       return "circle.fill"
+        case .bags:        return "bag.fill"
+        case .apparel:     return "tshirt.fill"
+        case .shoes:       return "shoeprints.fill"
+        case .accessories: return "wrench.fill"
+        case .courts:      return "sportscourt.fill"
+        case .other:       return "tag.fill"
+        }
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            // Icon circle
-            Circle()
-                .fill(Color.dinkrAmber.opacity(0.15))
-                .frame(width: 48, height: 48)
-                .overlay {
+            // Thumbnail placeholder (uses category icon until real photos are available)
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.dinkrAmber.opacity(0.10))
+                    .frame(width: 52, height: 52)
+
+                if let firstPhoto = listing.photos.first, !firstPhoto.isEmpty {
+                    CachedAsyncImage(urlString: firstPhoto)
+                        .scaledToFill()
+                        .frame(width: 52, height: 52)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                } else {
                     Image(systemName: categoryIcon)
                         .font(.system(size: 20))
                         .foregroundStyle(Color.dinkrAmber)
                 }
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.dinkrAmber.opacity(0.2), lineWidth: 1)
+            )
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("\(listing.brand) \(listing.model)")
@@ -973,7 +1245,7 @@ struct ListingSearchRow: View {
 
                 HStack(spacing: 6) {
                     Text(listing.condition.rawValue)
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(conditionColor)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -981,16 +1253,30 @@ struct ListingSearchRow: View {
                         .clipShape(Capsule())
 
                     Text(listing.location)
-                        .font(.caption)
+                        .font(.system(size: 12))
                         .foregroundStyle(Color.secondary)
+                        .lineLimit(1)
                 }
             }
 
             Spacer()
 
-            Text("$\(Int(listing.price))")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(Color.dinkrNavy)
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("$\(Int(listing.price))")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Color.dinkrNavy)
+
+                if listing.isFeatured {
+                    HStack(spacing: 3) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(Color.dinkrAmber)
+                        Text("Featured")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color.dinkrAmber)
+                    }
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

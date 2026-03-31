@@ -1,14 +1,74 @@
 import SwiftUI
 
+// MARK: - GameViewMode
+
+enum GameViewMode: String, CaseIterable {
+    case list     = "List"
+    case calendar = "Calendar"
+
+    var icon: String {
+        switch self {
+        case .list:     return "list.bullet"
+        case .calendar: return "calendar"
+        }
+    }
+}
+
+// MARK: - NearbyGamesView
+
 struct NearbyGamesView: View {
     var viewModel: PlayViewModel
     private let currentUser = User.mockCurrentUser
+    @State private var showDiscover = false
+    @State private var viewMode: GameViewMode = .list
 
     private var sessions: [GameSession] {
         viewModel.sortedSessions(playerSkill: currentUser.skillLevel)
     }
 
     var body: some View {
+        ZStack {
+            if viewMode == .list {
+                listContent
+                    .transition(.opacity)
+            } else {
+                calendarContent
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: viewMode)
+        .refreshable { await viewModel.load() }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                viewModeToggle
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    HapticManager.medium()
+                    showDiscover = true
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "rectangle.stack.fill")
+                            .font(.system(size: 13, weight: .semibold))
+                        Text("Discover")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Color.dinkrGreen, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .sheet(isPresented: $showDiscover) {
+            SwipeGameDiscoveryView()
+        }
+    }
+
+    // MARK: - List content
+
+    private var listContent: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
                 // Sort bar
@@ -17,7 +77,10 @@ struct NearbyGamesView: View {
                     .padding(.top, 4)
 
                 if viewModel.isLoading {
-                    ProgressView().padding(.top, 40)
+                    ForEach(0..<3, id: \.self) { _ in
+                        SkeletonGameCard()
+                            .padding(.horizontal)
+                    }
                 } else if sessions.isEmpty {
                     EmptyStateView(
                         icon: "figure.pickleball",
@@ -46,7 +109,43 @@ struct NearbyGamesView: View {
             }
             .padding(.vertical, 8)
         }
-        .refreshable { await viewModel.load() }
+    }
+
+    // MARK: - Calendar content
+
+    private var calendarContent: some View {
+        ScrollView {
+            GameCalendarView(sessions: sessions, viewModel: viewModel)
+                .padding(.top, 4)
+        }
+    }
+
+    // MARK: - View mode toggle
+
+    private var viewModeToggle: some View {
+        HStack(spacing: 0) {
+            ForEach(GameViewMode.allCases, id: \.self) { mode in
+                let isActive = viewMode == mode
+                Button {
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        viewMode = mode
+                        HapticManager.selection()
+                    }
+                } label: {
+                    Image(systemName: mode.icon)
+                        .font(.system(size: 13, weight: isActive ? .bold : .regular))
+                        .foregroundStyle(isActive ? .white : Color.secondary)
+                        .frame(width: 32, height: 28)
+                        .background(
+                            isActive ? Color.dinkrNavy : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 7)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(3)
+        .background(Color(UIColor.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
     }
 
     // MARK: - Sort Bar

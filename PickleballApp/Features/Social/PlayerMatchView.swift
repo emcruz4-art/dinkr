@@ -319,10 +319,10 @@ struct PlayerMatchCard: View {
                     }
 
                     HStack(spacing: 12) {
-                        StatPill(icon: "figure.pickleball", value: "\(player.gamesPlayed) games")
-                        StatPill(icon: "trophy.fill", value: "\(Int(player.winRate * 100))% win rate")
+                        MatchStatPill(icon: "figure.pickleball", value: "\(player.gamesPlayed) games")
+                        MatchStatPill(icon: "trophy.fill", value: "\(Int(player.winRate * 100))% win rate")
                         if sharedGroups > 0 {
-                            StatPill(icon: "person.3.fill", value: "\(sharedGroups) shared groups")
+                            MatchStatPill(icon: "person.3.fill", value: "\(sharedGroups) shared groups")
                         }
                     }
                 }
@@ -342,7 +342,7 @@ struct PlayerMatchCard: View {
     }
 }
 
-private struct StatPill: View {
+private struct MatchStatPill: View {
     let icon: String
     let value: String
 

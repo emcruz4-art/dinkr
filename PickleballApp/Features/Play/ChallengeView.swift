@@ -529,12 +529,15 @@ struct ChallengeView: View {
                 )
             } else {
                 ForEach(vm.incoming) { challenge in
-                    ChallengeRow(
-                        challenge: challenge,
-                        isIncoming: true,
-                        onAccept: { vm.accept(challenge) },
-                        onDecline: { vm.decline(challenge) }
-                    )
+                    NavigationLink(destination: ChallengeDetailView(challenge: challenge)) {
+                        ChallengeRow(
+                            challenge: challenge,
+                            isIncoming: true,
+                            onAccept: { vm.accept(challenge) },
+                            onDecline: { vm.decline(challenge) }
+                        )
+                    }
+                    .buttonStyle(.plain)
                     .transition(.asymmetric(
                         insertion: .move(edge: .leading).combined(with: .opacity),
                         removal: .opacity
@@ -563,12 +566,15 @@ struct ChallengeView: View {
                 )
             } else {
                 ForEach(vm.sent) { challenge in
-                    ChallengeRow(
-                        challenge: challenge,
-                        isIncoming: false,
-                        onAccept: nil,
-                        onDecline: nil
-                    )
+                    NavigationLink(destination: ChallengeDetailView(challenge: challenge, currentUserId: "user_001")) {
+                        ChallengeRow(
+                            challenge: challenge,
+                            isIncoming: false,
+                            onAccept: nil,
+                            onDecline: nil
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         } header: {

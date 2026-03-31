@@ -167,7 +167,7 @@ private struct ActiveTab: View {
                 .padding(.top, 40)
             } else {
                 ForEach(challenges) { challenge in
-                    NavigationLink(destination: ChallengeDetailView(challenge: challenge)) {
+                    NavigationLink(destination: ChallengeSummaryDetailView(challenge: challenge)) {
                         ChallengeCard(challenge: challenge, currentUserId: currentUserId)
                             .padding(.horizontal, 20)
                     }
@@ -212,7 +212,7 @@ private struct PendingTab: View {
                             .padding(.horizontal, 20)
 
                         ForEach(incoming) { challenge in
-                            NavigationLink(destination: ChallengeDetailView(challenge: challenge)) {
+                            NavigationLink(destination: ChallengeSummaryDetailView(challenge: challenge)) {
                                 ChallengeCard(challenge: challenge, currentUserId: currentUserId, showAcceptDecline: true)
                                     .padding(.horizontal, 20)
                             }
@@ -230,7 +230,7 @@ private struct PendingTab: View {
                             .padding(.horizontal, 20)
 
                         ForEach(outgoing) { challenge in
-                            NavigationLink(destination: ChallengeDetailView(challenge: challenge)) {
+                            NavigationLink(destination: ChallengeSummaryDetailView(challenge: challenge)) {
                                 ChallengeCard(challenge: challenge, currentUserId: currentUserId)
                                     .padding(.horizontal, 20)
                             }
@@ -260,7 +260,7 @@ private struct HistoryTab: View {
                 .padding(.top, 40)
             } else {
                 ForEach(challenges) { challenge in
-                    NavigationLink(destination: ChallengeDetailView(challenge: challenge)) {
+                    NavigationLink(destination: ChallengeSummaryDetailView(challenge: challenge)) {
                         HistoryChallengeCard(challenge: challenge, currentUserId: currentUserId)
                             .padding(.horizontal, 20)
                     }

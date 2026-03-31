@@ -125,6 +125,9 @@ struct GameCardView: View {
                             .padding(.vertical, 4)
                             .background(isUrgent ? Color.dinkrCoral : Color.dinkrGreen)
                             .clipShape(Capsule())
+
+                        // Bookmark button
+                        BookmarkButton(id: session.id, type: .game)
                     }
                 }
 

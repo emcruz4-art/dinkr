@@ -1,13 +1,41 @@
 import SwiftUI
 
+// MARK: - Tab Filter
+
+enum EventTabFilter: String, CaseIterable {
+    case all       = "All"
+    case upcoming  = "Upcoming"
+    case thisWeek  = "This Week"
+    case tournaments = "Tournaments"
+    case clinics   = "Clinics"
+    case openPlay  = "Open Play"
+    case myEvents  = "My Events"
+}
+
+// MARK: - Sort Option
+
+enum EventSortOption: String, CaseIterable {
+    case date     = "Date"
+    case distance = "Distance"
+    case price    = "Price"
+}
+
+// MARK: - EventsView
+
 struct EventsView: View {
     @State private var viewModel = EventsViewModel()
     @State private var calendarFilter = EventCalendarStrip.CalendarFilter.all
+    @State private var tabFilter: EventTabFilter = .all
+    @State private var sortOption: EventSortOption = .date
+    @State private var showCreateEvent = false
+    @State private var showSearch = false
 
-    var filteredByCalendar: [Event] {
+    // MARK: - Filtering pipeline
+
+    var baseEvents: [Event] {
         let now = Date()
         let cal = Calendar.current
-        return viewModel.filteredEvents.filter { event in
+        let afterCalendar = viewModel.filteredEvents.filter { event in
             switch calendarFilter {
             case .today:
                 return cal.isDateInToday(event.dateTime)
@@ -21,7 +49,52 @@ struct EventsView: View {
                 return true
             }
         }
+        return afterCalendar
     }
+
+    var filteredEvents: [Event] {
+        let now = Date()
+        let cal = Calendar.current
+        let source = baseEvents
+
+        let tabFiltered: [Event]
+        switch tabFilter {
+        case .all:
+            tabFiltered = source
+        case .upcoming:
+            tabFiltered = source.filter { $0.dateTime >= now }
+        case .thisWeek:
+            let weekOut = cal.date(byAdding: .day, value: 7, to: now) ?? now
+            tabFiltered = source.filter { $0.dateTime >= now && $0.dateTime <= weekOut }
+        case .tournaments:
+            tabFiltered = source.filter { $0.type == .tournament }
+        case .clinics:
+            tabFiltered = source.filter { $0.type == .clinic }
+        case .openPlay:
+            tabFiltered = source.filter { $0.type == .openPlay }
+        case .myEvents:
+            tabFiltered = source.filter { $0.isRegistered }
+        }
+
+        switch sortOption {
+        case .date:
+            return tabFiltered.sorted { $0.dateTime < $1.dateTime }
+        case .distance:
+            // Distance sort stub — falls back to date order until real location is wired
+            return tabFiltered.sorted { $0.dateTime < $1.dateTime }
+        case .price:
+            return tabFiltered.sorted {
+                ($0.entryFee ?? 0) < ($1.entryFee ?? 0)
+            }
+        }
+    }
+
+    /// First tournament from the full unfiltered mock/live set — used for the hero banner
+    var featuredTournament: Event? {
+        viewModel.events.first { $0.type == .tournament }
+    }
+
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
@@ -29,21 +102,15 @@ struct EventsView: View {
                 // Calendar strip
                 EventCalendarStrip(selectedFilter: $calendarFilter)
 
-                // Type filter chips
+                // ── Tab filter row ─────────────────────────────────────────
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        FilterChip(label: "All", isSelected: viewModel.selectedFilter == nil) {
-                            viewModel.selectedFilter = nil
-                            viewModel.applyFilter()
-                        }
-                        FilterChip(label: "Women Only", isSelected: viewModel.showWomenOnly, color: .pink) {
-                            viewModel.showWomenOnly.toggle()
-                            viewModel.applyFilter()
-                        }
-                        ForEach(EventType.allCases, id: \.self) { type in
-                            FilterChip(label: type.rawValue, isSelected: viewModel.selectedFilter == type) {
-                                viewModel.selectedFilter = viewModel.selectedFilter == type ? nil : type
-                                viewModel.applyFilter()
+                        ForEach(EventTabFilter.allCases, id: \.self) { tab in
+                            TabFilterChip(
+                                label: tab.rawValue,
+                                isSelected: tabFilter == tab
+                            ) {
+                                tabFilter = tab
                             }
                         }
                     }
@@ -52,7 +119,55 @@ struct EventsView: View {
                     .padding(.bottom, 4)
                 }
 
-                // Subtle gradient separator below filter bar
+                // Sort toolbar
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text("Sort:")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+
+                    Menu {
+                        ForEach(EventSortOption.allCases, id: \.self) { option in
+                            Button {
+                                sortOption = option
+                            } label: {
+                                HStack {
+                                    Text(option.rawValue)
+                                    if sortOption == option {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(sortOption.rawValue)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Color.dinkrGreen)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(Color.dinkrGreen)
+                        }
+                    }
+
+                    Spacer()
+
+                    if tabFilter == .myEvents {
+                        Text("\(filteredEvents.count) registered")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("\(filteredEvents.count) events")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 6)
+
+                // Subtle gradient separator
                 LinearGradient(
                     colors: [Color.dinkrGreen.opacity(0.10), Color.clear],
                     startPoint: .top,
@@ -64,19 +179,24 @@ struct EventsView: View {
                     LazyVStack(spacing: 0) {
                         if viewModel.isLoading {
                             ProgressView().padding(.top, 40)
-                        } else if filteredByCalendar.isEmpty {
+                        } else if filteredEvents.isEmpty {
                             EmptyStateView(
-                                icon: "calendar.badge.exclamationmark",
-                                title: "No Events Found",
-                                message: "Try changing your filters or check back later."
+                                icon: tabFilter == .myEvents
+                                    ? "ticket.fill"
+                                    : "calendar.badge.exclamationmark",
+                                title: tabFilter == .myEvents
+                                    ? "No Registered Events"
+                                    : "No Events Found",
+                                message: tabFilter == .myEvents
+                                    ? "Events you register for will appear here."
+                                    : "Try changing your filters or check back later."
                             )
                             .padding(.top, 40)
                         } else {
 
-                            // ── Featured hero — upgraded ───────────────────
-                            if let featured = filteredByCalendar.first {
+                            // ── Featured Hero Banner (always shown at top, uses first tournament) ──
+                            if tabFilter != .myEvents, let hero = featuredTournament {
                                 VStack(alignment: .leading, spacing: 10) {
-                                    // Section header
                                     HStack {
                                         Rectangle()
                                             .fill(Color.dinkrCoral)
@@ -91,17 +211,34 @@ struct EventsView: View {
                                     .padding(.top, 12)
 
                                     NavigationLink {
-                                        EventDetailView(event: featured)
+                                        EventDetailView(event: hero)
                                     } label: {
-                                        FeaturedEventHeroBanner(event: featured)
+                                        FeaturedEventHeroBanner(event: hero)
                                             .padding(.horizontal)
                                     }
                                     .buttonStyle(.plain)
                                 }
                             }
 
-                            // ── Remaining events with section header ───────
-                            if filteredByCalendar.count > 1 {
+                            // ── My Events section header ──────────────────
+                            if tabFilter == .myEvents {
+                                HStack {
+                                    Rectangle()
+                                        .fill(Color.dinkrGreen)
+                                        .frame(width: 4, height: 18)
+                                        .clipShape(Capsule())
+                                    Text("MY REGISTERED EVENTS")
+                                        .font(.system(size: 11, weight: .heavy))
+                                        .foregroundStyle(Color.dinkrNavy)
+                                    Spacer()
+                                }
+                                .padding(.horizontal)
+                                .padding(.top, 16)
+                                .padding(.bottom, 4)
+                            }
+
+                            // ── Upcoming section header (non-myEvents) ────
+                            if tabFilter != .myEvents && filteredEvents.count > 1 {
                                 HStack {
                                     Rectangle()
                                         .fill(Color.dinkrGreen)
@@ -111,7 +248,7 @@ struct EventsView: View {
                                         .font(.system(size: 11, weight: .heavy))
                                         .foregroundStyle(Color.dinkrNavy)
                                     Spacer()
-                                    Text("\(filteredByCalendar.count - 1) events")
+                                    Text("\(filteredEvents.count) events")
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
                                 }
@@ -120,13 +257,30 @@ struct EventsView: View {
                                 .padding(.bottom, 4)
                             }
 
-                            ForEach(filteredByCalendar.dropFirst()) { event in
+                            ForEach(filteredEvents) { event in
                                 NavigationLink {
                                     EventDetailView(event: event)
                                 } label: {
-                                    EventCardView(event: event)
-                                        .padding(.horizontal)
-                                        .padding(.vertical, 6)
+                                    ZStack(alignment: .topLeading) {
+                                        EventCardView(event: event)
+
+                                        // Countdown chip overlay for My Events
+                                        if tabFilter == .myEvents {
+                                            let days = Calendar.current
+                                                .dateComponents([.day], from: Date(), to: event.dateTime).day ?? 0
+                                            Text(days == 0 ? "Today!" : "In \(days) day\(days == 1 ? "" : "s")")
+                                                .font(.system(size: 10, weight: .bold))
+                                                .foregroundStyle(.white)
+                                                .padding(.horizontal, 10)
+                                                .padding(.vertical, 5)
+                                                .background(days <= 3 ? Color.dinkrCoral : Color.dinkrGreen)
+                                                .clipShape(Capsule())
+                                                .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                                                .offset(x: 14, y: 14)
+                                        }
+                                    }
+                                    .padding(.horizontal)
+                                    .padding(.vertical, 6)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -137,8 +291,70 @@ struct EventsView: View {
                 .refreshable { await viewModel.load() }
             }
             .navigationTitle("Events")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showSearch = true
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                    }
+                    .tint(Color.dinkrNavy)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showCreateEvent = true
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 15, weight: .semibold))
+                            Text("Host Event")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.dinkrNavy, Color.dinkrGreen],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .clipShape(Capsule())
+                        .shadow(color: Color.dinkrGreen.opacity(0.3), radius: 5, y: 2)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .sheet(isPresented: $showCreateEvent) {
+                CreateEventView()
+            }
+            .sheet(isPresented: $showSearch) {
+                SearchView()
+            }
         }
         .task { await viewModel.load() }
+    }
+}
+
+// MARK: - Tab Filter Chip
+
+struct TabFilterChip: View {
+    let label: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(isSelected ? .white : Color.dinkrGreen)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(isSelected ? Color.dinkrGreen : Color.dinkrGreen.opacity(0.12))
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -166,21 +382,21 @@ struct FeaturedEventHeroBanner: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
 
-            // ── Tall gradient image area (160pt) with canvas sport pattern ──
+            // ── Gradient image area (160pt) ──────────────────────────────
             ZStack(alignment: .bottomLeading) {
-                // Rich gradient — navy base with event type color accent
+                // Navy → dinkrGreen gradient
                 LinearGradient(
                     colors: [
                         Color.dinkrNavy,
-                        Color.dinkrNavy.opacity(0.85),
-                        eventTypeColor.opacity(0.75)
+                        Color.dinkrNavy.opacity(0.80),
+                        Color.dinkrGreen.opacity(0.80)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
                 .frame(height: 160)
 
-                // Subtle net/court pattern overlay
+                // Subtle court-pattern overlay
                 Canvas { context, size in
                     let lineColor = Color.white.opacity(0.07)
                     var gridPath = Path()
@@ -203,13 +419,11 @@ struct FeaturedEventHeroBanner: View {
 
                     context.stroke(gridPath, with: .color(lineColor), lineWidth: 0.7)
 
-                    // Center-court highlight line
                     var centerLine = Path()
                     centerLine.move(to: CGPoint(x: size.width / 2, y: 0))
                     centerLine.addLine(to: CGPoint(x: size.width / 2, y: size.height))
                     context.stroke(centerLine, with: .color(Color.white.opacity(0.10)), lineWidth: 2)
 
-                    // Kitchen line (non-volley zone)
                     let kitchenY = size.height * 0.72
                     var kitchenPath = Path()
                     kitchenPath.move(to: CGPoint(x: 0, y: kitchenY))
@@ -218,7 +432,7 @@ struct FeaturedEventHeroBanner: View {
                 }
                 .frame(height: 160)
 
-                // Scrim for text legibility
+                // Bottom scrim
                 LinearGradient(
                     colors: [Color.clear, Color.black.opacity(0.50)],
                     startPoint: .top,
@@ -226,9 +440,26 @@ struct FeaturedEventHeroBanner: View {
                 )
                 .frame(height: 160)
 
-                // Text overlay at bottom of image area
+                // "FEATURED EVENT" pill chip top-left
+                VStack {
+                    HStack {
+                        Text("FEATURED EVENT")
+                            .font(.system(size: 9, weight: .heavy))
+                            .foregroundStyle(Color.dinkrNavy)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(.white.opacity(0.92))
+                            .clipShape(Capsule())
+                            .padding(.top, 14)
+                            .padding(.leading, 16)
+                        Spacer()
+                    }
+                    Spacer()
+                }
+                .frame(height: 160)
+
+                // Text overlay at bottom
                 VStack(alignment: .leading, spacing: 6) {
-                    // Event type badge
                     HStack(spacing: 6) {
                         Text(event.type.rawValue.capitalized)
                             .font(.system(size: 10, weight: .bold))
@@ -266,10 +497,10 @@ struct FeaturedEventHeroBanner: View {
                 )
             )
 
-            // ── Card body ─────────────────────────────────────────────────
+            // ── Card body ────────────────────────────────────────────────
             VStack(alignment: .leading, spacing: 10) {
 
-                // Location + date row
+                // Date + location row
                 HStack(spacing: 16) {
                     Label {
                         Text(event.location)
@@ -284,28 +515,30 @@ struct FeaturedEventHeroBanner: View {
 
                     Spacer()
 
-                    Text(event.dateTime.formatted(.dateTime.month().day()))
+                    Text(event.dateTime.formatted(.dateTime.month().day().hour().minute()))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(Color.dinkrNavy)
                 }
 
-                // Registration progress bar (dinkrGreen → dinkrSky gradient)
+                // Registration progress bar
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Text("\(event.currentParticipants) registered")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Text("\(Int(registrationProgress * 100))% full")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(Color.dinkrGreen)
+                        if let max = event.maxParticipants {
+                            Text("\(Int(registrationProgress * 100))% of \(max) spots")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(Color.dinkrGreen)
+                        }
                     }
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(Color.dinkrGreen.opacity(0.12))
                             LinearGradient(
-                                colors: [Color.dinkrGreen, Color.dinkrSky],
+                                colors: [Color.dinkrNavy, Color.dinkrGreen],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -316,7 +549,7 @@ struct FeaturedEventHeroBanner: View {
                     .frame(height: 5)
                 }
 
-                // Bottom CTA row
+                // CTA row
                 HStack(spacing: 10) {
                     if let fee = event.entryFee {
                         Text(fee == 0 ? "Free" : "$\(Int(fee))")
@@ -334,12 +567,18 @@ struct FeaturedEventHeroBanner: View {
 
                     Spacer()
 
-                    Text("Register →")
+                    Text("Register Now →")
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 10)
-                        .background(Color.dinkrGreen)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.dinkrNavy, Color.dinkrGreen],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
                         .clipShape(Capsule())
                 }
             }
@@ -348,13 +587,13 @@ struct FeaturedEventHeroBanner: View {
         .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(
-            color: eventTypeColor.opacity(0.22),
+            color: Color.dinkrGreen.opacity(0.22),
             radius: 14, x: 0, y: 7
         )
     }
 }
 
-// MARK: - FilterChip (kept unchanged)
+// MARK: - FilterChip (legacy — kept for any remaining callers)
 
 struct FilterChip: View {
     let label: String

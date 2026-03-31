@@ -8,10 +8,11 @@ struct SocialLinks: Codable, Hashable {
     var linkedin: String = ""
     var twitter: String = ""
     var website: String = ""
+    var pickleheads: String = ""
 
     var isEmpty: Bool {
         instagram.isEmpty && tiktok.isEmpty && youtube.isEmpty
-            && linkedin.isEmpty && twitter.isEmpty && website.isEmpty
+            && linkedin.isEmpty && twitter.isEmpty && website.isEmpty && pickleheads.isEmpty
     }
 }
 
@@ -37,6 +38,11 @@ struct User: Identifiable, Codable, Hashable {
     var isPrivate: Bool
     var socialLinks: SocialLinks
     var playStyle: PlayStyle?
+    var playStyles: [PlayStyle]? = nil
+    var dominantHand: DominantHand? = nil
+    var yearsPlaying: Int? = nil
+    var availabilityDays: [Weekday]? = nil
+    var availableTimes: [TimeOfDay]? = nil
     var department: String?
 
     var winRate: Double {
@@ -152,5 +158,99 @@ extension User {
              reliabilityScore: 4.8, gamesPlayed: 121, wins: 73,
              joinedDate: Calendar.current.date(byAdding: .month, value: -10, to: Date()) ?? Date(),
              isWomenOnly: false, followersCount: 189, followingCount: 145, duprRating: nil, isPrivate: false, socialLinks: SocialLinks(), playStyle: nil, department: nil),
+        User(id: "user_010", displayName: "Tyler Brooks", username: "tylerbrooks_pb",
+             avatarURL: nil, bio: "2.5 and loving every second of it. Just found pickleball 6 months ago — hooked for life.",
+             skillLevel: .beginner25, city: "San Marcos, TX",
+             location: GeoPoint(latitude: 29.8833, longitude: -97.9414),
+             clubIds: [], badges: [],
+             reliabilityScore: 4.2, gamesPlayed: 22, wins: 9,
+             joinedDate: Calendar.current.date(byAdding: .month, value: -6, to: Date()) ?? Date(),
+             isWomenOnly: false, followersCount: 28, followingCount: 52, duprRating: nil, isPrivate: false,
+             socialLinks: SocialLinks(instagram: "tylerbrooks_pb"),
+             playStyle: .recreational, department: nil),
+        User(id: "user_011", displayName: "Priya Patel", username: "priyapatel_dinks",
+             avatarURL: nil, bio: "4.0 singles grinder | former tennis D1 | Austin by way of Houston | obsessed with the erne.",
+             skillLevel: .advanced40, city: "Austin, TX",
+             location: GeoPoint(latitude: 30.2453, longitude: -97.7610),
+             clubIds: ["club_001", "club_002"], badges: [.init(id: "b5", type: .reliablePro, earnedAt: Date(), label: "Reliable Pro")],
+             reliabilityScore: 4.9, gamesPlayed: 267, wins: 174,
+             joinedDate: Calendar.current.date(byAdding: .year, value: -2, to: Date()) ?? Date(),
+             isWomenOnly: false, followersCount: 381, followingCount: 142, duprRating: 4.31, isPrivate: false,
+             socialLinks: SocialLinks(instagram: "priyapatel_dinks", twitter: "priyapb"),
+             playStyle: .drillFocused, department: "Product"),
+        User(id: "user_012", displayName: "Marcus Williams", username: "marcusw_kitchen",
+             avatarURL: nil, bio: "Kitchen king. 4.5 doubles specialist. Retired basketball coach who traded hardwood for hardcourt.",
+             skillLevel: .advanced45, city: "Pflugerville, TX",
+             location: GeoPoint(latitude: 30.4393, longitude: -97.6200),
+             clubIds: ["club_001"], badges: [.init(id: "b6", type: .tournamentWinner, earnedAt: Date(), label: "Tournament Winner")],
+             reliabilityScore: 4.7, gamesPlayed: 398, wins: 263,
+             joinedDate: Calendar.current.date(byAdding: .year, value: -3, to: Date()) ?? Date(),
+             isWomenOnly: false, followersCount: 612, followingCount: 95, duprRating: 4.72, isPrivate: false,
+             socialLinks: SocialLinks(instagram: "marcusw_kitchen", youtube: "marcuswilliamspb"),
+             playStyle: .competitive, department: nil),
+        User(id: "user_013", displayName: "Sophie Chen", username: "sophie_serves",
+             avatarURL: nil, bio: "3.0 recreational player and community organizer. Sundays at Mueller are my church.",
+             skillLevel: .intermediate30, city: "Austin, TX",
+             location: GeoPoint(latitude: 30.3100, longitude: -97.7050),
+             clubIds: ["club_002", "club_003"], badges: [.init(id: "b7", type: .communityChampion, earnedAt: Date(), label: "Community Champion")],
+             reliabilityScore: 5.0, gamesPlayed: 88, wins: 47,
+             joinedDate: Calendar.current.date(byAdding: .month, value: -14, to: Date()) ?? Date(),
+             isWomenOnly: true, followersCount: 204, followingCount: 178, duprRating: nil, isPrivate: false,
+             socialLinks: SocialLinks(instagram: "sophie_serves"),
+             playStyle: .recreational, department: "Design"),
+        User(id: "user_014", displayName: "Derek Martinez", username: "derekmartinez_5pt0",
+             avatarURL: nil, bio: "5.0+ pro. PPA Tour participant. Coaching available. DMs open for clinics.",
+             skillLevel: .pro50, city: "Austin, TX",
+             location: GeoPoint(latitude: 30.2672, longitude: -97.7431),
+             clubIds: ["club_001"],
+             badges: [
+                .init(id: "b8", type: .reliablePro, earnedAt: Date(), label: "Reliable Pro"),
+                .init(id: "b9", type: .tournamentWinner, earnedAt: Date(), label: "Tournament Winner")
+             ],
+             reliabilityScore: 5.0, gamesPlayed: 892, wins: 671,
+             joinedDate: Calendar.current.date(byAdding: .year, value: -5, to: Date()) ?? Date(),
+             isWomenOnly: false, followersCount: 4821, followingCount: 312, duprRating: 5.47, isPrivate: false,
+             socialLinks: SocialLinks(instagram: "derekmartinez_pb", tiktok: "derekmartinez_5pt0", youtube: "DerekMartinezPickleball", twitter: "derekmartinezpb"),
+             playStyle: .competitive, department: nil),
+        User(id: "user_015", displayName: "Aisha Johnson", username: "aishaj_bangerz",
+             avatarURL: nil, bio: "3.5 banger with a backhand that doesn't quit. ATX Women's League co-captain. Always down for open play.",
+             skillLevel: .intermediate35, city: "Austin, TX",
+             location: GeoPoint(latitude: 30.2550, longitude: -97.7600),
+             clubIds: ["club_002"], badges: [],
+             reliabilityScore: 4.6, gamesPlayed: 145, wins: 82,
+             joinedDate: Calendar.current.date(byAdding: .month, value: -20, to: Date()) ?? Date(),
+             isWomenOnly: true, followersCount: 276, followingCount: 231, duprRating: nil, isPrivate: false,
+             socialLinks: SocialLinks(instagram: "aishaj_bangerz"),
+             playStyle: .allAround, department: "Legal"),
+        User(id: "user_016", displayName: "Kevin Park", username: "kevinpark_spin",
+             avatarURL: nil, bio: "Topspin obsessed. 4.0 singles. Former table tennis player — brings an unusual spin game to the court.",
+             skillLevel: .advanced40, city: "Georgetown, TX",
+             location: GeoPoint(latitude: 30.6330, longitude: -97.6779),
+             clubIds: ["club_001"], badges: [],
+             reliabilityScore: 4.5, gamesPlayed: 193, wins: 118,
+             joinedDate: Calendar.current.date(byAdding: .year, value: -1, to: Date()) ?? Date(),
+             isWomenOnly: false, followersCount: 143, followingCount: 167, duprRating: 4.15, isPrivate: false,
+             socialLinks: SocialLinks(tiktok: "kevinpark_spin"),
+             playStyle: .drillFocused, department: "Finance"),
+        User(id: "user_017", displayName: "Olivia Turner", username: "oliviaturner_pb",
+             avatarURL: nil, bio: "2.0 beginner — started 3 months ago. Scared of the erne but working on it. This community is the best!",
+             skillLevel: .beginner20, city: "Buda, TX",
+             location: GeoPoint(latitude: 30.0854, longitude: -97.8403),
+             clubIds: [], badges: [.init(id: "b10", type: .firstGame, earnedAt: Date(), label: "First Game")],
+             reliabilityScore: 4.0, gamesPlayed: 11, wins: 3,
+             joinedDate: Calendar.current.date(byAdding: .month, value: -3, to: Date()) ?? Date(),
+             isWomenOnly: false, followersCount: 14, followingCount: 43, duprRating: nil, isPrivate: false,
+             socialLinks: SocialLinks(),
+             playStyle: .recreational, department: nil),
     ]
+
+    /// All mock users including the current signed-in user.
+    static var mockUsers: [User] {
+        [mockCurrentUser] + mockPlayers
+    }
+
+    /// All mock users excluding the current signed-in user — useful for player search / discovery screens.
+    static var otherPlayers: [User] {
+        mockPlayers
+    }
 }

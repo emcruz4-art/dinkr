@@ -60,6 +60,7 @@ struct OfferRowView: View {
         case .accepted:  return Color.dinkrGreen
         case .declined:  return Color.dinkrCoral
         case .withdrawn: return Color.secondary
+        case .countered: return Color.dinkrSky
         }
     }
 
@@ -69,6 +70,7 @@ struct OfferRowView: View {
         case .accepted:  return "checkmark.circle.fill"
         case .declined:  return "xmark.circle.fill"
         case .withdrawn: return "arrow.uturn.left.circle"
+        case .countered: return "arrow.left.arrow.right.circle"
         }
     }
 

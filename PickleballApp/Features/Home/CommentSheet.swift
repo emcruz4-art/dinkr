@@ -115,7 +115,7 @@ struct CommentSheet: View {
         do {
             comments = try await FirestoreService.shared.queryCollectionOrdered(
                 collection: "posts/\(post.id)/comments",
-                orderBy: "createdAt",
+                orderBy: "date",
                 descending: false
             )
         } catch {
@@ -133,11 +133,12 @@ struct CommentSheet: View {
             let comment = Comment(
                 id: commentId,
                 postId: post.id,
-                authorId: currentUserId,
-                authorName: currentUserName,
-                authorAvatarURL: currentUserAvatarURL,
-                content: trimmed,
-                createdAt: Date()
+                userId: currentUserId,
+                userName: currentUserName,
+                body: trimmed,
+                date: Date(),
+                likeCount: 0,
+                replies: []
             )
             try await FirestoreService.shared.setDocument(
                 comment,
@@ -167,21 +168,21 @@ private struct CommentRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             AvatarView(
-                urlString: comment.authorAvatarURL,
-                displayName: comment.authorName,
+                urlString: nil,
+                displayName: comment.userName,
                 size: 34
             )
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(comment.authorName)
+                    Text(comment.userName)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color.dinkrNavy)
-                    Text(comment.createdAt.relativeString)
+                    Text(comment.date.relativeString)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Text(comment.content)
+                Text(comment.body)
                     .font(.subheadline)
                     .fixedSize(horizontal: false, vertical: true)
             }

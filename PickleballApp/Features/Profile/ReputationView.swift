@@ -1,155 +1,394 @@
 import SwiftUI
 
+// MARK: - Main View
+
 struct ReputationView: View {
     let user: User
 
-    var level: Int {
-        switch user.gamesPlayed {
-        case 0..<10: return 1
-        case 10..<25: return 2
-        case 25..<50: return 3
-        case 50..<75: return 4
-        case 75..<100: return 5
-        case 100..<125: return 6
-        case 125..<150: return 7
-        case 150..<200: return 8
-        case 200..<300: return 9
-        default: return 10
-        }
-    }
+    @State private var progressWidth: CGFloat = 0
+    @State private var xpExpanded: Bool = false
 
-    var levelTitle: String {
-        switch level {
-        case 1: return "Newbie"
-        case 2: return "Rookie"
-        case 3: return "Player"
-        case 4: return "Regular"
-        case 5: return "Competitor"
-        case 6: return "Veteran"
-        case 7: return "Dinkmaster"
-        case 8: return "Court Legend"
-        case 9: return "Pro Circuit"
-        default: return "Hall of Fame"
-        }
-    }
-
-    var xpProgress: Double {
-        let thresholds = [0, 10, 25, 50, 75, 100, 125, 150, 200, 300, Int.max]
-        let lower = thresholds[level - 1]
-        let upper = thresholds[level]
-        let progress = Double(user.gamesPlayed - lower) / Double(upper - lower)
-        return min(max(progress, 0), 1)
-    }
-
-    var nextLevelGames: Int {
-        let thresholds = [0, 10, 25, 50, 75, 100, 125, 150, 200, 300, 500]
-        return thresholds[min(level, thresholds.count - 1)]
-    }
+    private var currentLevel: PlayerLevel { user.playerLevel }
+    private var nextLevel: PlayerLevel? { currentLevel.next }
 
     var body: some View {
         VStack(spacing: 16) {
-            // Level + XP
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(Color.dinkrGreen.opacity(0.12))
-                        .frame(width: 60, height: 60)
-                    VStack(spacing: 0) {
-                        Text("LVL")
-                            .font(.system(size: 8, weight: .heavy))
-                            .foregroundStyle(Color.dinkrGreen.opacity(0.7))
-                        Text("\(level)")
-                            .font(.title2.weight(.heavy))
-                            .foregroundStyle(Color.dinkrGreen)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 6) {
-                        Text("Level \(level) · \(levelTitle)")
-                            .font(.subheadline.weight(.bold))
-                        if level >= 7 {
-                            Image(systemName: "crown.fill")
-                                .font(.caption)
-                                .foregroundStyle(Color.dinkrAmber)
-                        }
-                    }
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.dinkrGreen.opacity(0.15))
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.dinkrGreen, Color.dinkrSky],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .frame(width: geo.size.width * xpProgress)
-                        }
-                    }
-                    .frame(height: 8)
-                    Text("\(user.gamesPlayed) games · \(nextLevelGames - user.gamesPlayed) to Level \(level + 1)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .padding(14)
-            .background(Color.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-
-            // Stats row
-            HStack(spacing: 0) {
-                ReputationStatItem(value: String(format: "%.1f", user.reliabilityScore),
-                                   label: "Reliability", icon: "star.fill", color: Color.dinkrAmber)
-                Divider().frame(height: 40)
-                ReputationStatItem(value: "\(Int(user.winRate * 100))%",
-                                   label: "Win Rate", icon: "trophy.fill", color: Color.dinkrGreen)
-                Divider().frame(height: 40)
-                ReputationStatItem(value: "\(user.gamesPlayed)",
-                                   label: "Games", icon: "figure.pickleball", color: Color.dinkrSky)
-            }
-            .padding(.vertical, 8)
-            .background(Color.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-
-            // Badges
+            levelCard
+            howToEarnCard
+            statsGrid
             if !user.badges.isEmpty {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Badges")
-                        .font(.subheadline.weight(.bold))
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(user.badges) { badge in
-                                VStack(spacing: 6) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(Color.dinkrAmber.opacity(0.12))
-                                            .frame(width: 48, height: 48)
-                                        Image(systemName: "medal.fill")
-                                            .foregroundStyle(Color.dinkrAmber)
-                                            .font(.title3)
-                                    }
-                                    Text(badge.label)
-                                        .font(.caption2)
-                                        .multilineTextAlignment(.center)
-                                        .frame(width: 60)
-                                        .lineLimit(2)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 4)
-                    }
-                }
-                .padding(14)
-                .background(Color.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                badgesCard
             }
+            reliabilityCard
         }
     }
 }
+
+// MARK: - Level Card
+
+private extension ReputationView {
+
+    var levelCard: some View {
+        ZStack(alignment: .bottomLeading) {
+            // Gradient background derived from level color
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            currentLevel.color.opacity(0.85),
+                            currentLevel.color.opacity(0.4)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            VStack(alignment: .leading, spacing: 14) {
+                // Icon + Headline row
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(.white.opacity(0.2))
+                            .frame(width: 64, height: 64)
+                        Image(systemName: currentLevel.icon)
+                            .font(.system(size: 30, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Level \(currentLevel.level) · \(currentLevel.title)")
+                            .font(.title3.weight(.heavy))
+                            .foregroundStyle(.white)
+                        Text("\(user.xp) XP total")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    Spacer()
+                }
+
+                // XP Progress bar
+                VStack(alignment: .leading, spacing: 6) {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(.white.opacity(0.25))
+                                .frame(height: 10)
+                            Capsule()
+                                .fill(.white)
+                                .frame(width: progressWidth == 0 ? 0 : geo.size.width * CGFloat(user.levelProgress),
+                                       height: 10)
+                                .animation(.spring(response: 0.9, dampingFraction: 0.75).delay(0.2), value: progressWidth)
+                        }
+                        .onAppear {
+                            progressWidth = geo.size.width
+                        }
+                    }
+                    .frame(height: 10)
+
+                    HStack {
+                        Text("\(user.xp) XP")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                        Spacer()
+                        if let next = nextLevel {
+                            Text("\(next.xpRequired) XP")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.white.opacity(0.9))
+                        }
+                    }
+                }
+
+                // Subtitle
+                if let next = nextLevel {
+                    HStack(spacing: 4) {
+                        Image(systemName: "bolt.fill")
+                            .font(.caption2)
+                        Text("+\(user.xpToNextLevel) XP to Level \(next.level) · \(next.title)")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .foregroundStyle(.white.opacity(0.85))
+                } else {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.caption2)
+                        Text("Max Level Reached — You're a Legend!")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .foregroundStyle(.white.opacity(0.85))
+                }
+
+                Divider().overlay(.white.opacity(0.3))
+
+                // Level history timeline
+                levelTimeline
+            }
+            .padding(18)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+    }
+
+    var levelTimeline: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Level History")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white.opacity(0.7))
+                .padding(.bottom, 2)
+
+            ForEach(levelTimelineRows, id: \.level) { row in
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(row.reached ? Color.white : Color.white.opacity(0.2))
+                            .frame(width: 22, height: 22)
+                        Image(systemName: row.reached ? row.icon : "lock")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(row.reached ? currentLevel.color : .white.opacity(0.5))
+                    }
+                    Text("Level \(row.level) · \(row.title)")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(row.reached ? .white : .white.opacity(0.45))
+                    Spacer()
+                    if row.reached {
+                        Text("\(row.xpRequired) XP")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.7))
+                    } else {
+                        Text("\(row.xpRequired) XP")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.35))
+                    }
+                }
+            }
+        }
+    }
+
+    struct TimelineRow {
+        let level: Int
+        let title: String
+        let icon: String
+        let xpRequired: Int
+        let reached: Bool
+    }
+
+    var levelTimelineRows: [TimelineRow] {
+        PlayerLevel.all.map { pl in
+            TimelineRow(
+                level: pl.level,
+                title: pl.title,
+                icon: pl.icon,
+                xpRequired: pl.xpRequired,
+                reached: user.xp >= pl.xpRequired
+            )
+        }
+    }
+}
+
+// MARK: - How to Earn XP Card
+
+private extension ReputationView {
+
+    struct XPAction: Identifiable {
+        let id = UUID()
+        let label: String
+        let icon: String
+        let xp: Int
+    }
+
+    var xpActions: [XPAction] {[
+        XPAction(label: "Play a game",        icon: "figure.pickleball",     xp: 100),
+        XPAction(label: "Win a game",         icon: "trophy.fill",           xp: 50),
+        XPAction(label: "Host a game",        icon: "person.badge.plus",     xp: 75),
+        XPAction(label: "Get 5-star review",  icon: "star.fill",             xp: 200),
+        XPAction(label: "Complete a challenge", icon: "bolt.circle.fill",    xp: 150),
+        XPAction(label: "Join a tournament",  icon: "flag.checkered",        xp: 125),
+        XPAction(label: "Refer a friend",     icon: "person.2.fill",         xp: 300),
+        XPAction(label: "Complete profile",   icon: "checkmark.circle.fill", xp: 50),
+    ]}
+
+    var howToEarnCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                    xpExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "bolt.fill")
+                        .foregroundStyle(Color.dinkrAmber)
+                        .font(.subheadline)
+                    Text("How to Earn XP")
+                        .font(.subheadline.weight(.bold))
+                    Spacer()
+                    Image(systemName: xpExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(14)
+            }
+            .buttonStyle(.plain)
+
+            if xpExpanded {
+                Divider().padding(.horizontal, 14)
+                VStack(spacing: 0) {
+                    ForEach(xpActions) { action in
+                        HStack(spacing: 12) {
+                            Image(systemName: action.icon)
+                                .font(.subheadline)
+                                .foregroundStyle(Color.dinkrGreen)
+                                .frame(width: 22)
+                            Text(action.label)
+                                .font(.subheadline)
+                            Spacer()
+                            Text("+\(action.xp) XP")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(Color.dinkrAmber)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 4)
+                                .background(Color.dinkrAmber.opacity(0.14))
+                                .clipShape(Capsule())
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        if action.id != xpActions.last?.id {
+                            Divider().padding(.leading, 48)
+                        }
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+// MARK: - Stats Mini-Grid
+
+private extension ReputationView {
+
+    var statsGrid: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Current Stats")
+                .font(.subheadline.weight(.bold))
+                .padding(.horizontal, 14)
+                .padding(.top, 14)
+
+            HStack(spacing: 0) {
+                ReputationStatItem(
+                    value: "\(user.gamesPlayed)",
+                    label: "Games Played",
+                    icon: "figure.pickleball",
+                    color: Color.dinkrSky
+                )
+                Divider().frame(height: 44)
+                ReputationStatItem(
+                    value: "\(Int(user.winRate * 100))%",
+                    label: "Win Rate",
+                    icon: "trophy.fill",
+                    color: Color.dinkrGreen
+                )
+                Divider().frame(height: 44)
+                ReputationStatItem(
+                    value: user.duprRating.map { String(format: "%.2f", $0) } ?? "—",
+                    label: "DUPR",
+                    icon: "chart.bar.fill",
+                    color: Color.dinkrAmber
+                )
+                Divider().frame(height: 44)
+                ReputationStatItem(
+                    value: String(format: "%.1f", user.reliabilityScore),
+                    label: "Reliability",
+                    icon: "star.fill",
+                    color: Color.dinkrCoral
+                )
+            }
+            .padding(.bottom, 8)
+        }
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+// MARK: - Badges Card
+
+private extension ReputationView {
+
+    var badgesCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Badges")
+                .font(.subheadline.weight(.bold))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(user.badges) { badge in
+                        VStack(spacing: 6) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.dinkrAmber.opacity(0.12))
+                                    .frame(width: 48, height: 48)
+                                Image(systemName: "medal.fill")
+                                    .foregroundStyle(Color.dinkrAmber)
+                                    .font(.title3)
+                            }
+                            Text(badge.label)
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                                .frame(width: 60)
+                                .lineLimit(2)
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+        }
+        .padding(14)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+// MARK: - Reliability Card
+
+private extension ReputationView {
+
+    var reliabilityCard: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(Color.dinkrAmber.opacity(0.12))
+                    .frame(width: 52, height: 52)
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.title2)
+                    .foregroundStyle(Color.dinkrAmber)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Reliability Score")
+                    .font(.subheadline.weight(.bold))
+                Text(reliabilityLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(String(format: "%.1f", user.reliabilityScore))
+                .font(.title2.weight(.heavy))
+                .foregroundStyle(Color.dinkrAmber)
+        }
+        .padding(14)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    var reliabilityLabel: String {
+        switch user.reliabilityScore {
+        case 4.8...5.0: return "Exceptional — top 5% of players"
+        case 4.5..<4.8: return "Excellent — highly dependable"
+        case 4.0..<4.5: return "Good — solid track record"
+        case 3.0..<4.0: return "Improving"
+        default:        return "Needs attention"
+        }
+    }
+}
+
+// MARK: - Shared Stat Item
 
 struct ReputationStatItem: View {
     let value: String
@@ -168,13 +407,18 @@ struct ReputationStatItem: View {
             Text(label)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
     }
 }
 
+// MARK: - Preview
+
 #Preview {
-    ReputationView(user: User.mockCurrentUser)
-        .padding()
+    ScrollView {
+        ReputationView(user: User.mockCurrentUser)
+            .padding()
+    }
 }

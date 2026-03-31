@@ -12,13 +12,22 @@ struct CourtCheckIn: Identifiable {
 
 struct CheckInStoriesBar: View {
     let checkIns: [CourtCheckIn]
+    /// Called when the user taps the "+" button. If nil, falls back to the old AddCheckInSheet.
+    var onAddCheckIn: (() -> Void)? = nil
     @State private var showAddCheckIn = false
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 14) {
-                // "You" add button
-                AddCheckInButton(action: { showAddCheckIn = true })
+                // "+" create story button — always first in the bar
+                AddCheckInButton {
+                    HapticManager.medium()
+                    if let handler = onAddCheckIn {
+                        handler()
+                    } else {
+                        showAddCheckIn = true
+                    }
+                }
 
                 ForEach(checkIns) { checkIn in
                     CheckInBubble(checkIn: checkIn)
@@ -102,27 +111,33 @@ struct AddCheckInButton: View {
         Button(action: action) {
             VStack(spacing: 6) {
                 ZStack {
+                    // Dashed outer ring — clearly distinct from the solid gradient rings on other bubbles
                     Circle()
-                        .stroke(Color.dinkrGreen.opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [4]))
+                        .stroke(
+                            Color.dinkrGreen,
+                            style: StrokeStyle(lineWidth: 2, dash: [5, 3])
+                        )
                         .frame(width: 62, height: 62)
-                    ZStack {
-                        Circle()
-                            .fill(Color.dinkrGreen.opacity(0.10))
-                            .frame(width: 52, height: 52)
-                        Image(systemName: "plus")
-                            .font(.title2.weight(.semibold))
-                            .foregroundStyle(Color.dinkrGreen)
-                    }
+
+                    // Soft green fill circle
+                    Circle()
+                        .fill(Color.dinkrGreen.opacity(0.10))
+                        .frame(width: 54, height: 54)
+
+                    // Green "+" icon
+                    Image(systemName: "plus")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(Color.dinkrGreen)
                 }
                 .frame(width: 64, height: 64)
 
                 Text("Check In")
-                    .font(.caption2.weight(.medium))
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(Color.dinkrGreen)
 
-                Text("now")
+                Text("+ story")
                     .font(.system(size: 9))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.dinkrGreen.opacity(0.7))
             }
         }
         .buttonStyle(.plain)

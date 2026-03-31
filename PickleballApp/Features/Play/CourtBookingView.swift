@@ -4,6 +4,7 @@ import SwiftUI
 
 struct CourtBookingView: View {
     let courtName: String
+    var preselectedSlotIndex: Int? = nil
 
     @Environment(\.dismiss) private var dismiss
 
@@ -125,6 +126,11 @@ struct CourtBookingView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.25), value: selectedSlotIndex)
+            .onAppear {
+                if let pre = preselectedSlotIndex, selectedSlotIndex == nil {
+                    selectedSlotIndex = pre
+                }
+            }
         }
     }
 

@@ -5,6 +5,7 @@ enum OfferStatus: String, Codable {
     case accepted
     case declined
     case withdrawn
+    case countered
 }
 
 struct MarketOffer: Identifiable, Codable {

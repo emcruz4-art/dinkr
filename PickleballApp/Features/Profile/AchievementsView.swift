@@ -1,110 +1,65 @@
 import SwiftUI
 
+// MARK: - Main View
+
 struct AchievementsView: View {
     var user: User = User.mockCurrentUser
-    var gameResults: [GameResult] = GameResult.mockResults
+    var gameResults: [GameResult] = []
 
-    struct Achievement: Identifiable {
-        let id: String
-        let icon: String
-        let name: String
-        let description: String
-        let isUnlocked: Bool
-        let unlockedAt: Date?
-    }
+    private let achievements = Achievement.all
+    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
-    private var currentWinStreak: Int {
-        var streak = 0
-        for result in gameResults.sorted(by: { $0.playedAt > $1.playedAt }) {
-            if result.isWin { streak += 1 } else { break }
-        }
-        return streak
-    }
+    @State private var selectedAchievement: Achievement? = nil
+    @State private var showBadgeShowcase = false
 
-    private var uniqueCourts: Int {
-        Set(gameResults.map { $0.courtName }).count
-    }
-
-    var achievements: [Achievement] {
-        [
-            Achievement(id: "a1", icon: "figure.pickleball", name: "First Dink",
-                        description: "Play your first game on Dinkr",
-                        isUnlocked: user.gamesPlayed >= 1,
-                        unlockedAt: user.gamesPlayed >= 1 ? user.joinedDate : nil),
-            Achievement(id: "a2", icon: "trophy.fill", name: "Tournament Victor",
-                        description: "Win a tournament event",
-                        isUnlocked: user.badges.contains(where: { $0.type == .tournamentWinner }),
-                        unlockedAt: user.badges.first(where: { $0.type == .tournamentWinner })?.earnedAt),
-            Achievement(id: "a3", icon: "person.3.fill", name: "Community Pillar",
-                        description: "Join 3 or more groups",
-                        isUnlocked: user.clubIds.count >= 2,
-                        unlockedAt: user.clubIds.count >= 2 ? user.joinedDate : nil),
-            Achievement(id: "a4", icon: "star.fill", name: "Reliable Pro",
-                        description: "Maintain a 4.8+ reliability score over 50 games",
-                        isUnlocked: user.reliabilityScore >= 4.8 && user.gamesPlayed >= 50,
-                        unlockedAt: user.reliabilityScore >= 4.8 ? user.joinedDate : nil),
-            Achievement(id: "a5", icon: "100.circle.fill", name: "Centurion",
-                        description: "Play 100 games on Dinkr",
-                        isUnlocked: user.gamesPlayed >= 100,
-                        unlockedAt: nil),
-            Achievement(id: "a6", icon: "flame.fill", name: "On Fire",
-                        description: "Win 5 games in a row",
-                        isUnlocked: currentWinStreak >= 5,
-                        unlockedAt: nil),
-            Achievement(id: "a7", icon: "graduationcap.fill", name: "Level Master",
-                        description: "Reach Level 10",
-                        isUnlocked: user.gamesPlayed >= 300,
-                        unlockedAt: nil),
-            Achievement(id: "a8", icon: "heart.fill", name: "Court Regular",
-                        description: "Play at 10 different courts",
-                        isUnlocked: uniqueCourts >= 10,
-                        unlockedAt: nil),
-            Achievement(id: "a9", icon: "globe", name: "Social Butterfly",
-                        description: "Follow 20 players",
-                        isUnlocked: user.followingCount >= 20,
-                        unlockedAt: nil),
-            Achievement(id: "a10", icon: "calendar.badge.checkmark", name: "Consistent Player",
-                        description: "Play at least once per week for 4 weeks",
-                        isUnlocked: user.gamesPlayed >= 4,
-                        unlockedAt: nil),
-            Achievement(id: "a11", icon: "crown.fill", name: "Dinkr Champion",
-                        description: "Reach #1 on your local leaderboard",
-                        isUnlocked: user.followersCount >= 500,
-                        unlockedAt: nil),
-            Achievement(id: "a12", icon: "sparkles", name: "Legend",
-                        description: "Play 500 games on Dinkr",
-                        isUnlocked: user.gamesPlayed >= 500,
-                        unlockedAt: nil),
-        ]
-    }
-
-    let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
-
-    var unlockedCount: Int { achievements.filter { $0.isUnlocked }.count }
+    private var unlockedCount: Int { achievements.filter { $0.isUnlocked }.count }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                // Progress header
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(unlockedCount) of \(achievements.count) unlocked")
-                            .font(.headline.weight(.bold))
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.dinkrAmber.opacity(0.2))
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.dinkrAmber)
-                                    .frame(width: geo.size.width * Double(unlockedCount) / Double(achievements.count))
+            VStack(spacing: 20) {
+                // ── Summary header ───────────────────────────────────────
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Unlocked \(unlockedCount) of \(achievements.count)")
+                                .font(.headline.weight(.bold))
+                            Text("\(Int(Double(unlockedCount) / Double(achievements.count) * 100))% complete")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        // View All Badges button
+                        Button {
+                            showBadgeShowcase = true
+                        } label: {
+                            HStack(spacing: 5) {
+                                Text("🏅")
+                                    .font(.subheadline)
+                                Text("View All")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(Color.dinkrGreen)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundStyle(Color.dinkrGreen.opacity(0.8))
                             }
                         }
-                        .frame(height: 8)
+                        .buttonStyle(.plain)
                     }
-                    Spacer()
-                    Text("🏅 \(Int(Double(unlockedCount) / Double(achievements.count) * 100))%")
-                        .font(.title2.weight(.heavy))
-                        .foregroundStyle(Color.dinkrAmber)
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.dinkrAmber.opacity(0.20))
+                                .frame(height: 8)
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.dinkrAmber)
+                                .frame(
+                                    width: geo.size.width * Double(unlockedCount) / Double(achievements.count),
+                                    height: 8
+                                )
+                        }
+                    }
+                    .frame(height: 8)
                 }
                 .padding()
                 .background(Color.cardBackground)
@@ -112,47 +67,127 @@ struct AchievementsView: View {
                 .padding(.horizontal)
                 .padding(.top, 12)
 
+                // ── Badge grid ───────────────────────────────────────────
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(achievements) { achievement in
-                        AchievementBadgeCell(achievement: achievement)
+                        AchievementBadgeCard(achievement: achievement)
+                            .onTapGesture {
+                                selectedAchievement = achievement
+                            }
                     }
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 32)
             }
         }
+        .sheet(item: $selectedAchievement) { achievement in
+            AchievementDetailView(achievement: achievement, user: user, justUnlocked: false)
+        }
+        .sheet(isPresented: $showBadgeShowcase) {
+            BadgeShowcaseView(user: user)
+        }
     }
 }
 
-struct AchievementBadgeCell: View {
-    let achievement: AchievementsView.Achievement
+// MARK: - Badge card
+
+struct AchievementBadgeCard: View {
+    let achievement: Achievement
+
+    private var badgeColor: Color {
+        switch achievement.color {
+        case "dinkrGreen":  return Color.dinkrGreen
+        case "dinkrNavy":   return Color.dinkrNavy
+        case "dinkrCoral":  return Color.dinkrCoral
+        case "dinkrSky":    return Color.dinkrSky
+        default:            return Color.dinkrAmber
+        }
+    }
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
+            // Icon circle
             ZStack {
                 Circle()
-                    .fill(achievement.isUnlocked
-                          ? Color.dinkrAmber.opacity(0.15)
-                          : Color.secondary.opacity(0.08))
-                    .frame(width: 64, height: 64)
+                    .fill(
+                        achievement.isUnlocked
+                            ? badgeColor.opacity(0.15)
+                            : Color.secondary.opacity(0.08)
+                    )
+                    .frame(width: 68, height: 68)
+
                 Image(systemName: achievement.icon)
-                    .font(.title2)
-                    .foregroundStyle(achievement.isUnlocked ? Color.dinkrAmber : Color.secondary.opacity(0.3))
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(
+                        achievement.isUnlocked
+                            ? badgeColor
+                            : Color.secondary.opacity(0.30)
+                    )
+                    .saturation(achievement.isUnlocked ? 1 : 0)
 
                 if !achievement.isUnlocked {
                     Circle()
-                        .fill(Color.black.opacity(0.25))
-                        .frame(width: 64, height: 64)
+                        .fill(Color.black.opacity(0.28))
+                        .frame(width: 68, height: 68)
                     Image(systemName: "lock.fill")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.6))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.70))
                 }
             }
-            Text(achievement.name)
-                .font(.caption2.weight(.semibold))
+
+            // Title
+            Text(achievement.title)
+                .font(.caption.weight(.semibold))
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .foregroundStyle(achievement.isUnlocked ? .primary : .secondary)
+
+            // Progress bar + counter
+            VStack(spacing: 4) {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.secondary.opacity(0.15))
+                            .frame(height: 5)
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                achievement.isUnlocked
+                                    ? Color.dinkrGreen
+                                    : Color.secondary.opacity(0.35)
+                            )
+                            .frame(
+                                width: geo.size.width * achievement.progressFraction,
+                                height: 5
+                            )
+                    }
+                }
+                .frame(height: 5)
+
+                Text("\(achievement.progress) / \(achievement.goal)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 10)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(
+                    achievement.isUnlocked ? badgeColor.opacity(0.30) : Color.clear,
+                    lineWidth: 1.5
+                )
+        )
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    NavigationStack {
+        AchievementsView(user: User.mockCurrentUser)
+            .navigationTitle("Achievements")
+            .navigationBarTitleDisplayMode(.large)
     }
 }

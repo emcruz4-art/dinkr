@@ -164,125 +164,139 @@ private struct DUPRTrendSection: View {
     private let duprData: [Double] = [3.42, 3.48, 3.51, 3.47, 3.54, 3.67]
     private let monthLabels = ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"]
     @State private var lineProgress: CGFloat = 0
+    @State private var showDUPRDetail = false
 
     private var minVal: Double { (duprData.min() ?? 3.42) - 0.05 }
     private var maxVal: Double { (duprData.max() ?? 3.67) + 0.05 }
     private var valueRange: Double { maxVal - minVal }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            StatsSectionHeader(title: "DUPR Rating Trend", icon: "waveform.path.ecg")
+        Button {
+            showDUPRDetail = true
+        } label: {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    StatsSectionHeader(title: "DUPR Rating Trend", icon: "waveform.path.ecg")
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                }
 
-            // Current DUPR badge + trend
-            HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Current DUPR")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                // Current DUPR badge + trend
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Current DUPR")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(String(format: "%.2f", duprData.last ?? 3.67))
+                            .font(.title2.weight(.heavy))
+                            .foregroundStyle(Color.primary)
+                    }
+
+                    // Amber pill badge
                     Text(String(format: "%.2f", duprData.last ?? 3.67))
-                        .font(.title2.weight(.heavy))
-                        .foregroundStyle(Color.primary)
-                }
+                        .font(.system(size: 13, weight: .black))
+                        .foregroundStyle(Color.dinkrAmber)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.dinkrAmber.opacity(0.15))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color.dinkrAmber.opacity(0.4), lineWidth: 1))
 
-                // Amber pill badge
-                Text(String(format: "%.2f", duprData.last ?? 3.67))
-                    .font(.system(size: 13, weight: .black))
-                    .foregroundStyle(Color.dinkrAmber)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.dinkrAmber.opacity(0.15))
+                    Spacer()
+
+                    // Trend indicator
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.dinkrGreen)
+                        Text("+0.25 this season")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.dinkrGreen)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.dinkrGreen.opacity(0.1))
                     .clipShape(Capsule())
-                    .overlay(Capsule().stroke(Color.dinkrAmber.opacity(0.4), lineWidth: 1))
-
-                Spacer()
-
-                // Trend indicator
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.up.right")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(Color.dinkrGreen)
-                    Text("+0.25 this season")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.dinkrGreen)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(Color.dinkrGreen.opacity(0.1))
-                .clipShape(Capsule())
-            }
 
-            // Line chart canvas
-            GeometryReader { geo in
-                let w = geo.size.width
-                let h = geo.size.height
+                // Line chart canvas
+                GeometryReader { geo in
+                    let w = geo.size.width
+                    let h = geo.size.height
 
-                ZStack {
-                    // Grid lines
-                    ForEach(0..<4, id: \.self) { i in
-                        let y = h * CGFloat(i) / 3.0
-                        Path { path in
-                            path.move(to: CGPoint(x: 0, y: y))
-                            path.addLine(to: CGPoint(x: w, y: y))
+                    ZStack {
+                        // Grid lines
+                        ForEach(0..<4, id: \.self) { i in
+                            let y = h * CGFloat(i) / 3.0
+                            Path { path in
+                                path.move(to: CGPoint(x: 0, y: y))
+                                path.addLine(to: CGPoint(x: w, y: y))
+                            }
+                            .stroke(Color.secondary.opacity(0.1), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
                         }
-                        .stroke(Color.secondary.opacity(0.1), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                    }
 
-                    // Fill under curve
-                    DUPRFillShape(data: duprData, minVal: minVal, valueRange: valueRange, progress: lineProgress)
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.dinkrGreen.opacity(0.25), Color.dinkrGreen.opacity(0.02)],
-                                startPoint: .top,
-                                endPoint: .bottom
+                        // Fill under curve
+                        DUPRFillShape(data: duprData, minVal: minVal, valueRange: valueRange, progress: lineProgress)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.dinkrGreen.opacity(0.25), Color.dinkrGreen.opacity(0.02)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
                             )
-                        )
 
-                    // Line
-                    DUPRLinePath(data: duprData, minVal: minVal, valueRange: valueRange, progress: lineProgress)
-                        .stroke(
-                            LinearGradient(
-                                colors: [Color.dinkrGreen.opacity(0.7), Color.dinkrGreen],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ),
-                            style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)
-                        )
+                        // Line
+                        DUPRLinePath(data: duprData, minVal: minVal, valueRange: valueRange, progress: lineProgress)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.dinkrGreen.opacity(0.7), Color.dinkrGreen],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ),
+                                style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)
+                            )
 
-                    // Dots at each data point
-                    ForEach(duprData.indices, id: \.self) { i in
-                        let x = w * CGFloat(i) / CGFloat(duprData.count - 1)
-                        let normalized = (duprData[i] - minVal) / valueRange
-                        let y = h * (1.0 - CGFloat(normalized))
+                        // Dots at each data point
+                        ForEach(duprData.indices, id: \.self) { i in
+                            let x = w * CGFloat(i) / CGFloat(duprData.count - 1)
+                            let normalized = (duprData[i] - minVal) / valueRange
+                            let y = h * (1.0 - CGFloat(normalized))
 
-                        ZStack {
-                            Circle()
-                                .fill(Color.dinkrGreen)
-                                .frame(width: 9, height: 9)
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 4, height: 4)
+                            ZStack {
+                                Circle()
+                                    .fill(Color.dinkrGreen)
+                                    .frame(width: 9, height: 9)
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 4, height: 4)
+                            }
+                            .position(x: x, y: y)
+                            .opacity(lineProgress > CGFloat(i) / CGFloat(duprData.count - 1) ? 1 : 0)
+                            .animation(.easeIn(duration: 0.15).delay(Double(i) * 0.1 + 0.4), value: lineProgress)
                         }
-                        .position(x: x, y: y)
-                        .opacity(lineProgress > CGFloat(i) / CGFloat(duprData.count - 1) ? 1 : 0)
-                        .animation(.easeIn(duration: 0.15).delay(Double(i) * 0.1 + 0.4), value: lineProgress)
+                    }
+                }
+                .frame(height: 110)
+                .clipped()
+
+                // Month labels row
+                HStack(spacing: 0) {
+                    ForEach(monthLabels, id: \.self) { label in
+                        Text(label)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
                     }
                 }
             }
-            .frame(height: 110)
-            .clipped()
-
-            // Month labels row
-            HStack(spacing: 0) {
-                ForEach(monthLabels, id: \.self) { label in
-                    Text(label)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity)
-                }
-            }
+            .padding(16)
+            .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 20))
         }
-        .padding(16)
-        .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 20))
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showDUPRDetail) {
+            DUPRDetailView()
+        }
         .onAppear {
             withAnimation(.easeInOut(duration: 1.2)) {
                 lineProgress = 1.0
@@ -474,7 +488,7 @@ private struct CourtHeatmapSection: View {
     private let squareSize: CGFloat = 13
     private let spacing: CGFloat = 3
 
-    // Group into columns of 7 (weeks)
+    // DinkrGroup into columns of 7 (weeks)
     private var columns: [[Int]] {
         stride(from: 0, to: activityData.count, by: 7).map { start in
             Array(activityData[start..<min(start + 7, activityData.count)])

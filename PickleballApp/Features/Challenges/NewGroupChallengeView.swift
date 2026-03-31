@@ -6,7 +6,7 @@ struct NewGroupChallengeView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var step = 0
 
-    @State private var selectedGroup: Group? = nil
+    @State private var selectedGroup: DinkrGroup? = nil
     @State private var selectedMetric: GroupChallengeMetric? = nil
     @State private var durationIndex = 1    // 0=1 week, 1=2 weeks, 2=1 month
     @State private var stakes = ""
@@ -129,7 +129,7 @@ struct NewGroupChallengeView: View {
 
     private var stepTitle: String {
         switch step {
-        case 0: return "Pick Opponent Group"
+        case 0: return "Pick Opponent DinkrGroup"
         case 1: return "Set Challenge Terms"
         default: return "Preview"
         }
@@ -162,15 +162,15 @@ private struct GroupChallengeStepIndicator: View {
     }
 }
 
-// MARK: - Step 1: Pick Opponent Group
+// MARK: - Step 1: Pick Opponent DinkrGroup
 
 private struct PickOpponentGroupStep: View {
-    @Binding var selected: Group?
+    @Binding var selected: DinkrGroup?
     @State private var searchText = ""
 
-    private var filtered: [Group] {
-        if searchText.isEmpty { return Group.mockGroups }
-        return Group.mockGroups.filter {
+    private var filtered: [DinkrGroup] {
+        if searchText.isEmpty { return DinkrGroup.mockGroups }
+        return DinkrGroup.mockGroups.filter {
             $0.name.localizedCaseInsensitiveContains(searchText) ||
             $0.description.localizedCaseInsensitiveContains(searchText)
         }
@@ -366,14 +366,14 @@ private struct GroupMetricCard: View {
 // MARK: - Step 3: Preview & Send
 
 private struct GroupChallengePreviewStep: View {
-    let opponentGroup: Group
+    let opponentGroup: DinkrGroup
     let metric: GroupChallengeMetric
     let duration: (String, Int)
     let stakes: String
     let onSend: () -> Void
 
     // Current user's group (stubbed as South Austin Dinkers)
-    private let myGroup = Group.mockGroups[0]
+    private let myGroup = DinkrGroup.mockGroups[0]
 
     var body: some View {
         ScrollView {
@@ -397,7 +397,7 @@ private struct GroupChallengePreviewStep: View {
                         }
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Group Challenge")
+                            Text("DinkrGroup Challenge")
                                 .font(.subheadline.weight(.bold))
                                 .foregroundStyle(Color.dinkrNavy)
                             Text(metric.rawValue)

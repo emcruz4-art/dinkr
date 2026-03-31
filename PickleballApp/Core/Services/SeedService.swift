@@ -32,7 +32,7 @@ final class SeedService {
         async let c: Void = seedCollection(FirestoreCollections.courtVenues, docs: CourtVenue.mockVenues)
         async let p: Void = seedPostsCollection()
         async let m: Void = seedCollection(FirestoreCollections.marketListings, docs: MarketListing.mockListings)
-        async let gr: Void = seedCollection(FirestoreCollections.groups, docs: Group.mockGroups)
+        async let gr: Void = seedCollection(FirestoreCollections.groups, docs: DinkrGroup.mockGroups)
         _ = try await (u, e, g, c, p, m, gr)
     }
 

@@ -1,14 +1,58 @@
 import SwiftUI
 
+// MARK: - GroupsView
+
 struct GroupsView: View {
     @State private var viewModel = GroupsViewModel()
     @State private var selectedType: GroupType? = nil
+    @State private var searchText: String = ""
+    @State private var joinedGroupIds: Set<String> = []
+    @State private var showDiscovery = false
 
-    var filteredDiscover: [Group] {
+    // Category filter options as display strings mapped to GroupType
+    private let filterChips: [(label: String, type: GroupType?)] = [
+        ("All", nil),
+        ("Competitive", .competitive),
+        ("Recreational", .recreational),
+        ("Women's", .womenOnly),
+        ("Corporate", .corporate),
+        ("Neighborhood", .neighborhood),
+    ]
+
+    var myGroupIds: Set<String> {
+        Set(viewModel.myGroups.map(\.id))
+    }
+
+    var discoverGroups: [DinkrGroup] {
+        let base = viewModel.discoverGroups.filter { !myGroupIds.contains($0.id) }
+        let typed: [DinkrGroup]
         if let type = selectedType {
-            return viewModel.discoverGroups.filter { $0.type == type }
+            typed = base.filter { $0.type == type }
+        } else {
+            typed = base
         }
-        return viewModel.discoverGroups
+        if searchText.isEmpty { return typed }
+        return typed.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    var trendingGroups: [DinkrGroup] {
+        // Pick 3 from discover with highest member count as proxy for trending
+        let sorted = viewModel.discoverGroups
+            .filter { !myGroupIds.contains($0.id) }
+            .sorted { $0.memberCount > $1.memberCount }
+        return Array(sorted.prefix(3))
+    }
+
+    var nearYouGroups: [DinkrGroup] {
+        // Pick 3 neighborhood/recreational groups as "near you" proxies
+        let candidates = viewModel.discoverGroups
+            .filter { !myGroupIds.contains($0.id) }
+            .filter { $0.type == .neighborhood || $0.type == .recreational }
+        return Array(candidates.prefix(3))
+    }
+
+    var featuredGroup: DinkrGroup? {
+        viewModel.discoverGroups.first { !myGroupIds.contains($0.id) }
     }
 
     var body: some View {
@@ -16,353 +60,644 @@ struct GroupsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
 
-                    // ── Featured group hero ──────────────────────────────
-                    if let featured = viewModel.discoverGroups.first {
-                        NavigationLink {
-                            GroupDetailView(group: featured)
-                        } label: {
-                            PremiumGroupHero(group: featured)
+                    // ── My Groups horizontal scroll ───────────────────────
+                    if !viewModel.myGroups.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("My Groups")
+                                .font(.title3.weight(.bold))
                                 .padding(.horizontal)
-                                .padding(.top, 12)
+                                .padding(.top, 16)
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(viewModel.myGroups) { group in
+                                        NavigationLink {
+                                            GroupDetailView(group: group)
+                                        } label: {
+                                            MyGroupSquareCard(group: group)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+
+                                    // Discover CTA card
+                                    Button {
+                                        showDiscovery = true
+                                    } label: {
+                                        DiscoverMoreCard()
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                .padding(.horizontal)
+                                .padding(.bottom, 4)
+                            }
                         }
-                        .buttonStyle(.plain)
+
+                        Divider()
+                            .padding(.top, 12)
                     }
 
-                    // ── Category filter chips ────────────────────────────
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            GroupFilterChip(
-                                label: "All",
-                                isSelected: selectedType == nil,
-                                color: Color.dinkrGreen
-                            ) {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    selectedType = nil
-                                }
+                    // ── Trending This Week ────────────────────────────────
+                    if !trendingGroups.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(spacing: 6) {
+                                Text("🔥 Trending")
+                                    .font(.title3.weight(.bold))
+                                Spacer()
                             }
-                            ForEach(GroupType.allCases, id: \.self) { type in
-                                GroupFilterChip(
-                                    label: type.rawValue,
-                                    isSelected: selectedType == type,
-                                    color: groupTypeColor(for: type)
-                                ) {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                        selectedType = selectedType == type ? nil : type
+                            .padding(.horizontal)
+                            .padding(.top, 18)
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(trendingGroups) { group in
+                                        NavigationLink {
+                                            GroupDetailView(group: group)
+                                        } label: {
+                                            TrendingGroupCard(group: group)
+                                        }
+                                        .buttonStyle(.plain)
                                     }
                                 }
+                                .padding(.horizontal)
+                                .padding(.bottom, 4)
                             }
                         }
-                        .padding(.horizontal)
-                        .padding(.vertical, 12)
+
+                        Divider()
+                            .padding(.top, 12)
                     }
 
-                    Divider()
+                    // ── Near You ─────────────────────────────────────────
+                    if !nearYouGroups.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Label("Near You", systemImage: "location.fill")
+                                    .font(.title3.weight(.bold))
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                            }
+                            .padding(.horizontal)
+                            .padding(.top, 18)
 
-                    LazyVStack(alignment: .leading, spacing: 14) {
-                        if !viewModel.myGroups.isEmpty {
-                            Text("My Groups")
-                                .sectionHeader()
-                                .padding(.top, 14)
-                            ForEach(viewModel.myGroups) { group in
+                            ForEach(Array(nearYouGroups.enumerated()), id: \.element.id) { index, group in
+                                let distances = ["0.8 mi away", "1.2 mi away", "2.1 mi away"]
+                                let distance = distances[index % distances.count]
                                 NavigationLink {
                                     GroupDetailView(group: group)
                                 } label: {
-                                    PremiumGroupCard(group: group, isJoined: true)
+                                    NearYouGroupRow(group: group, distance: distance)
                                         .padding(.horizontal)
                                 }
                                 .buttonStyle(.plain)
                             }
                         }
 
-                        HStack {
-                            Text("Discover")
-                                .font(.title3.weight(.bold))
-                            Spacer()
-                            Text("See all →")
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(Color.dinkrGreen)
-                        }
-                        .padding(.horizontal)
-                        .padding(.top, 14)
+                        Divider()
+                            .padding(.top, 12)
+                    }
 
-                        ForEach(filteredDiscover) { group in
+                    // ── Featured DinkrGroup Hero ───────────────────────────────
+                    if let featured = featuredGroup {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Featured DinkrGroup")
+                                    .font(.title3.weight(.bold))
+                                Spacer()
+                            }
+                            .padding(.horizontal)
+                            .padding(.top, 18)
+
                             NavigationLink {
-                                GroupDetailView(group: group)
+                                GroupDetailView(group: featured)
                             } label: {
-                                PremiumGroupCard(group: group, isJoined: false)
-                                    .padding(.horizontal)
+                                FeaturedGroupHeroCard(
+                                    group: featured,
+                                    isJoined: joinedGroupIds.contains(featured.id)
+                                ) {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        toggleJoin(featured.id)
+                                    }
+                                }
+                                .padding(.horizontal)
                             }
                             .buttonStyle(.plain)
                         }
+
+                        Divider()
+                            .padding(.top, 12)
                     }
-                    .padding(.bottom, 32)
+
+                    // ── Discover Groups ───────────────────────────────────
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("Discover Groups")
+                                .font(.title3.weight(.bold))
+                            Spacer()
+                            Button {
+                                showDiscovery = true
+                            } label: {
+                                Text("See all →")
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(Color.dinkrGreen)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 18)
+                        .padding(.bottom, 4)
+
+                        // Category filter chips
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(filterChips, id: \.label) { chip in
+                                    GroupFilterChip(
+                                        label: chip.label,
+                                        isSelected: selectedType == chip.type,
+                                        color: chip.type.map { groupTypeColor(for: $0) } ?? Color.dinkrGreen
+                                    ) {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                            selectedType = chip.type
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 12)
+                        }
+
+                        if discoverGroups.isEmpty {
+                            ContentUnavailableView(
+                                "No groups found",
+                                systemImage: "person.3",
+                                description: Text("Try a different filter or search term.")
+                            )
+                            .padding(.vertical, 32)
+                        } else {
+                            LazyVStack(alignment: .leading, spacing: 12) {
+                                ForEach(discoverGroups) { group in
+                                    NavigationLink {
+                                        GroupDetailView(group: group)
+                                    } label: {
+                                        DiscoverGroupRow(
+                                            group: group,
+                                            isJoined: joinedGroupIds.contains(group.id)
+                                        ) {
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                                toggleJoin(group.id)
+                                            }
+                                        }
+                                        .padding(.horizontal)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.bottom, 32)
+                        }
+                    }
                 }
             }
+            .searchable(text: $searchText, prompt: "Search groups")
             .navigationTitle("Groups")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        viewModel.showCreateGroup = true
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
+                    HStack(spacing: 4) {
+                        // Discover button
+                        Button {
+                            showDiscovery = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "compass.drawing")
+                                    .font(.system(size: 15, weight: .semibold))
+                                Text("Discover")
+                                    .font(.system(size: 14, weight: .semibold))
+                            }
+                            .foregroundStyle(Color.dinkrGreen)
+                        }
+
+                        // Create group button
+                        Button {
+                            viewModel.showCreateGroup = true
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                        }
+                        .tint(Color.dinkrGreen)
                     }
-                    .tint(Color.dinkrGreen)
                 }
             }
         }
         .sheet(isPresented: $viewModel.showCreateGroup) {
             CreateGroupView()
         }
+        .sheet(isPresented: $showDiscovery) {
+            GroupDiscoveryView()
+        }
         .task { await viewModel.load() }
+    }
+
+    private func toggleJoin(_ id: String) {
+        if joinedGroupIds.contains(id) {
+            joinedGroupIds.remove(id)
+        } else {
+            joinedGroupIds.insert(id)
+        }
     }
 }
 
-// MARK: - Premium Featured Hero
+// MARK: - My DinkrGroup Square Card (130x130)
 
-struct PremiumGroupHero: View {
-    let group: Group
+struct MyGroupSquareCard: View {
+    let group: DinkrGroup
+
+    var accentColor: Color { groupTypeColor(for: group.type) }
+    var initial: String { String(group.name.prefix(1)).uppercased() }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [accentColor, accentColor.opacity(0.6)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 60, height: 60)
+
+                Text(initial)
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+
+            Text(group.name)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity)
+
+            Label("\(group.memberCount)", systemImage: "person.2.fill")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
+        .padding(10)
+        .frame(width: 130, height: 130)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .shadow(color: accentColor.opacity(0.15), radius: 8, x: 0, y: 3)
+        .shadow(color: .black.opacity(0.04), radius: 3, x: 0, y: 1)
+    }
+}
+
+// MARK: - Discover More Card
+
+struct DiscoverMoreCard: View {
+    var body: some View {
+        VStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(Color.dinkrGreen.opacity(0.12))
+                    .frame(width: 60, height: 60)
+
+                Image(systemName: "plus")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(Color.dinkrGreen)
+            }
+
+            Text("Discover")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.dinkrGreen)
+
+            Text("Find more")
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+        }
+        .padding(10)
+        .frame(width: 130, height: 130)
+        .background(Color.dinkrGreen.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .strokeBorder(Color.dinkrGreen.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+        )
+    }
+}
+
+// MARK: - Trending DinkrGroup Card
+
+struct TrendingGroupCard: View {
+    let group: DinkrGroup
+
+    var accentColor: Color { groupTypeColor(for: group.type) }
+    var activityCount: Int { max(4, group.memberCount / 3) }
+    var initial: String { String(group.name.prefix(1)).uppercased() }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                colors: [accentColor.opacity(0.22), accentColor.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 44, height: 44)
+
+                    Text(initial)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(accentColor)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(group.name)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .foregroundStyle(.primary)
+
+                    Text(group.type.rawValue)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(accentColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(accentColor.opacity(0.12))
+                        .clipShape(Capsule())
+                }
+            }
+
+            HStack(spacing: 4) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.orange)
+                Text("\(activityCount) posts this week")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+
+            Label("\(group.memberCount) members", systemImage: "person.2.fill")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .frame(width: 200)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .shadow(color: accentColor.opacity(0.12), radius: 8, x: 0, y: 3)
+        .shadow(color: .black.opacity(0.04), radius: 3, x: 0, y: 1)
+    }
+}
+
+// MARK: - Near You DinkrGroup Row
+
+struct NearYouGroupRow: View {
+    let group: DinkrGroup
+    let distance: String
+
+    var accentColor: Color { groupTypeColor(for: group.type) }
+    var initial: String { String(group.name.prefix(1)).uppercased() }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [accentColor, accentColor.opacity(0.6)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 48, height: 48)
+
+                Text(initial)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(group.name)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                    .foregroundStyle(.primary)
+
+                HStack(spacing: 6) {
+                    Text(group.type.rawValue)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(accentColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(accentColor.opacity(0.12))
+                        .clipShape(Capsule())
+
+                    HStack(spacing: 3) {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(Color.dinkrGreen)
+                        Text(distance)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Color.dinkrGreen)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.dinkrGreen.opacity(0.10))
+                    .clipShape(Capsule())
+                }
+
+                Label("\(group.memberCount) members", systemImage: "person.2.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: accentColor.opacity(0.10), radius: 6, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.04), radius: 2, x: 0, y: 1)
+    }
+}
+
+// MARK: - Featured DinkrGroup Hero Card
+
+struct FeaturedGroupHeroCard: View {
+    let group: DinkrGroup
+    let isJoined: Bool
+    let onJoin: () -> Void
+
+    var accentColor: Color { groupTypeColor(for: group.type) }
+    var initial: String { String(group.name.prefix(1)).uppercased() }
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             // Gradient background
             LinearGradient(
-                colors: [
-                    groupTypeColor(for: group.type),
-                    Color.dinkrNavy
-                ],
+                colors: [accentColor, accentColor.opacity(0.55), Color.dinkrNavy],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .frame(height: 170)
+            .frame(height: 200)
             .clipShape(RoundedRectangle(cornerRadius: 22))
 
-            // Decorative icon (large, faint)
-            Image(systemName: groupTypeIcon(for: group.type))
-                .font(.system(size: 90, weight: .black))
+            // Decorative initial (large, faint)
+            Text(initial)
+                .font(.system(size: 130, weight: .black))
                 .foregroundStyle(.white.opacity(0.07))
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                .padding(.trailing, 16)
+                .padding(.trailing, 20)
                 .padding(.top, 10)
 
             // Vignette
             LinearGradient(
-                colors: [.clear, .black.opacity(0.45)],
+                colors: [.clear, .black.opacity(0.50)],
                 startPoint: .top,
                 endPoint: .bottom
             )
             .clipShape(RoundedRectangle(cornerRadius: 22))
 
-            // Content
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    Text("FEATURED GROUP")
-                        .font(.system(size: 9, weight: .heavy))
-                        .foregroundStyle(.white.opacity(0.85))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(.white.opacity(0.18))
-                        .clipShape(Capsule())
+            // Content overlay
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Text("FEATURED")
+                            .font(.system(size: 9, weight: .heavy))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(.white.opacity(0.18))
+                            .clipShape(Capsule())
 
-                    if group.isPrivate {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.8))
+                        if group.isPrivate {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.8))
+                        }
                     }
-                }
 
-                Text(group.name)
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
+                    Text(group.name)
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
 
-                HStack(spacing: 12) {
+                    Text(group.description)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.80))
+                        .lineLimit(2)
+
                     Label("\(group.memberCount) members", systemImage: "person.2.fill")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.9))
-
-                    Text("·")
-                        .foregroundStyle(.white.opacity(0.5))
-
-                    Text(group.type.rawValue)
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.8))
                 }
 
-                // Overlapping member bubbles
-                HStack(spacing: -7) {
-                    ForEach(0..<min(5, max(0, group.memberCount)), id: \.self) { i in
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [groupTypeColor(for: group.type).opacity(0.5 + Double(i) * 0.1), .white.opacity(0.3)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 26, height: 26)
-                            .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1.5))
-                    }
-                    if group.memberCount > 5 {
-                        Text("+\(group.memberCount - 5)")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 26, height: 26)
-                            .background(.white.opacity(0.25))
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1.5))
-                    }
+                Spacer()
+
+                // Join CTA
+                Button(action: onJoin) {
+                    Text(isJoined ? "Joined" : "Join")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(isJoined ? accentColor : .white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 9)
+                        .background(isJoined ? .white : .white.opacity(0.22))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule().strokeBorder(.white.opacity(isJoined ? 0 : 0.45), lineWidth: 1)
+                        )
                 }
-                .padding(.top, 2)
+                .buttonStyle(.plain)
             }
-            .padding(16)
+            .padding(18)
         }
-        .frame(height: 170)
+        .frame(height: 200)
     }
 }
 
-// MARK: - Premium Group Card
+// MARK: - Discover DinkrGroup Row
 
-struct PremiumGroupCard: View {
-    let group: Group
+struct DiscoverGroupRow: View {
+    let group: DinkrGroup
     let isJoined: Bool
+    let onJoin: () -> Void
 
     var accentColor: Color { groupTypeColor(for: group.type) }
+    var initial: String { String(group.name.prefix(1)).uppercased() }
 
     var body: some View {
-        ZStack(alignment: .leading) {
-            // Card background
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color.cardBackground)
-
-            // Left accent strip
-            HStack(spacing: 0) {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(accentColor)
-                    .frame(width: 4)
-                    .padding(.vertical, 14)
-                    .padding(.leading, 8)
-                Spacer()
-            }
-
-            // Content
-            HStack(spacing: 14) {
-                // Icon block
-                ZStack {
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(
-                            LinearGradient(
-                                colors: [accentColor.opacity(0.18), accentColor.opacity(0.08)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+        HStack(spacing: 14) {
+            // Colored initial circle icon
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [accentColor, accentColor.opacity(0.65)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
-                        .frame(width: 54, height: 54)
-                    Image(systemName: groupTypeIcon(for: group.type))
-                        .foregroundStyle(accentColor)
-                        .font(.system(size: 22, weight: .medium))
-                }
-                .padding(.leading, 20)
+                    )
+                    .frame(width: 50, height: 50)
 
-                VStack(alignment: .leading, spacing: 5) {
-                    // Name + lock
-                    HStack(spacing: 6) {
-                        Text(group.name)
-                            .font(.subheadline.weight(.semibold))
-                            .lineLimit(1)
-                        if group.isPrivate {
-                            Image(systemName: "lock.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    // Type pill + activity
-                    HStack(spacing: 6) {
-                        Text(group.type.rawValue)
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(accentColor)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 2)
-                            .background(accentColor.opacity(0.12))
-                            .clipShape(Capsule())
-
-                        Text(activityText)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    // Member avatar stack + count
-                    HStack(spacing: -6) {
-                        ForEach(0..<min(4, max(0, group.memberCount)), id: \.self) { i in
-                            Circle()
-                                .fill(accentColor.opacity(0.25 + Double(i) * 0.12))
-                                .frame(width: 20, height: 20)
-                                .overlay(Circle().stroke(Color.cardBackground, lineWidth: 1.5))
-                        }
-                        if group.memberCount > 4 {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.secondary.opacity(0.15))
-                                    .frame(width: 20, height: 20)
-                                Text("+\(group.memberCount - 4)")
-                                    .font(.system(size: 7, weight: .bold))
-                                    .foregroundStyle(.secondary)
-                            }
-                            .overlay(Circle().stroke(Color.cardBackground, lineWidth: 1.5))
-                        }
-                        Text("\(group.memberCount) members")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .padding(.leading, 10)
-                    }
-                }
-
-                Spacer()
-
-                // Join / Joined button
-                VStack(spacing: 4) {
-                    if isJoined {
-                        Text("Joined")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(accentColor)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(accentColor.opacity(0.12))
-                            .clipShape(Capsule())
-                    } else {
-                        Text("Join")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(accentColor)
-                            .clipShape(Capsule())
-                    }
-                    Image(systemName: "chevron.right")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.trailing, 14)
+                Text(initial)
+                    .font(.system(size: 21, weight: .bold))
+                    .foregroundStyle(.white)
             }
-            .padding(.vertical, 14)
-        }
-        .shadow(color: accentColor.opacity(0.12), radius: 8, x: 0, y: 3)
-        .shadow(color: .black.opacity(0.04), radius: 3, x: 0, y: 1)
-    }
 
-    var activityText: String {
-        let seed = group.memberCount % 5
-        switch seed {
-        case 0: return "Last active 1h ago"
-        case 1: return "12 posts this week"
-        case 2: return "Active daily"
-        case 3: return "8 posts this week"
-        default: return "Last active 2h ago"
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 6) {
+                    Text(group.name)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .foregroundStyle(.primary)
+
+                    if group.isPrivate {
+                        Image(systemName: "lock.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                // Type badge
+                Text(group.type.rawValue)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(accentColor)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(accentColor.opacity(0.12))
+                    .clipShape(Capsule())
+
+                Label("\(group.memberCount) members", systemImage: "person.2.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            // Join button
+            Button(action: onJoin) {
+                Text(isJoined ? "Joined" : "Join")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(isJoined ? accentColor : .white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(isJoined ? accentColor.opacity(0.12) : accentColor)
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
         }
+        .padding(14)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .shadow(color: accentColor.opacity(0.10), radius: 6, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.04), radius: 2, x: 0, y: 1)
     }
 }
 
-// MARK: - Group Filter Chip
+// MARK: - DinkrGroup Filter Chip
 
 struct GroupFilterChip: View {
     let label: String
@@ -390,7 +725,7 @@ struct GroupFilterChip: View {
     }
 }
 
-// MARK: - Helpers (file-private free functions)
+// MARK: - Helpers
 
 private func groupTypeIcon(for type: GroupType) -> String {
     switch type {
@@ -419,9 +754,11 @@ private func groupTypeColor(for type: GroupType) -> Color {
 }
 
 // Keep old aliases for backward compat
-typealias GroupRowCard = PremiumGroupCard
-typealias EnhancedGroupRowCard = PremiumGroupCard
-typealias FeaturedGroupHero = PremiumGroupHero
+typealias GroupRowCard = DiscoverGroupRow
+typealias EnhancedGroupRowCard = DiscoverGroupRow
+typealias PremiumGroupCard = DiscoverGroupRow
+typealias PremiumGroupHero = FeaturedGroupHeroCard
+typealias FeaturedGroupHero = FeaturedGroupHeroCard
 
 #Preview {
     GroupsView()

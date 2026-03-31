@@ -1,6 +1,6 @@
 import Foundation
 
-enum VideoCategory: String, Codable, CaseIterable, Identifiable {
+enum VideoPostCategory: String, Codable, CaseIterable, Identifiable {
     case all       = "All"
     case drills    = "Drills"
     case highlights = "Highlights"
@@ -19,7 +19,7 @@ struct VideoPost: Identifiable, Codable {
     var likes: Int
     var commentCount: Int
     var shareCount: Int
-    var category: VideoCategory
+    var category: VideoPostCategory
     var hashtags: [String]
     var durationSeconds: Int
     var createdAt: Date

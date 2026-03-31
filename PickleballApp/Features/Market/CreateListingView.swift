@@ -1,279 +1,228 @@
 import SwiftUI
-import PhotosUI
 
-// MARK: - ViewModel
+// MARK: - Step enum
 
-@Observable
-final class CreateListingViewModel {
-    var brand: String = ""
-    var model: String = ""
-    var category: MarketCategory = .paddles
-    var condition: ListingCondition = .good
-    var price: String = ""
-    var description: String = ""
-    var location: String = ""
-    var selectedImages: [UIImage] = []
-    var isLoading: Bool = false
-    var uploadProgress: Double = 0
-    var errorMessage: String? = nil
-    var didPost: Bool = false
+private enum ListingStep: Int, CaseIterable {
+    case details = 0
+    case photos  = 1
+    case review  = 2
 
-    var canPost: Bool {
-        !brand.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !model.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !price.trimmingCharacters(in: .whitespaces).isEmpty &&
-        Double(price) != nil
-    }
-
-    var priceDouble: Double? { Double(price) }
-
-    // MARK: - Submit
-
-    func submit(sellerId: String, sellerName: String) async throws {
-        isLoading = true
-        uploadProgress = 0
-        errorMessage = nil
-        defer { isLoading = false }
-
-        let listingId = UUID().uuidString
-        var photoURLs: [String] = []
-
-        // Upload photos
-        let totalImages = Double(max(selectedImages.count, 1))
-        for (index, image) in selectedImages.enumerated() {
-            let path = StoragePaths.listingPhoto(listingId: listingId, index: index)
-            let url = try await ImageService.shared.upload(image, path: path)
-            photoURLs.append(url)
-            uploadProgress = Double(index + 1) / totalImages
+    var title: String {
+        switch self {
+        case .details: return "Item Details"
+        case .photos:  return "Photos & Price"
+        case .review:  return "Review & Publish"
         }
-
-        // Build listing
-        let listing = MarketListing(
-            id: listingId,
-            sellerId: sellerId,
-            sellerName: sellerName,
-            category: category,
-            brand: brand.trimmingCharacters(in: .whitespaces),
-            model: model.trimmingCharacters(in: .whitespaces),
-            condition: condition,
-            price: priceDouble ?? 0,
-            description: description,
-            photos: photoURLs,
-            status: .active,
-            location: location.trimmingCharacters(in: .whitespaces),
-            createdAt: Date(),
-            isFeatured: false,
-            viewCount: 0
-        )
-
-        // Write to Firestore
-        try await FirestoreService.shared.setDocument(
-            listing,
-            collection: FirestoreCollections.marketListings,
-            documentId: listingId
-        )
-
-        uploadProgress = 1.0
-        didPost = true
     }
 }
 
-// MARK: - View
+// MARK: - Draft model (no Firebase)
+
+private struct ListingDraft {
+    var category: MarketCategory   = .paddles
+    var title: String              = ""
+    var description: String        = ""
+    var condition: ListingCondition = .good
+    var price: String              = ""
+    var acceptsOffers: Bool        = false
+    var location: String           = "Austin, TX"
+    // 0 = not selected, 1 = selected
+    var photoSlots: [Bool]         = [false, false, false]
+}
+
+// MARK: - CreateListingView
 
 struct CreateListingView: View {
     @Environment(\.dismiss) private var dismiss
 
-    // In a real app these would come from an authenticated session
-    var sellerId: String = User.mockCurrentUser.id
-    var sellerName: String = User.mockCurrentUser.displayName
+    @State private var step: ListingStep = .details
+    @State private var draft = ListingDraft()
+    @State private var isPublished = false
+    @State private var confettiTrigger: Int = 0
 
-    @State private var vm = CreateListingViewModel()
-    @State private var showImagePicker = false
-    @State private var pendingPickedImage: UIImage? = nil
+    // Which step "Edit" jumps back to
+    @State private var editTarget: ListingStep? = nil
 
     var body: some View {
         NavigationStack {
             ZStack {
-                scrollContent
-                if vm.isLoading {
-                    uploadOverlay
+                Color.appBackground.ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    // ── Capsule step indicator ─────────────────────────────
+                    StepIndicator(current: step)
+                        .padding(.top, 14)
+                        .padding(.bottom, 6)
+
+                    if isPublished {
+                        SuccessView(confettiTrigger: confettiTrigger) {
+                            dismiss()
+                        }
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    } else {
+                        stepContent
+                            .transition(
+                                .asymmetric(
+                                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                                    removal:   .move(edge: .leading).combined(with: .opacity)
+                                )
+                            )
+                    }
                 }
             }
-            .navigationTitle("New Listing")
+            .navigationTitle(step.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("List Item") { triggerSubmit() }
-                        .fontWeight(.semibold)
-                        .disabled(!vm.canPost || vm.isLoading)
-                }
             }
-            .sheet(isPresented: $showImagePicker) {
-                ImagePicker(selectedImage: $pendingPickedImage)
-                    .ignoresSafeArea()
+        }
+    }
+
+    // MARK: - Step routing
+
+    @ViewBuilder
+    private var stepContent: some View {
+        switch step {
+        case .details:
+            Step1DetailsView(draft: $draft) {
+                withAnimation(.easeInOut(duration: 0.3)) { step = .photos }
             }
-            .onChange(of: pendingPickedImage) { _, newImage in
-                if let img = newImage, vm.selectedImages.count < 6 {
-                    vm.selectedImages.append(img)
-                    pendingPickedImage = nil
-                }
+        case .photos:
+            Step2PhotosPriceView(draft: $draft) {
+                withAnimation(.easeInOut(duration: 0.3)) { step = .review }
             }
-            .onChange(of: vm.didPost) { _, posted in
-                if posted {
+        case .review:
+            Step3ReviewView(
+                draft: draft,
+                onEdit: { target in
+                    withAnimation(.easeInOut(duration: 0.3)) { step = target }
+                },
+                onPublish: {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                        isPublished = true
+                        confettiTrigger += 1
+                    }
                     HapticManager.success()
-                    dismiss()
                 }
+            )
+        }
+    }
+}
+
+// MARK: - Step Indicator
+
+private struct StepIndicator: View {
+    let current: ListingStep
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(ListingStep.allCases, id: \.rawValue) { s in
+                let isActive  = s == current
+                let isPast    = s.rawValue < current.rawValue
+
+                Capsule()
+                    .fill(
+                        isActive || isPast
+                            ? Color.dinkrGreen
+                            : Color.secondary.opacity(0.2)
+                    )
+                    .frame(width: isActive ? 32 : 10, height: 8)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: current)
             }
         }
     }
+}
 
-    // MARK: - Scroll Content
+// MARK: - Step 1: Item Details
 
-    private var scrollContent: some View {
+private struct Step1DetailsView: View {
+    @Binding var draft: ListingDraft
+    let onNext: () -> Void
+
+    var canProceed: Bool {
+        !draft.title.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    private let categoryItems: [(cat: MarketCategory, icon: String, label: String, color: Color)] = [
+        (.paddles,     "sportscourt",    "Paddles",     Color.dinkrCoral),
+        (.balls,       "circle.circle",  "Balls",       Color.dinkrAmber),
+        (.bags,        "bag",            "Bags",        Color.dinkrSky),
+        (.apparel,     "tshirt",         "Apparel",     .purple),
+        (.shoes,       "boot",           "Shoes",       .teal),
+        (.accessories, "sparkles",       "Accessories", .pink),
+        (.other,       "square.grid.2x2","Other",       Color.dinkrNavy),
+    ]
+
+    var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                photoGridSection
-                categorySection
-                detailsSection
-                priceSuggestionChip
-                previewSection
-                if let err = vm.errorMessage {
-                    errorBanner(err)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 20)
-        }
-        .background(Color.appBackground)
-    }
+            VStack(spacing: 20) {
 
-    // MARK: - Photo Grid
-
-    private var photoGridSection: some View {
-        ListingSectionCard(label: "Photos", icon: "photo.stack.fill", iconColor: Color.dinkrSky) {
-            let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
-            LazyVGrid(columns: columns, spacing: 8) {
-                // Existing images
-                ForEach(vm.selectedImages.indices, id: \.self) { idx in
-                    ZStack(alignment: .topTrailing) {
-                        Image(uiImage: vm.selectedImages[idx])
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 90)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-
-                        Button {
-                            let i: Int = idx
-                            withAnimation { vm.selectedImages.remove(at: i) }
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, Color.dinkrCoral)
-                                .font(.system(size: 18))
-                                .padding(4)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-
-                // Add Photo cell (if < 6)
-                if vm.selectedImages.count < 6 {
-                    Button { showImagePicker = true } label: {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.cardBackground)
-                                .frame(height: 90)
-                            VStack(spacing: 4) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.system(size: 24))
-                                    .foregroundStyle(Color.dinkrGreen)
-                                Text("Add Photo")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(.secondary)
+                // Category 2-col grid
+                CLSectionCard(label: "Category", icon: "square.grid.2x2.fill", iconColor: Color.dinkrGreen) {
+                    let columns = [GridItem(.flexible()), GridItem(.flexible())]
+                    LazyVGrid(columns: columns, spacing: 10) {
+                        ForEach(categoryItems, id: \.label) { item in
+                            let isSelected = draft.category == item.cat
+                            Button {
+                                HapticManager.selection()
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    draft.category = item.cat
+                                }
+                            } label: {
+                                HStack(spacing: 10) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(isSelected ? item.color : item.color.opacity(0.12))
+                                            .frame(width: 38, height: 38)
+                                        Image(systemName: item.icon)
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundStyle(isSelected ? .white : item.color)
+                                    }
+                                    Text(item.label)
+                                        .font(.subheadline.weight(isSelected ? .bold : .medium))
+                                        .foregroundStyle(isSelected ? item.color : .primary)
+                                    Spacer()
+                                    if isSelected {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(item.color)
+                                            .font(.system(size: 14))
+                                    }
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(isSelected ? item.color.opacity(0.08) : Color.appBackground)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(isSelected ? item.color.opacity(0.5) : Color.secondary.opacity(0.15), lineWidth: 1.5)
+                                        )
+                                )
                             }
+                            .buttonStyle(.plain)
+                            .animation(.easeInOut(duration: 0.15), value: isSelected)
                         }
                     }
-                    .buttonStyle(.plain)
                 }
-            }
-            Text("\(vm.selectedImages.count)/6 photos")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.top, 2)
-        }
-    }
 
-    // MARK: - Category Picker
-
-    private var categorySection: some View {
-        ListingSectionCard(label: "Category", icon: "square.grid.2x2.fill", iconColor: Color.dinkrGreen) {
-            SelectableCategoryGrid(selection: $vm.category)
-        }
-    }
-
-    // MARK: - Details
-
-    private var detailsSection: some View {
-        ListingSectionCard(label: "Item Details", icon: "tag.fill", iconColor: Color.dinkrAmber) {
-            VStack(spacing: 14) {
-                // Brand
-                LabeledTextField(icon: "building.2", placeholder: "Brand (e.g. Selkirk)", text: $vm.brand)
-
-                Divider()
-
-                // Model
-                LabeledTextField(icon: "pencil", placeholder: "Model (e.g. Vanguard Power Air)", text: $vm.model)
-
-                Divider()
-
-                // Price
-                HStack(spacing: 8) {
-                    Image(systemName: "dollarsign.circle.fill")
-                        .foregroundStyle(Color.dinkrGreen)
-                        .font(.system(size: 16))
-                    Text("$")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(Color.dinkrGreen)
-                    TextField("0.00", text: $vm.price)
-                        .keyboardType(.decimalPad)
+                // Title
+                CLSectionCard(label: "Title", icon: "tag.fill", iconColor: Color.dinkrAmber) {
+                    TextField("e.g. Selkirk Vanguard 6.0", text: $draft.title)
                         .font(.body)
                 }
 
-                Divider()
-
-                // Condition picker
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Condition")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    ConditionPicker(selection: $vm.condition)
-                }
-
-                Divider()
-
                 // Description
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Image(systemName: "text.alignleft")
-                            .foregroundStyle(Color.dinkrSky)
-                            .font(.system(size: 14))
-                        Text("Description")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    }
+                CLSectionCard(label: "Description", icon: "text.alignleft", iconColor: Color.dinkrSky) {
                     ZStack(alignment: .topLeading) {
-                        if vm.description.isEmpty {
+                        if draft.description.isEmpty {
                             Text("Describe the item, any wear or damage…")
                                 .font(.body)
                                 .foregroundStyle(.tertiary)
                                 .padding(.top, 1)
                         }
-                        TextEditor(text: $vm.description)
+                        TextEditor(text: $draft.description)
                             .font(.body)
                             .frame(minHeight: 80)
                             .scrollContentBackground(.hidden)
@@ -281,154 +230,463 @@ struct CreateListingView: View {
                     }
                 }
 
-                Divider()
+                // Condition chips
+                CLSectionCard(label: "Condition", icon: "sparkle", iconColor: Color.dinkrCoral) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(ListingCondition.allCases, id: \.self) { cond in
+                                let isSelected = draft.condition == cond
+                                Button {
+                                    HapticManager.selection()
+                                    withAnimation(.easeInOut(duration: 0.15)) {
+                                        draft.condition = cond
+                                    }
+                                } label: {
+                                    HStack(spacing: 5) {
+                                        Circle()
+                                            .fill(conditionColor(cond))
+                                            .frame(width: 8, height: 8)
+                                        Text(cond.rawValue)
+                                            .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                                            .foregroundStyle(isSelected ? conditionColor(cond) : .primary)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 7)
+                                    .background(
+                                        isSelected
+                                            ? conditionColor(cond).opacity(0.13)
+                                            : Color.appBackground
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(
+                                                isSelected ? conditionColor(cond) : Color.secondary.opacity(0.25),
+                                                lineWidth: isSelected ? 1.5 : 1
+                                            )
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
 
-                // Location
-                LabeledTextField(icon: "mappin.circle.fill", placeholder: "Location (e.g. Austin, TX)", text: $vm.location, iconColor: Color.dinkrCoral)
+                // Next button
+                CLNextButton(label: "Next →", enabled: canProceed, action: onNext)
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+            .padding(.bottom, 32)
         }
     }
 
-    // MARK: - Price Suggestion
-
-    @ViewBuilder
-    private var priceSuggestionChip: some View {
-        let suggestion = priceSuggestion(for: vm.category)
-        HStack(spacing: 6) {
-            Image(systemName: "lightbulb.fill")
-                .font(.caption2)
-                .foregroundStyle(Color.dinkrAmber)
-            Text("Similar \(vm.category.rawValue): \(suggestion)")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
+    private func conditionColor(_ c: ListingCondition) -> Color {
+        switch c {
+        case .brandNew:  return Color.dinkrGreen
+        case .likeNew:   return Color.dinkrSky
+        case .good:      return Color.dinkrAmber
+        case .fair:      return Color.dinkrCoral
+        case .forParts:  return .secondary
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(Color.dinkrAmber.opacity(0.10))
-        .clipShape(Capsule())
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - Step 2: Photos & Price
+
+private struct Step2PhotosPriceView: View {
+    @Binding var draft: ListingDraft
+    let onNext: () -> Void
+
+    var canProceed: Bool {
+        guard let val = Double(draft.price), val > 0 else { return false }
+        return true
     }
 
-    // MARK: - Live Preview Card
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
 
-    @ViewBuilder
-    private var previewSection: some View {
-        if vm.canPost {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 6) {
-                    Image(systemName: "eye.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.dinkrSky)
-                    Text("Preview")
-                        .font(.caption.weight(.semibold))
+                // Photo placeholders
+                CLSectionCard(label: "Photos", icon: "photo.stack.fill", iconColor: Color.dinkrSky) {
+                    HStack(spacing: 10) {
+                        ForEach(draft.photoSlots.indices, id: \.self) { idx in
+                            let isSelected = draft.photoSlots[idx]
+                            Button {
+                                HapticManager.selection()
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                    draft.photoSlots[idx].toggle()
+                                }
+                            } label: {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(isSelected ? Color.dinkrGreen.opacity(0.08) : Color.secondary.opacity(0.10))
+                                        .frame(height: 90)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(
+                                                    isSelected ? Color.dinkrGreen : Color.secondary.opacity(0.25),
+                                                    lineWidth: isSelected ? 2 : 1
+                                                )
+                                        )
+
+                                    if isSelected {
+                                        VStack(spacing: 4) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: 22))
+                                                .foregroundStyle(Color.dinkrGreen)
+                                            Text("Selected")
+                                                .font(.caption2.weight(.semibold))
+                                                .foregroundStyle(Color.dinkrGreen)
+                                        }
+                                    } else {
+                                        VStack(spacing: 4) {
+                                            Image(systemName: "plus.circle")
+                                                .font(.system(size: 22))
+                                                .foregroundStyle(.secondary)
+                                            Text("Add Photo")
+                                                .font(.caption2.weight(.medium))
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    Text("\(draft.photoSlots.filter { $0 }.count)/\(draft.photoSlots.count) selected")
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .textCase(.uppercase)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.top, 4)
                 }
-                ListingCardView(listing: previewListing)
-                    .frame(maxWidth: 200)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .transition(.opacity.combined(with: .move(edge: .bottom)))
-        }
-    }
 
-    // MARK: - Upload Overlay
-
-    private var uploadOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.35).ignoresSafeArea()
-            VStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .stroke(Color.white.opacity(0.2), lineWidth: 5)
-                        .frame(width: 64, height: 64)
-                    Circle()
-                        .trim(from: 0, to: vm.uploadProgress)
-                        .stroke(Color.dinkrGreen, style: StrokeStyle(lineWidth: 5, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .frame(width: 64, height: 64)
-                        .animation(.linear(duration: 0.2), value: vm.uploadProgress)
-                    Text("\(Int(vm.uploadProgress * 100))%")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.white)
+                // Price
+                CLSectionCard(label: "Price", icon: "dollarsign.circle.fill", iconColor: Color.dinkrGreen) {
+                    HStack(spacing: 8) {
+                        Text("$")
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(Color.dinkrGreen)
+                        TextField("0.00", text: $draft.price)
+                            .keyboardType(.decimalPad)
+                            .font(.title2.weight(.semibold))
+                    }
                 }
-                Text("Uploading listing…")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+
+                // Accept Offers toggle
+                CLSectionCard(label: "Offers", icon: "hand.raised.fill", iconColor: Color.dinkrAmber) {
+                    Toggle(isOn: $draft.acceptsOffers) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Accept Offers")
+                                .font(.body.weight(.medium))
+                            Text("Buyers can send you a counter-offer")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .tint(Color.dinkrGreen)
+                }
+
+                // Location chip
+                CLSectionCard(label: "Location", icon: "mappin.circle.fill", iconColor: Color.dinkrCoral) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "mappin.and.ellipse")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.dinkrCoral)
+                        Text(draft.location)
+                            .font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Text("Change")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.dinkrGreen)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.dinkrCoral.opacity(0.07))
+                    .clipShape(Capsule())
+                }
+
+                CLNextButton(label: "Next →", enabled: canProceed, action: onNext)
             }
-            .padding(32)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+            .padding(.bottom, 32)
         }
     }
+}
 
-    // MARK: - Error Banner
+// MARK: - Step 3: Review & Publish
 
-    @ViewBuilder
-    private func errorBanner(_ message: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(Color.dinkrCoral)
-            Text(message)
-                .font(.caption)
-                .foregroundStyle(Color.dinkrCoral)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.dinkrCoral.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-    }
-
-    // MARK: - Helpers
+private struct Step3ReviewView: View {
+    let draft: ListingDraft
+    let onEdit: (ListingStep) -> Void
+    let onPublish: () -> Void
 
     private var previewListing: MarketListing {
         MarketListing(
             id: "preview",
-            sellerId: sellerId,
-            sellerName: sellerName,
-            category: vm.category,
-            brand: vm.brand.isEmpty ? "Brand" : vm.brand,
-            model: vm.model.isEmpty ? "Model" : vm.model,
-            condition: vm.condition,
-            price: vm.priceDouble ?? 0,
-            description: vm.description,
+            sellerId: User.mockCurrentUser.id,
+            sellerName: User.mockCurrentUser.displayName,
+            category: draft.category,
+            brand: "",
+            model: draft.title.isEmpty ? "Your Item" : draft.title,
+            condition: draft.condition,
+            price: Double(draft.price) ?? 0,
+            description: draft.description,
             photos: [],
             status: .active,
-            location: vm.location.isEmpty ? "Location" : vm.location,
+            location: draft.location,
             createdAt: Date(),
             isFeatured: false,
             viewCount: 0
         )
     }
 
-    private func priceSuggestion(for category: MarketCategory) -> String {
-        switch category {
-        case .paddles:     return "~$80–$220"
-        case .balls:       return "~$15–$35"
-        case .bags:        return "~$40–$120"
-        case .apparel:     return "~$15–$60"
-        case .shoes:       return "~$40–$120"
-        case .accessories: return "~$10–$50"
-        case .courts:      return "~$500+"
-        case .other:       return "varies"
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+
+                // Preview card
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "eye.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.dinkrSky)
+                        Text("PREVIEW")
+                            .font(.caption.weight(.heavy))
+                            .foregroundStyle(.secondary)
+                    }
+                    ListingCardView(listing: previewListing)
+                        .frame(maxWidth: 200)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, 20)
+
+                Divider().padding(.horizontal, 20)
+
+                // Details summary row
+                ReviewRow(
+                    icon: "tag.fill",
+                    iconColor: Color.dinkrAmber,
+                    title: "Item Details"
+                ) {
+                    onEdit(.details)
+                } content: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(draft.title.isEmpty ? "—" : draft.title)
+                            .font(.subheadline.weight(.semibold))
+                        Text(draft.condition.rawValue)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if !draft.description.isEmpty {
+                            Text(draft.description)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                    }
+                }
+
+                // Photos & price summary row
+                ReviewRow(
+                    icon: "photo.stack.fill",
+                    iconColor: Color.dinkrSky,
+                    title: "Photos & Price"
+                ) {
+                    onEdit(.photos)
+                } content: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        let photoCount = draft.photoSlots.filter { $0 }.count
+                        Label("\(photoCount) photo\(photoCount == 1 ? "" : "s") attached", systemImage: "photo")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        HStack(spacing: 4) {
+                            Text("$\(draft.price.isEmpty ? "0" : draft.price)")
+                                .font(.subheadline.weight(.bold))
+                                .foregroundStyle(Color.dinkrGreen)
+                            if draft.acceptsOffers {
+                                Text("· Accepting Offers")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        Label(draft.location, systemImage: "mappin")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                // Publish button
+                Button(action: onPublish) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                        Text("Publish Listing")
+                            .font(.headline.weight(.bold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.dinkrGreen, Color.dinkrGreen.opacity(0.75)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: Color.dinkrGreen.opacity(0.35), radius: 10, x: 0, y: 5)
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 32)
+            }
+            .padding(.top, 10)
         }
     }
+}
 
-    private func triggerSubmit() {
-        Task {
-            do {
-                try await vm.submit(sellerId: sellerId, sellerName: sellerName)
-            } catch {
-                vm.errorMessage = error.localizedDescription
-                HapticManager.error()
+// MARK: - ReviewRow
+
+private struct ReviewRow<Content: View>: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let onEdit: () -> Void
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: icon)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(iconColor)
+                    Text(title)
+                        .font(.caption.weight(.heavy))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                }
+                Spacer()
+                Button("Edit") { onEdit() }
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.dinkrGreen)
+            }
+            content()
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+        .padding(.horizontal, 20)
+    }
+}
+
+// MARK: - Success View
+
+private struct SuccessView: View {
+    let confettiTrigger: Int
+    let onDone: () -> Void
+
+    var body: some View {
+        VStack(spacing: 28) {
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .fill(Color.dinkrGreen.opacity(0.12))
+                    .frame(width: 110, height: 110)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(Color.dinkrGreen)
+                    .symbolEffect(.bounce, value: confettiTrigger)
+            }
+
+            VStack(spacing: 8) {
+                Text("Your item is live!")
+                    .font(.title2.weight(.heavy))
+                    .foregroundStyle(.primary)
+                Text("Buyers can now find and message you about your listing.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
+
+            // Confetti dots row
+            ConfettiRow(trigger: confettiTrigger)
+                .padding(.horizontal, 40)
+
+            Button(action: onDone) {
+                Text("Done")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.dinkrGreen, Color.dinkrGreen.opacity(0.75)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: Color.dinkrGreen.opacity(0.35), radius: 10, x: 0, y: 5)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 32)
+
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Confetti Row (simple animated dots)
+
+private struct ConfettiRow: View {
+    let trigger: Int
+    @State private var offsets: [CGFloat] = Array(repeating: 0, count: 12)
+    @State private var opacities: [Double] = Array(repeating: 0, count: 12)
+
+    private let colors: [Color] = [
+        Color.dinkrGreen, Color.dinkrCoral, Color.dinkrAmber,
+        Color.dinkrSky, .purple, .pink, Color.dinkrNavy, .teal
+    ]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<12, id: \.self) { i in
+                Circle()
+                    .fill(colors[i % colors.count])
+                    .frame(width: 8, height: 8)
+                    .offset(y: offsets[i])
+                    .opacity(opacities[i])
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .frame(height: 40)
+        .onChange(of: trigger) { _, _ in animate() }
+        .onAppear { animate() }
+    }
+
+    private func animate() {
+        for i in 0..<12 {
+            let delay = Double(i) * 0.04
+            withAnimation(.easeOut(duration: 0.5).delay(delay)) {
+                offsets[i] = CGFloat.random(in: -20 ... -4)
+                opacities[i] = 1
+            }
+            withAnimation(.easeIn(duration: 0.35).delay(delay + 0.45)) {
+                offsets[i] = CGFloat.random(in: 4 ... 20)
+                opacities[i] = 0
             }
         }
     }
 }
 
-// MARK: - ListingSectionCard
+// MARK: - Shared subviews
 
-private struct ListingSectionCard<Content: View>: View {
+private struct CLSectionCard<Content: View>: View {
     let label: String
     let icon: String
     let iconColor: Color
@@ -441,7 +699,7 @@ private struct ListingSectionCard<Content: View>: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(iconColor)
                 Text(label)
-                    .font(.caption.weight(.semibold))
+                    .font(.caption.weight(.heavy))
                     .foregroundStyle(.secondary)
                     .textCase(.uppercase)
             }
@@ -453,129 +711,36 @@ private struct ListingSectionCard<Content: View>: View {
     }
 }
 
-// MARK: - SelectableCategoryGrid
-
-private struct SelectableCategoryGrid: View {
-    @Binding var selection: MarketCategory
-
-    let items: [(category: MarketCategory, icon: String, label: String, color: Color)] = [
-        (.paddles,     "figure.pickleball", "Paddles",     Color.dinkrCoral),
-        (.balls,       "circle.fill",       "Balls",       Color.dinkrAmber),
-        (.bags,        "bag.fill",          "Bags",        Color.dinkrSky),
-        (.apparel,     "tshirt.fill",       "Apparel",     .purple),
-        (.shoes,       "shoeprints.fill",   "Shoes",       .teal),
-        (.accessories, "sparkles",          "Accessories", .pink),
-        (.courts,      "sportscourt",       "Courts",      Color.dinkrGreen),
-        (.other,       "ellipsis.circle",   "Other",       .secondary),
-    ]
-
-    let columns = Array(repeating: GridItem(.flexible()), count: 4)
+private struct CLNextButton: View {
+    let label: String
+    let enabled: Bool
+    let action: () -> Void
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 12) {
-            ForEach(items, id: \.label) { item in
-                Button {
-                    HapticManager.selection()
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        selection = item.category
-                    }
-                } label: {
-                    VStack(spacing: 6) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(selection == item.category
-                                      ? item.color
-                                      : item.color.opacity(0.12))
-                                .frame(width: 50, height: 50)
-                            Image(systemName: item.icon)
-                                .font(.title3)
-                                .foregroundStyle(selection == item.category ? .white : item.color)
-                        }
-                        Text(item.label)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(selection == item.category ? item.color : .primary)
-                            .lineLimit(1)
-                    }
-                }
-                .buttonStyle(.plain)
-            }
+        Button(action: action) {
+            Text(label)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 15)
+                .background(
+                    LinearGradient(
+                        colors: enabled
+                            ? [Color.dinkrGreen, Color.dinkrGreen.opacity(0.75)]
+                            : [Color.secondary.opacity(0.3), Color.secondary.opacity(0.25)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .shadow(
+                    color: enabled ? Color.dinkrGreen.opacity(0.3) : .clear,
+                    radius: 8, x: 0, y: 4
+                )
         }
-    }
-}
-
-// MARK: - ConditionPicker
-
-private struct ConditionPicker: View {
-    @Binding var selection: ListingCondition
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(ListingCondition.allCases, id: \.self) { cond in
-                    let isSelected = selection == cond
-                    Button {
-                        HapticManager.selection()
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            selection = cond
-                        }
-                    } label: {
-                        HStack(spacing: 5) {
-                            Circle()
-                                .fill(conditionColor(cond))
-                                .frame(width: 8, height: 8)
-                            Text(cond.rawValue)
-                                .font(.system(size: 13, weight: isSelected ? .bold : .medium))
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
-                        .background(
-                            isSelected
-                                ? conditionColor(cond).opacity(0.15)
-                                : Color.appBackground
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(
-                                    isSelected ? conditionColor(cond) : Color.secondary.opacity(0.25),
-                                    lineWidth: isSelected ? 1.5 : 1
-                                )
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
-    private func conditionColor(_ condition: ListingCondition) -> Color {
-        switch condition {
-        case .brandNew:  return Color.dinkrGreen
-        case .likeNew:   return Color.dinkrSky
-        case .good:      return Color.dinkrAmber
-        case .fair:      return Color.dinkrCoral
-        case .forParts:  return .secondary
-        }
-    }
-}
-
-// MARK: - LabeledTextField
-
-private struct LabeledTextField: View {
-    let icon: String
-    let placeholder: String
-    @Binding var text: String
-    var iconColor: Color = Color.dinkrNavy
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .foregroundStyle(iconColor)
-                .font(.system(size: 16))
-                .frame(width: 20)
-            TextField(placeholder, text: $text)
-                .font(.body)
-        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .animation(.easeInOut(duration: 0.2), value: enabled)
     }
 }
 

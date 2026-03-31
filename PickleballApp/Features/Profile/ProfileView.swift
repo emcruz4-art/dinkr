@@ -6,9 +6,11 @@ struct ProfileView: View {
     @State private var viewModel = ProfileViewModel()
     @Environment(AuthService.self) private var authService
     @State private var selectedTab = 0
-    @State private var showSettings = false
+    @State private var showShareProfile = false
+    @State private var showDUPRVerification = false
+    @State private var showSearch = false
     @Namespace private var tabNamespace
-    let tabs = ["Overview", "History", "Stats", "Achievements"]
+    let tabs = ["Overview", "History", "Stats", "Achievements", "Friends"]
 
     var body: some View {
         NavigationStack {
@@ -36,6 +38,9 @@ struct ProfileView: View {
                             StatsView(user: user)
                         case 3:
                             AchievementsView(user: viewModel.user ?? User.mockCurrentUser, gameResults: viewModel.gameResults)
+                        case 4:
+                            FollowersListView()
+                                .padding(.top, 8)
                         default:
                             EmptyView()
                         }
@@ -51,10 +56,28 @@ struct ProfileView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showSettings = true
-                    } label: {
+                    NavigationLink(destination: SettingsView()) {
                         Image(systemName: "gearshape.fill")
+                            .foregroundStyle(.white)
+                            .fontWeight(.semibold)
+                    }
+                }
+
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showSearch = true
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.white)
+                            .fontWeight(.semibold)
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showShareProfile = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
                             .foregroundStyle(.white)
                             .fontWeight(.semibold)
                     }
@@ -63,6 +86,7 @@ struct ProfileView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button("Edit Profile") { viewModel.showEditProfile = true }
+                        Button("Get Verified") { showDUPRVerification = true }
                         Divider()
                         Button("Sign Out", role: .destructive) {
                             viewModel.signOut(authService: authService)
@@ -76,11 +100,19 @@ struct ProfileView: View {
             }
             .toolbarBackground(.hidden, for: .navigationBar)
         }
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
-        }
         .sheet(isPresented: $viewModel.showEditProfile) {
             EditProfileView(user: viewModel.user ?? User.mockCurrentUser)
+        }
+        .sheet(isPresented: $showShareProfile) {
+            ShareProfileSheet(user: viewModel.user ?? User.mockCurrentUser)
+        }
+        .sheet(isPresented: $showDUPRVerification) {
+            DUPRVerificationView(onVerified: {
+                Task { await viewModel.load(authService: authService) }
+            })
+        }
+        .sheet(isPresented: $showSearch) {
+            SearchView()
         }
         .task { await viewModel.load(authService: authService) }
     }
@@ -103,59 +135,93 @@ struct PremiumProfileHeaderView: View {
     @State private var drawProgress: Double = 0
     @State private var glowPulse: Bool = false
 
+    // Banner sits behind the avatar; avatar overlaps its bottom edge
+    private let bannerHeight: CGFloat = 190
+
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Gradient background
-            LinearGradient(
-                colors: [Color.dinkrNavy, Color.dinkrNavy.opacity(0.72)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 260)
+        ZStack(alignment: .top) {
 
-            // Animated court lines
-            Canvas { ctx, size in
-                let path = headerCourtLinePath(size: size, progress: drawProgress)
-                ctx.stroke(path, with: .color(.white.opacity(0.04)), lineWidth: 1.5)
-            }
-            .frame(height: 260)
-            .allowsHitTesting(false)
-
-            // Gradient fade to background at bottom
-            VStack(spacing: 0) {
-                Spacer()
+            // ── Cover photo banner ──────────────────────────────────────────
+            ZStack {
+                // Primary dinkrNavy → dinkrGreen gradient
                 LinearGradient(
-                    colors: [Color.clear, Color(UIColor.systemBackground)],
-                    startPoint: .top,
-                    endPoint: .bottom
+                    colors: [Color.dinkrNavy, Color.dinkrGreen.opacity(0.65)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
-                .frame(height: 48)
+
+                // Subtle secondary diagonal layer for depth
+                LinearGradient(
+                    colors: [Color.dinkrGreen.opacity(0.18), Color.clear],
+                    startPoint: .bottomLeading,
+                    endPoint: .topTrailing
+                )
+
+                // Animated court lines
+                Canvas { ctx, size in
+                    let path = headerCourtLinePath(size: size, progress: drawProgress)
+                    ctx.stroke(path, with: .color(.white.opacity(0.055)), lineWidth: 1.5)
+                }
+                .allowsHitTesting(false)
+
+                // Scattered depth circles
+                Canvas { ctx, size in
+                    let xs: [CGFloat] = [0.08, 0.22, 0.45, 0.60, 0.75, 0.88, 0.35, 0.92]
+                    let ys: [CGFloat] = [0.18, 0.72, 0.35, 0.80, 0.25, 0.60, 0.88, 0.42]
+                    let rs: [CGFloat] = [28, 18, 34, 14, 24, 10, 20, 16]
+                    for i in 0..<xs.count {
+                        let x = size.width * xs[i]
+                        let y = size.height * ys[i]
+                        let r = rs[i]
+                        var c = Path()
+                        c.addEllipse(in: CGRect(x: x - r/2, y: y - r/2, width: r, height: r))
+                        ctx.fill(c, with: .color(.white.opacity(0.025)))
+                    }
+                }
+                .allowsHitTesting(false)
+
+                // Bottom fade to system background
+                VStack(spacing: 0) {
+                    Spacer()
+                    LinearGradient(
+                        colors: [Color.clear, Color(UIColor.systemBackground)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 56)
+                }
             }
-            .frame(height: 260)
+            .frame(height: bannerHeight)
+            .frame(maxWidth: .infinity)
+            .ignoresSafeArea(edges: .top)
 
-            // Header content
+            // ── Content column laid over the banner ─────────────────────────
             VStack(spacing: 0) {
-                // Safe area spacer
-                Color.clear.frame(height: 56)
+                // Space for status bar / nav bar inside the banner
+                Color.clear.frame(height: bannerHeight - 52)
 
-                // Avatar + edit button row
+                // Avatar — centre sits at the banner bottom edge, half below
                 ZStack(alignment: .bottomTrailing) {
-                    // Avatar with glow ring
                     ZStack {
-                        // Glow halo
+                        // Pulsing glow halo
                         Circle()
-                            .fill(Color.dinkrGreen.opacity(glowPulse ? 0.25 : 0.12))
-                            .frame(width: 110, height: 110)
-                            .blur(radius: 8)
+                            .fill(Color.dinkrGreen.opacity(glowPulse ? 0.28 : 0.12))
+                            .frame(width: 118, height: 118)
+                            .blur(radius: 10)
                             .animation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true), value: glowPulse)
 
-                        // Green ring border
+                        // White ring separates avatar from banner
+                        Circle()
+                            .fill(Color(UIColor.systemBackground))
+                            .frame(width: 106, height: 106)
+
+                        // dinkrGreen accent ring
                         Circle()
                             .stroke(Color.dinkrGreen, lineWidth: 3)
-                            .frame(width: 97, height: 97)
+                            .frame(width: 100, height: 100)
 
-                        AvatarView(urlString: user.avatarURL, displayName: user.displayName, size: 90)
-                            .shadow(color: Color.dinkrNavy.opacity(0.5), radius: 8, x: 0, y: 4)
+                        AvatarView(urlString: user.avatarURL, displayName: user.displayName, size: 93)
+                            .shadow(color: Color.dinkrNavy.opacity(0.45), radius: 8, x: 0, y: 4)
                     }
 
                     // Edit pill (own profile) or Follow button (other user)
@@ -185,47 +251,65 @@ struct PremiumProfileHeaderView: View {
                         .offset(x: 4, y: 4)
                     }
                 }
-                .padding(.bottom, 12)
 
-                // Name
-                Text(user.displayName)
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.white)
+                // Name + verified badges
+                HStack(spacing: 6) {
+                    Text(user.displayName)
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.primary)
+                    if let dupr = user.duprRating, dupr > 0 {
+                        VerifiedBadgeSmall(type: .duprVerified)
+                    }
+                    VerifiedBadgeSmall(type: .identityVerified)
+                }
+                .padding(.top, 10)
 
                 // @username
                 Text("@\(user.username)")
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.65))
+                    .foregroundStyle(.secondary)
                     .padding(.top, 1)
 
-                // Skill badge + DUPR + city
-                HStack(spacing: 10) {
+                // Skill badge + DUPR with trend indicator + city
+                HStack(spacing: 8) {
                     SkillBadge(level: user.skillLevel)
 
                     if let dupr = user.duprRating {
-                        HStack(spacing: 4) {
+                        // DUPR pill with embedded trend chip
+                        HStack(spacing: 5) {
                             Text("DUPR")
                                 .font(.system(size: 10, weight: .black))
                                 .foregroundStyle(Color.dinkrAmber)
                             Text(String(format: "%.2f", dupr))
                                 .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(.primary)
+                            // Skill trend: ↑ rating (+0.15 this month)
+                            HStack(spacing: 2) {
+                                Image(systemName: "arrow.up")
+                                    .font(.system(size: 8, weight: .black))
+                                Text("+0.15")
+                                    .font(.system(size: 9, weight: .bold))
+                            }
+                            .foregroundStyle(Color.dinkrGreen)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.dinkrGreen.opacity(0.14), in: Capsule())
                         }
                         .padding(.horizontal, 9)
                         .padding(.vertical, 4)
-                        .background(Color.dinkrAmber.opacity(0.18))
+                        .background(Color.dinkrAmber.opacity(0.12))
                         .clipShape(Capsule())
-                        .overlay(Capsule().stroke(Color.dinkrAmber.opacity(0.5), lineWidth: 1))
+                        .overlay(Capsule().stroke(Color.dinkrAmber.opacity(0.4), lineWidth: 1))
                     }
 
                     if !user.city.isEmpty {
                         HStack(spacing: 3) {
                             Image(systemName: "mappin.circle.fill")
                                 .font(.caption2)
-                                .foregroundStyle(.white.opacity(0.55))
+                                .foregroundStyle(.secondary)
                             Text(user.city)
                                 .font(.caption)
-                                .foregroundStyle(.white.opacity(0.7))
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -236,21 +320,31 @@ struct PremiumProfileHeaderView: View {
                     Text(user.bio)
                         .font(.caption)
                         .multilineTextAlignment(.center)
-                        .foregroundStyle(.white.opacity(0.72))
+                        .foregroundStyle(.secondary)
                         .lineLimit(2)
                         .padding(.horizontal, 40)
-                        .padding(.top, 6)
+                        .padding(.top, 5)
                 }
 
-                // Stats row
+                // Stats row: Games | Wins | Following | Followers — all tappable
                 HStack(spacing: 0) {
+                    // Games — non-nav column (tap handled upstream by switching to History tab)
                     PremiumStatColumn(value: "\(user.gamesPlayed)", label: "Games")
                     statDivider
-                    PremiumStatColumn(value: "\(user.followersCount)", label: "Followers")
+                    // Wins
+                    PremiumStatColumn(value: "\(user.wins)", label: "Wins")
                     statDivider
-                    PremiumStatColumn(value: "\(user.followingCount)", label: "Following")
+                    NavigationLink(destination: FollowersListView()) {
+                        PremiumStatChip(value: formattedCount(user.followingCount), label: "Following")
+                    }
+                    .buttonStyle(.plain)
+                    statDivider
+                    NavigationLink(destination: FollowersListView()) {
+                        PremiumStatChip(value: formattedCount(user.followersCount), label: "Followers")
+                    }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 32)
+                .padding(.horizontal, 24)
                 .padding(.top, 14)
                 .padding(.bottom, 20)
             }
@@ -263,9 +357,16 @@ struct PremiumProfileHeaderView: View {
         }
     }
 
+    private func formattedCount(_ count: Int) -> String {
+        if count >= 1_000 {
+            return String(format: "%.1fK", Double(count) / 1_000)
+        }
+        return "\(count)"
+    }
+
     private var statDivider: some View {
         Rectangle()
-            .fill(Color.white.opacity(0.18))
+            .fill(Color.secondary.opacity(0.22))
             .frame(width: 1, height: 32)
     }
 }
@@ -331,6 +432,39 @@ struct PremiumStatColumn: View {
     }
 }
 
+// MARK: - Premium Stat Chip (tappable follower/following count)
+
+struct PremiumStatChip: View {
+    let value: String
+    let label: String
+
+    var body: some View {
+        VStack(spacing: 3) {
+            Text(value)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(.white)
+            HStack(spacing: 3) {
+                Text(label)
+                    .font(.caption2)
+                    .foregroundStyle(Color.dinkrGreen.opacity(0.85))
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(Color.dinkrGreen.opacity(0.7))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
+        .background(Color.dinkrGreen.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.dinkrGreen.opacity(0.22), lineWidth: 1)
+        )
+        .padding(.horizontal, 6)
+    }
+}
+
 // MARK: - Premium Tab Bar
 
 struct PremiumTabBar: View {
@@ -384,7 +518,7 @@ private struct ProfileOverviewTab: View {
     let viewModel: ProfileViewModel
 
     @State private var showChallenges = false
-    @State private var showRecap = false
+    @State private var showDUPRVerification = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -398,55 +532,14 @@ private struct ProfileOverviewTab: View {
             .buttonStyle(.plain)
             .padding(.top, 20)
 
-            // March Recap banner
-            Button {
-                HapticManager.selection()
-                showRecap = true
-            } label: {
-                HStack(spacing: 0) {
-                    // dinkrAmber left border accent
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.dinkrAmber)
-                        .frame(width: 4)
-                        .padding(.vertical, 4)
+            // ── Highlight Reel ──────────────────────────────────────────
+            HighlightReelSection()
+                .padding(.top, 16)
 
-                    HStack(spacing: 12) {
-                        Image(systemName: "calendar.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundStyle(Color.dinkrAmber)
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Your March Recap is ready")
-                                .font(.subheadline.weight(.bold))
-                                .foregroundStyle(Color.primary)
-                            Text("14 games · 9 wins · +0.12 DUPR")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                }
-                .background(Color.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.dinkrAmber.opacity(0.25), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+            // Monthly Recap entry — Spotify Wrapped-style full-screen experience
+            MonthlyRecapButton(stats: .mock(for: user))
                 .padding(.horizontal, 20)
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 12)
-            .sheet(isPresented: $showRecap) {
-                MonthlyRecapSheet(data: .mock(for: user))
-            }
+                .padding(.top, 12)
 
             // Challenges card
             Button {
@@ -462,7 +555,50 @@ private struct ProfileOverviewTab: View {
                 ChallengesView()
             }
 
-            // Premium Reputation card
+            // Recent Activity row
+            NavigationLink(destination: RecentActivityView()) {
+                HStack(spacing: 14) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.dinkrSky.opacity(0.14))
+                            .frame(width: 48, height: 48)
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 22))
+                            .foregroundStyle(Color.dinkrSky)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Recent Activity")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(Color.primary)
+                        Text("Games, achievements, social & more")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(14)
+                .background(Color.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.dinkrSky.opacity(0.2), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            // Verification status + Get Verified card
+            VerificationStatusCard(user: user, onGetVerified: { showDUPRVerification = true })
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .sheet(isPresented: $showDUPRVerification) {
+                    DUPRVerificationView()
+                }
+
             PremiumReputationCard(user: user)
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
@@ -671,8 +807,21 @@ private struct PremiumReputationCard: View {
             // Badges
             if !user.badges.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Badges")
-                        .font(.subheadline.weight(.bold))
+                    HStack {
+                        Text("Badges")
+                            .font(.subheadline.weight(.bold))
+                        Spacer()
+                        NavigationLink(destination: BadgeShowcaseView(user: user)) {
+                            HStack(spacing: 4) {
+                                Text("View All")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(Color.dinkrGreen)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundStyle(Color.dinkrGreen.opacity(0.8))
+                            }
+                        }
+                    }
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
                             ForEach(user.badges) { badge in
@@ -952,6 +1101,131 @@ struct StatColumn: View {
     }
 }
 
+// MARK: - Verification Status Card
+
+struct VerificationStatusCard: View {
+    let user: User
+    var onGetVerified: (() -> Void)? = nil
+
+    // Derive active verified badge types from user data.
+    // In production these come from user.verifications flags; here we derive from existing fields.
+    private var earnedTypes: [VerifiedBadgeType] {
+        var result: [VerifiedBadgeType] = []
+        if let dupr = user.duprRating, dupr > 0 {
+            result.append(.duprVerified)
+        }
+        // identity verified: treat mockCurrentUser (user_001) as verified for demo
+        if user.id == "user_001" {
+            result.append(.identityVerified)
+        }
+        if user.gamesPlayed >= 100 {
+            result.append(.topPlayer)
+        }
+        return result
+    }
+
+    private var isDUPRVerified: Bool {
+        earnedTypes.contains(.duprVerified)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            // Header
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.dinkrGreen)
+                Text("Verification")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+                    .tracking(0.3)
+                Spacer()
+            }
+
+            if !earnedTypes.isEmpty {
+                // Status chips for earned verifications
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(earnedTypes) { type in
+                            HStack(spacing: 5) {
+                                Image(systemName: type.icon)
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(type.color)
+                                Text(type.title)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(type.color)
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 10, weight: .heavy))
+                                    .foregroundStyle(type.color.opacity(0.7))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(type.color.opacity(0.1), in: Capsule())
+                            .overlay(Capsule().stroke(type.color.opacity(0.3), lineWidth: 1))
+                        }
+                    }
+                    .padding(.horizontal, 1)
+                }
+            }
+
+            // Get Verified row (always shown; label changes if DUPR already verified)
+            Button {
+                HapticManager.selection()
+                onGetVerified?()
+            } label: {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(
+                                isDUPRVerified
+                                    ? Color.dinkrGreen.opacity(0.12)
+                                    : Color.dinkrAmber.opacity(0.14)
+                            )
+                            .frame(width: 40, height: 40)
+                        Image(systemName: isDUPRVerified ? "checkmark.seal.fill" : "chart.bar.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(isDUPRVerified ? Color.dinkrGreen : Color.dinkrAmber)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(isDUPRVerified ? "DUPR Verified" : "Verify Your DUPR Rating")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.primary)
+                        Text(isDUPRVerified
+                             ? "Your DUPR rating is linked and up to date"
+                             : "Link your DUPR account to earn a verified badge")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: isDUPRVerified ? "checkmark.circle.fill" : "chevron.right")
+                        .font(.system(size: isDUPRVerified ? 18 : 12, weight: .semibold))
+                        .foregroundStyle(isDUPRVerified ? Color.dinkrGreen : Color.secondary)
+                }
+                .padding(14)
+                .background(Color(UIColor.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(
+                            isDUPRVerified ? Color.dinkrGreen.opacity(0.25) : Color.dinkrAmber.opacity(0.22),
+                            lineWidth: 1
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(16)
+        .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
+        )
+    }
+}
+
 #Preview {
     ProfileView()
         .environment(AuthService())
@@ -1019,5 +1293,127 @@ private struct ProfileChallengesCard: View {
         .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+    }
+}
+
+// MARK: - Highlight Reel Section
+
+private struct HighlightItem: Identifiable {
+    let id: Int
+    let icon: String
+    let title: String
+    let subtitle: String
+    let accent: Color
+    let gradient: [Color]
+}
+
+/// A horizontal scroll of 3 recent achievement / win highlight cards.
+private struct HighlightReelSection: View {
+
+    private let highlights: [HighlightItem] = [
+        HighlightItem(
+            id: 0,
+            icon: "trophy.fill",
+            title: "Win Streak",
+            subtitle: "5 in a row",
+            accent: Color.dinkrAmber,
+            gradient: [Color.dinkrAmber.opacity(0.22), Color.dinkrAmber.opacity(0.06)]
+        ),
+        HighlightItem(
+            id: 1,
+            icon: "flame.fill",
+            title: "Top Player",
+            subtitle: "#3 this week",
+            accent: Color.dinkrCoral,
+            gradient: [Color.dinkrCoral.opacity(0.22), Color.dinkrCoral.opacity(0.06)]
+        ),
+        HighlightItem(
+            id: 2,
+            icon: "chart.line.uptrend.xyaxis",
+            title: "DUPR Rise",
+            subtitle: "+0.15 this month",
+            accent: Color.dinkrGreen,
+            gradient: [Color.dinkrGreen.opacity(0.22), Color.dinkrGreen.opacity(0.06)]
+        ),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Highlight Reel")
+                    .font(.subheadline.weight(.bold))
+                    .padding(.leading, 20)
+                Spacer()
+                Text("This Month")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.trailing, 20)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(highlights) { item in
+                        ProfileHighlightCard(item: item)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 4)
+            }
+        }
+    }
+}
+
+private struct ProfileHighlightCard: View {
+    let item: HighlightItem
+
+    @State private var appeared = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: item.gradient,
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 44, height: 44)
+                Circle()
+                    .stroke(item.accent.opacity(0.35), lineWidth: 1.5)
+                    .frame(width: 44, height: 44)
+                Image(systemName: item.icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(item.accent)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.title)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(.primary)
+                Text(item.subtitle)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(item.accent)
+            }
+        }
+        .padding(16)
+        .frame(width: 130)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.cardBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(item.accent.opacity(0.2), lineWidth: 1)
+                )
+        )
+        .shadow(color: item.accent.opacity(0.12), radius: 8, x: 0, y: 3)
+        .scaleEffect(appeared ? 1 : 0.88)
+        .opacity(appeared ? 1 : 0)
+        .animation(
+            .spring(response: 0.45, dampingFraction: 0.72).delay(Double(item.id) * 0.08),
+            value: appeared
+        )
+        .onAppear { appeared = true }
     }
 }
