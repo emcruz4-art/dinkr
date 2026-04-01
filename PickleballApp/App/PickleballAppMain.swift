@@ -132,6 +132,9 @@ struct AppRootView: View {
                         routeDeepLink(link)
                         deepLinkHandler.consume()
                     }
+            } else if hasCompletedOnboarding {
+                AuthLandingView()
+                    .environment(authService)
             } else {
                 OnboardingView()
             }
