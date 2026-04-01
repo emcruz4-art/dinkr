@@ -94,7 +94,7 @@ struct CommentThreadView: View {
                     Circle()
                         .fill(Color.dinkrGreen.opacity(0.18))
                         .frame(width: 34, height: 34)
-                    Text(String(User.mockCurrentUser.displayName.prefix(1)))
+                    Text(currentUserInitial)
                         .font(.callout.weight(.bold))
                         .foregroundStyle(Color.dinkrGreen)
                 }
@@ -134,8 +134,8 @@ struct CommentThreadView: View {
         let newComment = Comment(
             id: UUID().uuidString,
             postId: post.id,
-            userId: "me",
-            userName: User.mockCurrentUser.displayName,
+            userId: authService.currentUser?.id ?? "",
+            userName: authService.currentUser?.displayName ?? "You",
             body: trimmed,
             date: Date(),
             likeCount: 0,
@@ -187,6 +187,7 @@ private struct CommentThreadRow: View {
     @Binding var item: CommentThreadItem
     @Binding var replyingToId: String?
     @Binding var replyDraft: [String: String]
+    @Environment(AuthService.self) private var authService
 
     var isShowingReplyComposer: Bool { replyingToId == item.id }
 
@@ -293,8 +294,8 @@ private struct CommentThreadRow: View {
         let newReplyComment = Comment(
             id: UUID().uuidString,
             postId: item.comment.postId,
-            userId: "me",
-            userName: User.mockCurrentUser.displayName,
+            userId: authService.currentUser?.id ?? "",
+            userName: authService.currentUser?.displayName ?? "You",
             body: trimmed,
             date: Date(),
             likeCount: 0,

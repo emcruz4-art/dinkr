@@ -16,11 +16,12 @@ struct Post: Identifiable, Codable, Hashable {
     var tags: [String]
     var taggedUserIds: [String] = []
     var groupId: String?
+    var groupName: String?      // denormalized for display; excluded from Firestore encoding
 
-    // isLiked is client-side only — exclude from Firestore encoding
+    // isLiked and groupName are client-side only — exclude from Firestore encoding
     private enum CodingKeys: String, CodingKey {
         case id, authorId, authorName, authorAvatarURL, content, mediaURLs,
-             postType, likes, commentCount, createdAt, likedBy, tags, taggedUserIds, groupId
+             postType, likes, commentCount, createdAt, likedBy, tags, taggedUserIds, groupId, groupName
     }
 }
 

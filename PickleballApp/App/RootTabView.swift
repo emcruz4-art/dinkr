@@ -150,15 +150,9 @@ struct FloatingTabBar: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.dinkrGreen, Color.dinkrGreen.opacity(0.82)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .fill(Color.dinkrGreen)
                         .frame(width: 52, height: 52)
-                        .shadow(color: Color.dinkrGreen.opacity(0.45), radius: 10, x: 0, y: 4)
+                        .shadow(color: Color.dinkrGreen.opacity(0.3), radius: 8, x: 0, y: 3)
                     Image(systemName: "plus")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(.white)
@@ -181,7 +175,7 @@ struct FloatingTabBar: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28))
-        .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 8)
+        .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
     }
 
     // MARK: Helpers
@@ -265,7 +259,7 @@ private struct TabBadgeView: View {
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(.white)
         }
-        .shadow(color: Color.dinkrCoral.opacity(0.5), radius: 4, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
         .transition(.scale.combined(with: .opacity))
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: count)
     }

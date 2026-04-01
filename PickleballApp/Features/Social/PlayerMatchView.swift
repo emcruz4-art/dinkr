@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct PlayerMatchView: View {
-    @State private var players = User.mockPlayers
+    @State private var players: [User] = []
+    @State private var isLoading = false
     @State private var currentIndex = 0
     @State private var offset = CGSize.zero
     @State private var showMatchAlert = false
@@ -238,6 +239,18 @@ struct PlayerMatchView: View {
             }
             .presentationDetents([.medium])
         }
+        .task { await loadPlayers() }
+    }
+
+    private func loadPlayers() async {
+        isLoading = true
+        defer { isLoading = false }
+        let loaded: [User] = (try? await FirestoreService.shared.queryCollectionOrdered(
+            collection: FirestoreCollections.users,
+            orderBy: "displayName",
+            limit: 50
+        )) ?? User.mockPlayers
+        players = loaded
     }
 }
 

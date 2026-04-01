@@ -27,10 +27,9 @@ struct PostCardView: View {
         reactions.reduce(0) { $0 + $1.count }
     }
 
-    // Resolve group name from mock data
+    // Group name is stored on the post for display
     private var groupName: String? {
-        guard let gid = post.groupId else { return nil }
-        return DinkrGroup.mockGroups.first(where: { $0.id == gid })?.name
+        post.groupName ?? (post.groupId != nil ? "Group" : nil)
     }
 
     // Derive a mock star rating from post id for court reviews

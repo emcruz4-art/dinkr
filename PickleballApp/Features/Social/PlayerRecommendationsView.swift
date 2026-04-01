@@ -360,13 +360,14 @@ private struct CompactPlayerCard: View {
 struct PlayerRecommendationsView: View {
 
     // MARK: State
-    @State private var sections: [RecommendationSection] = Self.buildSections()
+    @State private var sections: [RecommendationSection] = []
     @State private var swipeMode = false
     @State private var currentSwipeSection = 0
     @State private var currentSwipeIndex  = 0
     @State private var connectedCount = 0
     @State private var isLoadingMore = false
     @State private var loadedMoreCount = 0
+    @Environment(AuthService.self) private var authService
 
     // MARK: Body
 
@@ -401,6 +402,7 @@ struct PlayerRecommendationsView: View {
                 }
             }
         }
+        .task { await loadRecommendations() }
     }
 
     // MARK: - List View
@@ -693,8 +695,22 @@ struct PlayerRecommendationsView: View {
 
     // MARK: - Data builders
 
+    private func loadRecommendations() async {
+        let allUsers: [User] = (try? await FirestoreService.shared.queryCollectionOrdered(
+            collection: FirestoreCollections.users,
+            orderBy: "displayName",
+            limit: 50
+        )) ?? User.mockPlayers
+        let currentId = authService.currentUser?.id ?? ""
+        let others = allUsers.filter { $0.id != currentId }
+        sections = Self.buildSections(from: others)
+    }
+
     static fileprivate func buildSections() -> [RecommendationSection] {
-        let all = User.mockPlayers
+        buildSections(from: User.mockPlayers)
+    }
+
+    static fileprivate func buildSections(from all: [User]) -> [RecommendationSection] {
 
         // Because you play at Westside (shared club IDs)
         let westsidePlayers = all.filter { $0.clubIds.contains("club_001") }.prefix(3).map { user in

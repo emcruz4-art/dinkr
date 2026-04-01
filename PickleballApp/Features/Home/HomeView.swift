@@ -33,17 +33,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Rich app background gradient
-                LinearGradient(
-                    colors: [
-                        Color.dinkrNavy.opacity(0.04),
-                        Color.appBackground,
-                        Color.dinkrGreen.opacity(0.02)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                Color.appBackground.ignoresSafeArea()
 
                 ScrollView {
                     VStack(spacing: 0) {
@@ -85,7 +75,7 @@ struct HomeView: View {
                         .padding(.vertical, 10)
 
                         // Bento grid
-                        LazyVStack(spacing: 14) {
+                        LazyVStack(spacing: 20) {
                             // Hero banner
                             WelcomeHeroWidget(
                                 greeting: viewModel.greetingText,
@@ -206,25 +196,10 @@ struct HomeView: View {
                             ])
                             .padding(.horizontal, 16)
 
-                            // Daily pickleball tip
-                            DailyTipWidget()
-                                .padding(.horizontal, 16)
-
-                            // Explore
-                            ExploreSection()
-                                .padding(.horizontal, 16)
-
-                            // Explore Dinkr shortcuts (compact 2×2)
-                            ExploreDinkrWidget()
-                                .padding(.horizontal, 16)
-
-                            // Women's corner + Court vibes + Streak
+                            // Streak + Court vibes
                             HStack(alignment: .top, spacing: 12) {
-                                WomensCornerWidget()
-                                VStack(spacing: 12) {
-                                    StreakFireWidget(streak: viewModel.currentStreak)
-                                    CourtVibesWidget(weather: viewModel.weather)
-                                }
+                                StreakFireWidget(streak: viewModel.currentStreak)
+                                CourtVibesWidget(weather: viewModel.weather)
                             }
                             .padding(.horizontal, 16)
 
@@ -249,9 +224,7 @@ struct HomeView: View {
                             )
                             .padding(.horizontal, 16)
 
-                            // Week at a Glance
-                            WeekAtAGlanceWidget()
-                                .padding(.horizontal, 16)
+                            // Week at a Glance — removed (redundant with hero widget)
 
                             // This Week digest banner
                             Button {
@@ -261,13 +234,7 @@ struct HomeView: View {
                                 HStack(spacing: 14) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 12)
-                                            .fill(
-                                                LinearGradient(
-                                                    colors: [Color.dinkrNavy, Color.dinkrNavy.opacity(0.75)],
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                )
-                                            )
+                                            .fill(Color.dinkrNavy)
                                             .frame(width: 48, height: 48)
                                         Image(systemName: "calendar.badge.checkmark")
                                             .font(.system(size: 22))
