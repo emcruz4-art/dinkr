@@ -5,11 +5,16 @@ import SwiftUI
 struct CommentThreadView: View {
     let post: Post
 
+    @Environment(AuthService.self) private var authService
     @State private var comments: [CommentThreadItem] = []
     @State private var commentText: String = ""
     @State private var replyingToId: String? = nil
     @State private var replyDraft: [String: String] = [:]
     @FocusState private var inputFocused: Bool
+
+    private var currentUserInitial: String {
+        String((authService.currentUser?.displayName ?? "?").prefix(1))
+    }
 
     var body: some View {
         NavigationStack {

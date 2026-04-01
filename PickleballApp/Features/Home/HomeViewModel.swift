@@ -233,6 +233,10 @@ final class HomeViewModel {
     var videoHighlights: [VideoHighlight] = VideoHighlight.mockHighlights
     var currentStreak: Int = 7
 
+    // Real sessions and events loaded for bento widgets
+    var recentSessions: [GameSession] = []
+    var upcomingEvents: [Event] = []
+
     // MARK: - Header computed properties
 
     /// Number of mock unread notifications shown on the bell badge.
@@ -240,7 +244,7 @@ final class HomeViewModel {
 
     /// Number of currently live games shown in the header chip.
     var liveGameCount: Int {
-        GameSession.mockSessions.filter { $0.liveScore != nil }.count
+        recentSessions.filter { $0.liveScore != nil }.count
     }
 
     /// Weather summary string for the hero widget, e.g. "☀️ 78°F".
@@ -345,6 +349,25 @@ final class HomeViewModel {
 
         // Attach the live listener for posts arriving after this load
         startFeedListener()
+
+        // Load sessions and events for bento widgets
+        async let sessionsResult: [GameSession] = (try? firestoreService.queryCollectionWhere(
+            collection: FirestoreCollections.gameSessions,
+            whereField: "dateTime",
+            isGreaterThanOrEqualTo: Timestamp(date: Date()),
+            orderBy: "dateTime",
+            descending: false
+        )) ?? []
+        async let eventsResult: [Event] = (try? firestoreService.queryCollectionWhere(
+            collection: FirestoreCollections.events,
+            whereField: "dateTime",
+            isGreaterThanOrEqualTo: Timestamp(date: Date()),
+            orderBy: "dateTime",
+            descending: false
+        )) ?? []
+        let (loadedSessions, loadedEvents) = await (sessionsResult, eventsResult)
+        recentSessions = Array(loadedSessions.prefix(10))
+        upcomingEvents = Array(loadedEvents.prefix(5))
 
         // Static data that doesn't need a live feed
         newsArticles = NewsArticle.mockArticles
@@ -461,10 +484,10 @@ final class HomeViewModel {
 
     // MARK: - Derived
 
-    var featuredEvent: Event { Event.mockEvents[0] }
+    var featuredEvent: Event? { upcomingEvents.first }
     var myGroups: [String] { ["S. Austin Crew", "4.0+ Pool", "Mueller Regulars"] }
-    var trendingGames: [GameSession] { Array(GameSession.mockSessions.prefix(3)) }
-    var liveSession: GameSession? { GameSession.mockSessions.first { $0.liveScore != nil } }
+    var trendingGames: [GameSession] { Array(recentSessions.prefix(3)) }
+    var liveSession: GameSession? { recentSessions.first { $0.liveScore != nil } }
 
     var greetingText: String {
         let first = currentUserName?.components(separatedBy: " ").first ?? "there"

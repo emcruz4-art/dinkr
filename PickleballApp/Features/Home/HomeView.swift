@@ -163,7 +163,9 @@ struct HomeView: View {
 
                             // Featured event + Nearby games
                             HStack(alignment: .top, spacing: 12) {
-                                FeaturedEventWidget(event: viewModel.featuredEvent)
+                                if let featured = viewModel.featuredEvent {
+                                    FeaturedEventWidget(event: featured)
+                                }
                                 NearbyGamesWidget(
                                     count: viewModel.nearbyGameCount,
                                     distance: viewModel.nearestDistance
@@ -379,7 +381,7 @@ struct HomeView: View {
             let lon = locationService.currentLocation?.coordinate.longitude ?? -97.7431
             await viewModel.fetchWeather(latitude: lat, longitude: lon)
             await viewModel.loadVideoHighlights()
-            let userId = authService.currentUser?.id ?? User.mockCurrentUser.id
+            let userId = authService.currentUser?.id ?? ""
             await noShowService.loadPendingPrompts(for: userId)
 
             // Show rating prompt after 5+ games if user hasn't rated yet
