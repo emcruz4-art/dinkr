@@ -17,11 +17,7 @@ final class ProfileViewModel {
     func load(authService: AuthService) async {
         isLoading = true
         defer { isLoading = false }
-        #if DEBUG
-        user = authService.currentUser ?? User.mockCurrentUser
-        #else
         user = authService.currentUser
-        #endif
         await loadPosts()
         if let userId = user?.id {
             gameResults = await GameResultService.shared.loadResults(for: userId)
