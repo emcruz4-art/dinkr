@@ -72,7 +72,7 @@ struct GameSessionDetailView: View {
     @State private var showAttendees = false
     @State private var livePulse = false
 
-    private var currentUserId: String { authService.currentUser?.id ?? "user_001" }
+    private var currentUserId: String { authService.currentUser?.id ?? "" }
     private var isRsvped: Bool { session.rsvps.contains(currentUserId) }
     private var isHost: Bool { session.hostId == currentUserId }
 

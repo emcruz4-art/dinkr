@@ -24,6 +24,7 @@ enum EventSortOption: String, CaseIterable {
 
 struct EventsView: View {
     @State private var viewModel = EventsViewModel()
+    @Environment(AuthService.self) private var authService
     @State private var calendarFilter = EventCalendarStrip.CalendarFilter.all
     @State private var tabFilter: EventTabFilter = .all
     @State private var sortOption: EventSortOption = .date
@@ -313,15 +314,8 @@ struct EventsView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 7)
-                        .background(
-                            LinearGradient(
-                                colors: [Color.dinkrNavy, Color.dinkrGreen],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .background(Color.dinkrNavy)
                         .clipShape(Capsule())
-                        .shadow(color: Color.dinkrGreen.opacity(0.3), radius: 5, y: 2)
                     }
                     .buttonStyle(.plain)
                 }
@@ -333,7 +327,10 @@ struct EventsView: View {
                 SearchView()
             }
         }
-        .task { await viewModel.load() }
+        .task {
+            viewModel.currentUserId = authService.currentUser?.id
+            await viewModel.load()
+        }
     }
 }
 
@@ -384,59 +381,11 @@ struct FeaturedEventHeroBanner: View {
 
             // ── Gradient image area (160pt) ──────────────────────────────
             ZStack(alignment: .bottomLeading) {
-                // Navy → dinkrGreen gradient
+                // Clean two-tone hero background
                 LinearGradient(
-                    colors: [
-                        Color.dinkrNavy,
-                        Color.dinkrNavy.opacity(0.80),
-                        Color.dinkrGreen.opacity(0.80)
-                    ],
+                    colors: [Color.dinkrNavy, Color.dinkrNavy.opacity(0.85)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
-                )
-                .frame(height: 160)
-
-                // Subtle court-pattern overlay
-                Canvas { context, size in
-                    let lineColor = Color.white.opacity(0.07)
-                    var gridPath = Path()
-
-                    let hSpacing: CGFloat = 22
-                    var y: CGFloat = 0
-                    while y <= size.height {
-                        gridPath.move(to: CGPoint(x: 0, y: y))
-                        gridPath.addLine(to: CGPoint(x: size.width, y: y))
-                        y += hSpacing
-                    }
-
-                    let vSpacing: CGFloat = 30
-                    var x: CGFloat = 0
-                    while x <= size.width {
-                        gridPath.move(to: CGPoint(x: x, y: 0))
-                        gridPath.addLine(to: CGPoint(x: x, y: size.height))
-                        x += vSpacing
-                    }
-
-                    context.stroke(gridPath, with: .color(lineColor), lineWidth: 0.7)
-
-                    var centerLine = Path()
-                    centerLine.move(to: CGPoint(x: size.width / 2, y: 0))
-                    centerLine.addLine(to: CGPoint(x: size.width / 2, y: size.height))
-                    context.stroke(centerLine, with: .color(Color.white.opacity(0.10)), lineWidth: 2)
-
-                    let kitchenY = size.height * 0.72
-                    var kitchenPath = Path()
-                    kitchenPath.move(to: CGPoint(x: 0, y: kitchenY))
-                    kitchenPath.addLine(to: CGPoint(x: size.width, y: kitchenY))
-                    context.stroke(kitchenPath, with: .color(Color.white.opacity(0.13)), lineWidth: 1.5)
-                }
-                .frame(height: 160)
-
-                // Bottom scrim
-                LinearGradient(
-                    colors: [Color.clear, Color.black.opacity(0.50)],
-                    startPoint: .top,
-                    endPoint: .bottom
                 )
                 .frame(height: 160)
 
@@ -468,16 +417,6 @@ struct FeaturedEventHeroBanner: View {
                             .padding(.vertical, 4)
                             .background(eventTypeColor)
                             .clipShape(Capsule())
-
-                        if event.isWomenOnly {
-                            Text("Women Only")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 9)
-                                .padding(.vertical, 4)
-                                .background(.pink)
-                                .clipShape(Capsule())
-                        }
                     }
 
                     Text(event.title)
@@ -537,13 +476,9 @@ struct FeaturedEventHeroBanner: View {
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(Color.dinkrGreen.opacity(0.12))
-                            LinearGradient(
-                                colors: [Color.dinkrNavy, Color.dinkrGreen],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                            .frame(width: geo.size.width * registrationProgress)
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.dinkrGreen)
+                                .frame(width: geo.size.width * registrationProgress)
                         }
                     }
                     .frame(height: 5)
@@ -572,13 +507,7 @@ struct FeaturedEventHeroBanner: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 10)
-                        .background(
-                            LinearGradient(
-                                colors: [Color.dinkrNavy, Color.dinkrGreen],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .background(Color.dinkrGreen)
                         .clipShape(Capsule())
                 }
             }
@@ -586,10 +515,7 @@ struct FeaturedEventHeroBanner: View {
         }
         .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(
-            color: Color.dinkrGreen.opacity(0.22),
-            radius: 14, x: 0, y: 7
-        )
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
 

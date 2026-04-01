@@ -7,9 +7,9 @@ struct QuickRSVPView: View {
     let viewModel: PlayViewModel
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthService.self) private var authService
 
-    // Stub current user — matches the mock data convention
-    private let currentUserId = "user_001"
+    private var currentUserId: String { authService.currentUser?.id ?? "" }
 
     // Success state
     @State private var showSuccess = false

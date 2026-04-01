@@ -43,6 +43,7 @@ struct GroupMembersView: View {
     let group: DinkrGroup
     let allMembers: [User] = User.mockPlayers
 
+    @Environment(AuthService.self) private var authService
     @State private var searchText = ""
     @State private var sortOption: MemberSortOption = .mostActive
     @State private var showSortPicker = false
@@ -54,7 +55,10 @@ struct GroupMembersView: View {
     ]
 
     // Current user is admin if their id appears in group.adminIds
-    private var currentUserIsAdmin: Bool { group.adminIds.contains("user_001") }
+    private var currentUserIsAdmin: Bool {
+        guard let uid = authService.currentUser?.id else { return false }
+        return group.adminIds.contains(uid)
+    }
 
     // Members active in last 24h (mocked by reliabilityScore threshold)
     private func isOnline(_ member: User) -> Bool {
@@ -188,6 +192,7 @@ struct GroupMembersView: View {
                                         isOnline: true,
                                         isAdmin: adminRoles[member.id]?.label == "Admin",
                                         currentUserIsAdmin: currentUserIsAdmin,
+                                        currentUserId: authService.currentUser?.id ?? "",
                                         group: group
                                     )
                                 }
@@ -216,6 +221,7 @@ struct GroupMembersView: View {
                                         isOnline: false,
                                         isAdmin: adminRoles[member.id]?.label == "Admin",
                                         currentUserIsAdmin: currentUserIsAdmin,
+                                        currentUserId: authService.currentUser?.id ?? "",
                                         group: group
                                     )
                                 }
@@ -288,6 +294,7 @@ private struct MemberAvatarCell: View {
     let isOnline: Bool
     let isAdmin: Bool
     let currentUserIsAdmin: Bool
+    let currentUserId: String
     let group: DinkrGroup
 
     @State private var showAdminConfirm = false
@@ -297,7 +304,7 @@ private struct MemberAvatarCell: View {
     enum AdminAction { case makeAdmin, remove }
 
     var body: some View {
-        NavigationLink(destination: UserProfileView(user: member, currentUserId: "user_001")) {
+        NavigationLink(destination: UserProfileView(user: member, currentUserId: currentUserId)) {
             VStack(spacing: 6) {
 
                 ZStack(alignment: .bottomTrailing) {

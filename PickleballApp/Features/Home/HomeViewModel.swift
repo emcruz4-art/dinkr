@@ -317,7 +317,7 @@ final class HomeViewModel {
                 pageSize: 20
             )
             await MainActor.run {
-                var loadedPosts = result.items
+                var loadedPosts = result.items.isEmpty ? Post.mockPosts : result.items
                 let uid = currentUserId ?? ""
                 for i in loadedPosts.indices {
                     loadedPosts[i].isLiked = loadedPosts[i].likedBy.contains(uid)
@@ -329,7 +329,18 @@ final class HomeViewModel {
                 lastLoadTime = Date()
             }
         } catch {
-            print("[HomeViewModel] loadFeed error: \(error)")
+            print("[HomeViewModel] loadFeed error: \(error) — falling back to mock posts")
+            await MainActor.run {
+                let uid = currentUserId ?? ""
+                var fallback = Post.mockPosts
+                for i in fallback.indices {
+                    fallback[i].isLiked = fallback[i].likedBy.contains(uid)
+                }
+                posts = fallback
+                featuredPosts = Array(fallback.prefix(3))
+                hasMorePosts = false
+                lastLoadTime = Date()
+            }
         }
 
         // Attach the live listener for posts arriving after this load

@@ -1,9 +1,11 @@
 import SwiftUI
+import FirebaseFirestore
 
 // MARK: - GroupsView
 
 struct GroupsView: View {
     @State private var viewModel = GroupsViewModel()
+    @Environment(AuthService.self) private var authService
     @State private var selectedType: GroupType? = nil
     @State private var searchText: String = ""
     @State private var joinedGroupIds: Set<String> = []
@@ -100,7 +102,9 @@ struct GroupsView: View {
                     if !trendingGroups.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(spacing: 6) {
-                                Text("🔥 Trending")
+                                Image(systemName: "flame.fill")
+                                    .foregroundStyle(Color.dinkrCoral)
+                                Text("Trending")
                                     .font(.title3.weight(.bold))
                                 Spacer()
                             }
@@ -291,14 +295,30 @@ struct GroupsView: View {
         .sheet(isPresented: $showDiscovery) {
             GroupDiscoveryView()
         }
-        .task { await viewModel.load() }
+        .task { await viewModel.load(currentUserId: authService.currentUser?.id) }
     }
 
     private func toggleJoin(_ id: String) {
+        guard let uid = authService.currentUser?.id else { return }
         if joinedGroupIds.contains(id) {
             joinedGroupIds.remove(id)
         } else {
             joinedGroupIds.insert(id)
+        }
+        let isJoining = joinedGroupIds.contains(id)
+        Task {
+            try? await FirestoreService.shared.updateDocument(
+                collection: FirestoreCollections.groups,
+                documentId: id,
+                data: [
+                    "memberIds": isJoining
+                        ? FirebaseFirestore.FieldValue.arrayUnion([uid])
+                        : FirebaseFirestore.FieldValue.arrayRemove([uid]),
+                    "memberCount": isJoining
+                        ? FirebaseFirestore.FieldValue.increment(Int64(1))
+                        : FirebaseFirestore.FieldValue.increment(Int64(-1))
+                ]
+            )
         }
     }
 }
@@ -315,18 +335,12 @@ struct MyGroupSquareCard: View {
         VStack(spacing: 8) {
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [accentColor, accentColor.opacity(0.6)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Color.dinkrGreen.opacity(0.15))
                     .frame(width: 60, height: 60)
 
                 Text(initial)
                     .font(.system(size: 26, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.dinkrGreen)
             }
 
             Text(group.name)
@@ -344,8 +358,7 @@ struct MyGroupSquareCard: View {
         .frame(width: 130, height: 130)
         .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 18))
-        .shadow(color: accentColor.opacity(0.15), radius: 8, x: 0, y: 3)
-        .shadow(color: .black.opacity(0.04), radius: 3, x: 0, y: 1)
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
 
@@ -378,7 +391,7 @@ struct DiscoverMoreCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .overlay(
             RoundedRectangle(cornerRadius: 18)
-                .strokeBorder(Color.dinkrGreen.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
         )
     }
 }
@@ -397,18 +410,12 @@ struct TrendingGroupCard: View {
             HStack(spacing: 10) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(
-                            LinearGradient(
-                                colors: [accentColor.opacity(0.22), accentColor.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .fill(Color.dinkrGreen.opacity(0.15))
                         .frame(width: 44, height: 44)
 
                     Text(initial)
                         .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(accentColor)
+                        .foregroundStyle(Color.dinkrGreen)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -444,8 +451,7 @@ struct TrendingGroupCard: View {
         .frame(width: 200)
         .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 18))
-        .shadow(color: accentColor.opacity(0.12), radius: 8, x: 0, y: 3)
-        .shadow(color: .black.opacity(0.04), radius: 3, x: 0, y: 1)
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
 
@@ -462,18 +468,12 @@ struct NearYouGroupRow: View {
         HStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [accentColor, accentColor.opacity(0.6)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Color.dinkrGreen.opacity(0.15))
                     .frame(width: 48, height: 48)
 
                 Text(initial)
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.dinkrGreen)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -519,8 +519,7 @@ struct NearYouGroupRow: View {
         .padding(14)
         .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: accentColor.opacity(0.10), radius: 6, x: 0, y: 2)
-        .shadow(color: .black.opacity(0.04), radius: 2, x: 0, y: 1)
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
 
@@ -543,22 +542,6 @@ struct FeaturedGroupHeroCard: View {
                 endPoint: .bottomTrailing
             )
             .frame(height: 200)
-            .clipShape(RoundedRectangle(cornerRadius: 22))
-
-            // Decorative initial (large, faint)
-            Text(initial)
-                .font(.system(size: 130, weight: .black))
-                .foregroundStyle(.white.opacity(0.07))
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                .padding(.trailing, 20)
-                .padding(.top, 10)
-
-            // Vignette
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.50)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
             .clipShape(RoundedRectangle(cornerRadius: 22))
 
             // Content overlay
@@ -633,18 +616,12 @@ struct DiscoverGroupRow: View {
             // Colored initial circle icon
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [accentColor, accentColor.opacity(0.65)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Color.dinkrGreen.opacity(0.15))
                     .frame(width: 50, height: 50)
 
                 Text(initial)
                     .font(.system(size: 21, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.dinkrGreen)
             }
 
             VStack(alignment: .leading, spacing: 5) {
@@ -692,8 +669,7 @@ struct DiscoverGroupRow: View {
         .padding(14)
         .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 18))
-        .shadow(color: accentColor.opacity(0.10), radius: 6, x: 0, y: 2)
-        .shadow(color: .black.opacity(0.04), radius: 2, x: 0, y: 1)
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
 

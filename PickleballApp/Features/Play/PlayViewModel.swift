@@ -212,14 +212,11 @@ final class PlayViewModel {
         nearbySessions[index].liveScore = snapshot
     }
 
-    // Legacy overload retained for call sites that don't yet pass currentUserId
+    // Legacy overload — routes to the real async version using a stored currentUserId
     func rsvp(to session: GameSession) {
-        guard let index = nearbySessions.firstIndex(where: { $0.id == session.id }) else { return }
-        let userId = "user_001"
-        if nearbySessions[index].rsvps.contains(userId) {
-            nearbySessions[index].rsvps.removeAll { $0 == userId }
-        } else if !nearbySessions[index].isFull {
-            nearbySessions[index].rsvps.append(userId)
-        }
+        guard let uid = currentUserId else { return }
+        Task { await rsvp(to: session, currentUserId: uid) }
     }
+
+    var currentUserId: String? = nil
 }

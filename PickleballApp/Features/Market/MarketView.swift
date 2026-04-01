@@ -417,7 +417,7 @@ private struct RecentlySoldRow: View {
         .padding(12)
         .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 
     private var categoryIcon: String {
@@ -611,7 +611,7 @@ private struct MarketListingTypeToggle: View {
         }
         .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.06), radius: 5, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
         .padding(.horizontal)
     }
 
@@ -638,7 +638,6 @@ private struct MarketListingTypeToggle: View {
                     .fill(isSelected ? selectedColor : Color.clear)
                     .padding(3)
             )
-            .animation(.spring(response: 0.28, dampingFraction: 0.75), value: isSelected)
         }
         .buttonStyle(.plain)
     }
@@ -831,15 +830,15 @@ private extension View {
 struct PremiumMarketCategoryGrid: View {
     @Binding var selectedCategory: MarketCategory?
 
-    let categories: [(category: MarketCategory?, icon: String, label: String, gradient: [Color])] = [
-        (nil,          "square.grid.2x2",   "All",         [Color.dinkrGreen,  Color.dinkrGreen.opacity(0.6)]),
-        (.paddles,     "figure.pickleball", "Paddles",     [Color.dinkrCoral,  Color.dinkrAmber.opacity(0.8)]),
-        (.balls,       "circle.fill",       "Balls",       [Color.dinkrAmber,  Color.dinkrAmber.opacity(0.6)]),
-        (.bags,        "bag.fill",          "Bags",        [Color.dinkrSky,    Color.dinkrNavy.opacity(0.7)]),
-        (.apparel,     "tshirt.fill",       "Apparel",     [.purple,           .purple.opacity(0.6)]),
-        (.shoes,       "shoeprints.fill",   "Shoes",       [.teal,             Color.dinkrSky.opacity(0.7)]),
-        (.accessories, "sparkles",          "Accessories", [.pink,             .pink.opacity(0.6)]),
-        (.other,       "ellipsis.circle",   "Other",       [Color.dinkrNavy,   Color.dinkrNavy.opacity(0.6)]),
+    let categories: [(category: MarketCategory?, icon: String, label: String, accent: Color)] = [
+        (nil,          "square.grid.2x2",   "All",         Color.dinkrGreen),
+        (.paddles,     "figure.pickleball", "Paddles",     Color.dinkrCoral),
+        (.balls,       "circle.fill",       "Balls",       Color.dinkrAmber),
+        (.bags,        "bag.fill",          "Bags",        Color.dinkrSky),
+        (.apparel,     "tshirt.fill",       "Apparel",     .purple),
+        (.shoes,       "shoeprints.fill",   "Shoes",       .teal),
+        (.accessories, "sparkles",          "Accessories", .pink),
+        (.other,       "ellipsis.circle",   "Other",       Color.dinkrNavy),
     ]
 
     let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
@@ -858,22 +857,17 @@ struct PremiumMarketCategoryGrid: View {
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(
                                     isSelected
-                                    ? LinearGradient(colors: item.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                                    : LinearGradient(colors: [item.gradient[0].opacity(0.12), item.gradient[0].opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                    ? Color.dinkrGreen.opacity(0.12)
+                                    : Color(.secondarySystemBackground)
                                 )
                                 .frame(width: 58, height: 58)
-                                .shadow(
-                                    color: isSelected ? item.gradient[0].opacity(0.4) : .clear,
-                                    radius: 8, x: 0, y: 4
-                                )
                             Image(systemName: item.icon)
                                 .font(.system(size: 22, weight: .medium))
-                                .foregroundStyle(isSelected ? .white : item.gradient[0])
-                                .scaleEffect(isSelected ? 1.1 : 1.0)
+                                .foregroundStyle(isSelected ? Color.dinkrGreen : item.accent)
                         }
                         Text(item.label)
                             .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(isSelected ? item.gradient[0] : .primary)
+                            .foregroundStyle(isSelected ? Color.dinkrGreen : .primary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }

@@ -21,7 +21,15 @@ struct Event: Identifiable, Codable, Hashable {
     var prizePool: String?
     var bannerURL: String?
     var tags: [String]
-    var isRegistered: Bool
+    var isRegistered: Bool = false
+    var registeredUserIds: [String] = []
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, type, description, location, coordinates, dateTime, endDateTime,
+             registrationURL, registrationDeadline, isPro, isWomenOnly, organizer, organizerId,
+             maxParticipants, currentParticipants, entryFee, prizePool, bannerURL, tags,
+             registeredUserIds
+    }
 }
 
 extension Event {

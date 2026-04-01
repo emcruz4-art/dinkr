@@ -19,12 +19,11 @@ enum GameViewMode: String, CaseIterable {
 struct NearbyGamesView: View {
     var viewModel: PlayViewModel
     @Environment(AuthService.self) private var authService
-    private var currentUser: User { authService.currentUser ?? User.mockCurrentUser }
     @State private var showDiscover = false
     @State private var viewMode: GameViewMode = .list
 
     private var sessions: [GameSession] {
-        viewModel.sortedSessions(playerSkill: currentUser.skillLevel)
+        viewModel.sortedSessions(playerSkill: authService.currentUser?.skillLevel ?? .intermediate30)
     }
 
     var body: some View {
@@ -99,7 +98,7 @@ struct NearbyGamesView: View {
                             GameCardView(
                                 session: session,
                                 matchScore: viewModel.sortMode == .skillMatch
-                                    ? viewModel.matchScore(session: session, playerSkill: currentUser.skillLevel)
+                                    ? viewModel.matchScore(session: session, playerSkill: authService.currentUser?.skillLevel ?? .intermediate30)
                                     : nil
                             )
                             .padding(.horizontal)
@@ -190,9 +189,9 @@ struct GameDetailView: View {
     let session: GameSession
     var viewModel: PlayViewModel
     @Environment(AuthService.self) private var authService
-    private var currentUserId: String { authService.currentUser?.id ?? "user_001" }
+    private var currentUserId: String? { authService.currentUser?.id }
 
-    var isRsvped: Bool { session.rsvps.contains(currentUserId) }
+    var isRsvped: Bool { session.rsvps.contains(currentUserId ?? "") }
 
     var body: some View {
         ScrollView {

@@ -34,10 +34,13 @@ private struct ListingDraft {
 
 struct CreateListingView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthService.self) private var authService
 
     @State private var step: ListingStep = .details
     @State private var draft = ListingDraft()
     @State private var isPublished = false
+    @State private var isPublishing = false
+    @State private var publishError: String? = nil
     @State private var confettiTrigger: Int = 0
 
     // Which step "Edit" jumps back to
@@ -100,13 +103,50 @@ struct CreateListingView: View {
                     withAnimation(.easeInOut(duration: 0.3)) { step = target }
                 },
                 onPublish: {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                        isPublished = true
-                        confettiTrigger += 1
-                    }
-                    HapticManager.success()
+                    Task { await publishListing() }
                 }
             )
+        }
+    }
+
+    // MARK: - Publish to Firestore
+
+    @MainActor
+    private func publishListing() async {
+        guard let seller = authService.currentUser else { return }
+        isPublishing = true
+        defer { isPublishing = false }
+        let id = UUID().uuidString
+        let listing = MarketListing(
+            id: id,
+            sellerId: seller.id,
+            sellerName: seller.displayName,
+            category: draft.category,
+            brand: "",
+            model: draft.title.isEmpty ? "Item" : draft.title,
+            condition: draft.condition,
+            price: Double(draft.price) ?? 0,
+            description: draft.description,
+            photos: [],
+            status: .active,
+            location: draft.location.isEmpty ? seller.city : draft.location,
+            createdAt: Date(),
+            isFeatured: false,
+            viewCount: 0
+        )
+        do {
+            try await FirestoreService.shared.setDocument(
+                listing,
+                collection: FirestoreCollections.marketListings,
+                documentId: id
+            )
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                isPublished = true
+                confettiTrigger += 1
+            }
+            HapticManager.success()
+        } catch {
+            publishError = error.localizedDescription
         }
     }
 }

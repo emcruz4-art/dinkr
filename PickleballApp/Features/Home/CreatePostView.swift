@@ -41,28 +41,33 @@ final class CreatePostViewModel {
         isLoading = true
         defer { isLoading = false }
 
-        // Simulate async post submission (no Firebase in stub)
-        try? await Task.sleep(nanoseconds: 800_000_000)
-
         let postId = UUID().uuidString
-        let _ = Post(
+        let post = Post(
             id: postId,
             authorId: authorId,
             authorName: authorName,
             authorAvatarURL: authorAvatarURL,
             content: content.trimmingCharacters(in: .whitespacesAndNewlines),
-            mediaURLs: hasPhoto ? ["placeholder://photo"] : [],
+            mediaURLs: [],
             postType: selectedPostType,
             likes: 0,
             commentCount: 0,
             createdAt: Date(),
-            isLiked: false,
             tags: tags,
             taggedUserIds: taggedUserIds,
             groupId: nil
         )
 
-        didPost = true
+        do {
+            try await FirestoreService.shared.setDocument(
+                post,
+                collection: FirestoreCollections.posts,
+                documentId: postId
+            )
+            didPost = true
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
 

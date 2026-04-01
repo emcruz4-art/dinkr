@@ -4,6 +4,7 @@ import SwiftUI
 
 struct GroupDetailView: View {
     let group: DinkrGroup
+    @Environment(AuthService.self) private var authService
     @State private var selectedTab = 0
     @State private var showCreatePoll = false
     @State private var showSettings = false
@@ -11,8 +12,10 @@ struct GroupDetailView: View {
     @State private var showShareSheet = false
     let tabs = ["Feed", "Members", "Events"]
 
-    // Derived from group — in a real app this would come from the current user's membership state
-    private var currentUserIsAdmin: Bool { group.adminIds.contains("user_001") }
+    private var currentUserIsAdmin: Bool {
+        guard let uid = authService.currentUser?.id else { return false }
+        return group.adminIds.contains(uid)
+    }
 
     var body: some View {
         ScrollView {

@@ -5,10 +5,11 @@ import SwiftUI
 struct ChallengeSummaryDetailView: View {
     let challenge: Challenge
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthService.self) private var authService
     @State private var showLogProgress = false
     @State private var animateRings = false
 
-    private let currentUserId = "user_001"
+    private var currentUserId: String { authService.currentUser?.id ?? "" }
     private var typeColor: Color { challenge.type.brandColor }
 
     var body: some View {

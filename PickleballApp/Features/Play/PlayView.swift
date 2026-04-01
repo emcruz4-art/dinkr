@@ -38,9 +38,6 @@ struct PlayView: View {
     // Matched-geometry namespace for the sliding pill
     @Namespace private var tabNamespace
 
-    // Pulsing animation for Live dot
-    @State private var liveGlow = false
-
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -49,12 +46,7 @@ struct PlayView: View {
                 playTabBar
 
                 // Subtle green gradient separator
-                LinearGradient(
-                    colors: [Color.dinkrGreen.opacity(0.10), Color.clear],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 4)
+                Divider()
 
                 // ── Content area ──────────────────────────────────────────
                 tabContent
@@ -99,8 +91,10 @@ struct PlayView: View {
         .sheet(isPresented: $showLogResult) {
             LogGameResultView()
         }
-        .task { await viewModel.load() }
-        .onAppear { liveGlow = true }
+        .task {
+            viewModel.currentUserId = authService.currentUser?.id
+            await viewModel.load()
+        }
     }
 
     // MARK: - Tab Bar
@@ -135,10 +129,11 @@ struct PlayView: View {
                 Capsule()
                     .fill(Color.dinkrGreen)
                     .matchedGeometryEffect(id: "activePill", in: tabNamespace)
+                    .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
             }
 
             HStack(spacing: 5) {
-                // Live tab: pulsing red dot badge on its icon
+                // Live tab: static red dot badge on its icon
                 if tab == .live {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: tab.icon)
@@ -148,11 +143,6 @@ struct PlayView: View {
                         Circle()
                             .fill(Color.red)
                             .frame(width: 6, height: 6)
-                            .scaleEffect(liveGlow ? 1.35 : 0.80)
-                            .animation(
-                                .easeInOut(duration: 0.72).repeatForever(autoreverses: true),
-                                value: liveGlow
-                            )
                             .offset(x: 3, y: -3)
                     }
                 } else {

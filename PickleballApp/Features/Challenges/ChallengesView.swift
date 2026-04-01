@@ -7,8 +7,9 @@ struct ChallengesView: View {
     @State private var showNewChallenge = false
     @State private var showNewGroupChallenge = false
     @Namespace private var segmentNamespace
+    @Environment(AuthService.self) private var authService
 
-    private let currentUserId = "user_001"
+    private var currentUserId: String { authService.currentUser?.id ?? "" }
     private let segments = ["Active", "Pending", "History", "Groups"]
 
     private var activeChallenges: [Challenge] {
