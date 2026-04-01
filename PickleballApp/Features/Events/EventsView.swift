@@ -212,7 +212,9 @@ struct EventsView: View {
                                     .padding(.top, 12)
 
                                     NavigationLink {
-                                        EventDetailView(event: hero)
+                                        EventDetailView(event: hero) { evt in
+                                            await viewModel.register(event: evt)
+                                        }
                                     } label: {
                                         FeaturedEventHeroBanner(event: hero)
                                             .padding(.horizontal)
@@ -260,7 +262,9 @@ struct EventsView: View {
 
                             ForEach(filteredEvents) { event in
                                 NavigationLink {
-                                    EventDetailView(event: event)
+                                    EventDetailView(event: event) { evt in
+                                        await viewModel.register(event: evt)
+                                    }
                                 } label: {
                                     ZStack(alignment: .topLeading) {
                                         EventCardView(event: event)

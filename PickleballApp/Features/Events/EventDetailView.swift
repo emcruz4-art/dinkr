@@ -3,6 +3,7 @@ import MapKit
 
 struct EventDetailView: View {
     let event: Event
+    var onRegister: ((Event) async -> Void)? = nil
     @State private var showBracketBuilder = false
     @State private var showRegistration = false
     @State private var showAttendees = false
@@ -11,6 +12,8 @@ struct EventDetailView: View {
     @State private var showRecap = false
     @State private var showTournamentResults = false
     @State private var isFollowingOrganizer = false
+    @State private var isRegistering = false
+    @Environment(AuthService.self) private var authService
 
     private var mockBracket: Bracket? {
         Bracket.mock.eventId == event.id ? Bracket.mock : nil
@@ -140,8 +143,25 @@ struct EventDetailView: View {
                         .padding(.vertical, 14)
                         .background(Color.dinkrGreen.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
                     } else if event.entryFee != nil || event.type == .tournament {
-                        Button("Register Now") { showRegistration = true }
-                            .primaryButton()
+                        Button {
+                            if let onRegister {
+                                isRegistering = true
+                                Task {
+                                    await onRegister(event)
+                                    isRegistering = false
+                                }
+                            } else {
+                                showRegistration = true
+                            }
+                        } label: {
+                            if isRegistering {
+                                ProgressView().tint(.white)
+                            } else {
+                                Text("Register Now")
+                            }
+                        }
+                        .primaryButton()
+                        .disabled(isRegistering)
                     } else {
                         Button("Learn More") {}
                             .primaryButton()

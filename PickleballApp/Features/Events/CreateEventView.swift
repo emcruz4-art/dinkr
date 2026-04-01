@@ -43,11 +43,57 @@ final class CreateEventViewModel {
         selectedCourt != nil
     }
 
-    func publish() async {
+    func publish(organizerId: String, organizerName: String) async {
+        guard let type = selectedType,
+              let court = selectedCourt else { return }
         isPublishing = true
-        try? await Task.sleep(for: .seconds(2))
-        isPublishing = false
-        isPublished = true
+        defer { isPublishing = false }
+        let eventId = UUID().uuidString
+        let durationHours: Double
+        switch duration {
+        case .twoHour: durationHours = 2
+        case .fourHour: durationHours = 4
+        case .fullDay: durationHours = 8
+        }
+        let endDate = eventDate.addingTimeInterval(durationHours * 3600)
+        let fee = entryFeeEnabled ? Double(entryFeeAmount) : nil
+        let event = Event(
+            id: eventId,
+            title: eventName,
+            type: type,
+            description: eventDescription,
+            location: court.name,
+            coordinates: court.coordinates,
+            dateTime: eventDate,
+            endDateTime: endDate,
+            registrationURL: nil,
+            registrationDeadline: registrationDeadline,
+            isPro: false,
+            isWomenOnly: type == .womenOnly,
+            organizer: organizerName,
+            organizerId: organizerId,
+            maxParticipants: Int(maxParticipants),
+            currentParticipants: 0,
+            entryFee: fee,
+            prizePool: prizeMoney ? "$\(prizeAmount)" : nil,
+            bannerURL: nil,
+            tags: selectedSkillLevels.map { $0.rawValue }
+        )
+        do {
+            try await FirestoreService.shared.setDocument(
+                event,
+                collection: FirestoreCollections.events,
+                documentId: eventId
+            )
+            isPublished = true
+        } catch {
+            print("[CreateEventViewModel] publish error: \(error)")
+        }
+    }
+
+    // Legacy no-arg version for previews
+    func publish() async {
+        await publish(organizerId: "", organizerName: "")
     }
 }
 
@@ -57,6 +103,7 @@ struct CreateEventView: View {
     @State private var vm = CreateEventViewModel()
     @State private var currentStep: Int = 0
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthService.self) private var authService
 
     private let steps = ["Basics", "When & Where", "Details", "Review"]
 
@@ -102,7 +149,12 @@ struct CreateEventView: View {
                             canAdvance: canAdvanceFromCurrentStep,
                             isPublishing: vm.isPublishing
                         ) {
-                            Task { await vm.publish() }
+                            Task {
+                                await vm.publish(
+                                    organizerId: authService.currentUser?.id ?? "",
+                                    organizerName: authService.currentUser?.displayName ?? "Unknown"
+                                )
+                            }
                         }
                         .padding(.horizontal)
                         .padding(.bottom, 24)

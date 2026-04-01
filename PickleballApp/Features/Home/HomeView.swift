@@ -343,6 +343,8 @@ struct HomeView: View {
             VideoHighlightsFeedView(initialCategory: highlightsFeedCategory)
         }
         .task {
+            viewModel.currentUserId = authService.currentUser?.id
+            viewModel.currentUserName = authService.currentUser?.displayName
             await viewModel.loadFeed()
             let lat = locationService.currentLocation?.coordinate.latitude ?? 30.2672
             let lon = locationService.currentLocation?.coordinate.longitude ?? -97.7431

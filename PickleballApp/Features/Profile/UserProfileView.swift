@@ -56,10 +56,14 @@ struct UserProfileView: View {
             MatchRequestView(opponent: user)
         }
         .sheet(isPresented: $showHeadToHead) {
-            HeadToHeadView(playerA: User.mockCurrentUser, playerB: user)
+            if let currentUser = authService.currentUser {
+                HeadToHeadView(playerA: currentUser, playerB: user)
+            }
         }
         .sheet(isPresented: $showComparison) {
-            PlayerComparisonView(currentUser: User.mockCurrentUser, opponent: user)
+            if let currentUser = authService.currentUser {
+                PlayerComparisonView(currentUser: currentUser, opponent: user)
+            }
         }
         .navigationDestination(isPresented: $showMutuals) {
             MutualFriendsView(userId: user.id, userName: user.displayName)
@@ -263,7 +267,7 @@ struct UserProfileView: View {
 
     private var commonGroupsSection: some View {
         let sharedClubIds = Set(user.clubIds).intersection(
-            Set(User.mockCurrentUser.clubIds)
+            Set(authService.currentUser?.clubIds ?? [])
         )
         let clubs = Club.mockClubs.filter { sharedClubIds.contains($0.id) }
 

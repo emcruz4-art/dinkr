@@ -12,7 +12,6 @@ struct DinkrHeaderView: View {
     var onSearchTap: (() -> Void)? = nil
 
     @State private var showLocationSheet = false
-    @State private var livePulse = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,11 +30,6 @@ struct DinkrHeaderView: View {
                             Circle()
                                 .fill(Color.red)
                                 .frame(width: 7, height: 7)
-                                .scaleEffect(livePulse ? 1.4 : 1.0)
-                                .animation(
-                                    .easeInOut(duration: 0.7).repeatForever(autoreverses: true),
-                                    value: livePulse
-                                )
                             Text("Live \(liveGameCount) games")
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(Color.primary)
@@ -50,7 +44,6 @@ struct DinkrHeaderView: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .onAppear { livePulse = true }
                 }
 
                 // City chip (tappable)
@@ -130,14 +123,8 @@ struct DinkrHeaderView: View {
                 .buttonStyle(.plain)
             }
 
-            // Accent gradient strip
-            LinearGradient(
-                colors: [Color.dinkrGreen, Color.dinkrNavy.opacity(0.6)],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-            .frame(height: 2)
-            .padding(.top, 8)
+            Divider()
+                .padding(.top, 8)
         }
     }
 }
@@ -147,9 +134,6 @@ struct WelcomeHeroWidget: View {
     let greeting: String
     let gameCount: Int
     var weather: String? = nil   // e.g. "☀️ 78°F"
-
-    // Animated gradient state
-    @State private var gradientOffset: CGFloat = 0
 
     // Compute time-of-day icon from the greeting string
     private var timeIcon: String {
@@ -180,76 +164,28 @@ struct WelcomeHeroWidget: View {
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            // Animated base gradient
+            // Clean static gradient
             RoundedRectangle(cornerRadius: 20)
                 .fill(
                     LinearGradient(
-                        colors: [
-                            Color.dinkrNavy,
-                            Color.dinkrGreen.opacity(0.85 + gradientOffset * 0.12),
-                            Color.dinkrNavy.opacity(0.9 - gradientOffset * 0.08)
-                        ],
-                        startPoint: UnitPoint(x: gradientOffset * 0.3, y: 0),
-                        endPoint: UnitPoint(x: 1 - gradientOffset * 0.1, y: 1)
+                        colors: [Color.dinkrNavy, Color.dinkrGreen.opacity(0.75)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
                 )
                 .frame(maxWidth: .infinity)
                 .frame(height: 148)
-                .onAppear {
-                    withAnimation(.easeInOut(duration: 3.5).repeatForever(autoreverses: true)) {
-                        gradientOffset = 1
-                    }
-                }
-
-            // Pickleball court line pattern
-            Canvas { ctx, size in
-                let lineColor = Color.white.opacity(0.06)
-                // Kitchen line
-                ctx.stroke(Path { p in
-                    p.move(to: CGPoint(x: 0, y: size.height * 0.45))
-                    p.addLine(to: CGPoint(x: size.width, y: size.height * 0.45))
-                }, with: .color(lineColor), lineWidth: 1.5)
-                // Center line
-                ctx.stroke(Path { p in
-                    p.move(to: CGPoint(x: size.width / 2, y: size.height * 0.45))
-                    p.addLine(to: CGPoint(x: size.width / 2, y: size.height))
-                }, with: .color(lineColor), lineWidth: 1.5)
-                // Left sideline
-                ctx.stroke(Path { p in
-                    p.move(to: CGPoint(x: size.width * 0.1, y: 0))
-                    p.addLine(to: CGPoint(x: size.width * 0.1, y: size.height))
-                }, with: .color(lineColor), lineWidth: 1)
-                // Right sideline
-                ctx.stroke(Path { p in
-                    p.move(to: CGPoint(x: size.width * 0.9, y: 0))
-                    p.addLine(to: CGPoint(x: size.width * 0.9, y: size.height))
-                }, with: .color(lineColor), lineWidth: 1)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 148)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-
-            // Decorative circles
-            Circle()
-                .fill(Color.white.opacity(0.07))
-                .frame(width: 120, height: 120)
-                .offset(x: 260, y: -10)
-            Circle()
-                .fill(Color.white.opacity(0.05))
-                .frame(width: 80, height: 80)
-                .offset(x: 300, y: 30)
 
             // Content
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .center, spacing: 8) {
-                    // Time-of-day icon with glow
                     Image(systemName: timeIcon)
                         .font(.title3)
                         .foregroundStyle(timeIconColor)
-                        .shadow(color: timeIconColor.opacity(0.8), radius: 6, x: 0, y: 0)
 
-                    // Greeting with shimmer phase animation
-                    ShimmerGreetingText(text: cleanGreeting)
+                    Text(cleanGreeting)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
                 }
 
                 // Weather line
@@ -267,51 +203,11 @@ struct WelcomeHeroWidget: View {
                     HeroStatBadge(icon: "sportscourt.fill",
                                   label: "\(gameCount) games this week",
                                   iconColor: Color.dinkrGreen)
-                        .modifier(PulseOnAppearModifier(shouldPulse: gameCount > 0))
                 }
             }
             .padding(16)
         }
         .clipShape(RoundedRectangle(cornerRadius: 20))
-    }
-}
-
-private struct PulseOnAppearModifier: ViewModifier {
-    let shouldPulse: Bool
-    @State private var scale: CGFloat = 1.0
-
-    func body(content: Content) -> some View {
-        content
-            .scaleEffect(scale)
-            .onAppear {
-                guard shouldPulse else { return }
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.4).delay(0.45)) {
-                    scale = 1.18
-                }
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.5).delay(0.72)) {
-                    scale = 1.0
-                }
-            }
-    }
-}
-
-private struct ShimmerGreetingText: View {
-    let text: String
-
-    var body: some View {
-        Text(text)
-            .font(.headline.weight(.bold))
-            .foregroundStyle(.white)
-            .phaseAnimator([false, true]) { content, isGlowing in
-                content
-                    .shadow(
-                        color: Color.dinkrGreen.opacity(isGlowing ? 0.65 : 0.0),
-                        radius: isGlowing ? 8 : 0,
-                        x: 0, y: 0
-                    )
-            } animation: { _ in
-                .easeInOut(duration: 2.2)
-            }
     }
 }
 
@@ -419,15 +315,9 @@ struct QuickActionPill: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 11)
-            .background(
-                LinearGradient(
-                    colors: gradientColors,
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            .background(gradientColors[0])
             .clipShape(RoundedRectangle(cornerRadius: 14))
-            .shadow(color: gradientColors[0].opacity(0.35), radius: 8, x: 0, y: 4)
+            .shadow(color: .black.opacity(0.06), radius: 6, x: 0, y: 2)
         }
         .buttonStyle(.plain)
         .scaleEffect(isPressed ? 0.95 : 1.0)
@@ -521,13 +411,7 @@ struct FeaturedEventWidget: View {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(Color.white.opacity(0.15))
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.dinkrGreen, Color.dinkrSky],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
+                                .fill(Color.dinkrGreen)
                                 .frame(width: geo.size.width * registrationProgress)
                         }
                     }
@@ -577,7 +461,9 @@ struct NearbyGamesWidget: View {
         VStack(alignment: .leading, spacing: 8) {
             // Live indicator + label
             HStack(spacing: 6) {
-                PulsingLiveDot()
+                Circle()
+                    .fill(Color.dinkrGreen)
+                    .frame(width: 7, height: 7)
                 Text("LIVE")
                     .font(.system(size: 9, weight: .heavy))
                     .foregroundStyle(Color.dinkrGreen)
@@ -617,29 +503,8 @@ struct NearbyGamesWidget: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, minHeight: 160)
-        .background(
-            LinearGradient(
-                colors: [Color.dinkrSky.opacity(0.15), Color.dinkrSky.opacity(0.05)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
+        .background(Color.dinkrSky.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 20))
-    }
-}
-
-private struct PulsingLiveDot: View {
-    var body: some View {
-        Circle()
-            .fill(Color.dinkrGreen)
-            .frame(width: 8, height: 8)
-            .phaseAnimator([1.0, 1.5, 1.0]) { content, scale in
-                content
-                    .scaleEffect(scale)
-                    .opacity(scale > 1.2 ? 0.6 : 1.0)
-            } animation: { _ in
-                .easeInOut(duration: 1.0)
-            }
     }
 }
 
